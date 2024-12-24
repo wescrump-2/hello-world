@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-	publicDir: 'src/client/assets/',
+	publicDir: 'public',
 	server: {
 		port: 5173,
 	},
