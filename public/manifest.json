@@ -1,9 +1,9 @@
 {
-	"name": "Hello, World!",
+	"name": "Savage Worlds Initiative",
 	"version": "1.0.0",
 	"manifest_version": 1,
 	"action": {
-	  "title": "Hello, World!",
+	  "title": "Savage Worlds Initiative",
 	  "icon": "/icon.svg",
 	  "popover": "/",
 	  "height": 600,
