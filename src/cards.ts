@@ -9,53 +9,80 @@ export enum Suit {
 
 // Enum for card values
 export enum Value {
-	Ace = "14",
-	Two = "2",
-	Three = "3",
-	Four = "4",
-	Five = "5",
-	Six = "6",
-	Seven = "7",
-	Eight = "8",
-	Nine = "9",
-	Ten = "10",
-	Jack = "11",
-	Queen = "12",
-	King = "13",
-	Joker = "15"
+	Two = 2,
+	Three = 3,
+	Four = 4,
+	Five = 5,
+	Six = 6,
+	Seven = 7,
+	Eight = 8,
+	Nine = 9,
+	Ten = 10,
+	Jack = 11,
+	Queen = 12,
+	King = 13,
+	Ace = 14,
+	Joker = 15
 }
 export enum Color {
 	Red = "Red",
 	Black = "Black"
 }
+export enum Facing {
+	None, Up, Down
+}
 
 // Card class
 export class Card {
-	static inc: number = 20
+	static backs: SVGSVGElement[] = []
+	static stackedinc: number = 2
+	static spreadinc: number = 100
 	rank: number
-	faceup: boolean = false
+	dir: Facing = Facing.Down
 	suit: Suit
 	value: Value
 	face: SVGElement
+	backidx: number = 0
 	color: Color
 
-	constructor(rank: number, obj: HTMLObjectElement) {
+	constructor(rank: number, obj: HTMLObjectElement, backx: number = 3) {
 		this.rank = rank
-		this.faceup = false
+		this.dir = Facing.Down
 		const svg = obj.contentDocument
+		if (Card.backs.length === 0) {
+			const elements = svg?.querySelectorAll("[cardback]")?.values()
+			for (const el of elements ?? []) {
+				Card.backs.push(el as SVGSVGElement)
+			}
+		}
 		this.face = svg?.querySelector(`[rank="${rank}"]`) as SVGElement
-		this.value = this.face.getAttribute("number") as Value
+		this.setBack(backx)
+		this.value = Number(this.face.getAttribute("number")) as Value
 		this.suit = this.face.getAttribute("suit") as Suit
 		this.color = (this.suit === Suit.Hearts || this.suit === Suit.Diamonds) ? Color.Red : Color.Black
+	}
+	setBack(back: number) {
+		this.backidx = Math.max(0, Math.min(back, Card.backs.length - 1))
+	}
+	back(): SVGElement {
+		return Card.backs[this.backidx]
+	}
+
+	getImageSvg(): string {
+		let img = this.face.innerHTML
+		if (this.dir != Facing.Up) {
+			img = this.back().innerHTML
+		}
+		return img
 	}
 
 	toString(): string {
 		return `${this.value} of ${this.suit}`;
 	}
 
-	draw(div: HTMLDivElement, scale: number, x: number, y: number) {
+	render(div: HTMLDivElement, scale: number, x: number, y: number) {
 		const svg = div.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg")
-		svg.innerHTML = this.face.innerHTML
+		svg.innerHTML = this.getImageSvg()
 		div.appendChild(svg)
 		Card.scale(svg, scale, scale)
 		let cls: string[] = ["position-absolute", "small-card"]
@@ -78,12 +105,14 @@ export class Card {
 
 export class Player {
 	hand: Card[] = [];
-	onHold: boolean = false;
-	levelHeaded: boolean = false;
-	quick: boolean = false;
-	outOfCombat: boolean = false;
-	chooseCard: boolean = false;
-	hesitant: boolean = false;
+
+	public onHold: boolean = false;
+	public outOfCombat: boolean = false;
+	public levelHeaded: boolean = false;
+	public impLevelHeaded: boolean = false;
+	public quick: boolean = false;
+	public chooseCard: boolean = false;
+	public hesitant: boolean = false;
 
 	constructor(public name: string) { }
 
@@ -98,19 +127,55 @@ export class Player {
 		}
 	}
 
-	draw(div: HTMLDivElement, scale: number, x: number, y: number) {
+	render(div: HTMLDivElement, scale: number, x: number, y: number) {
+		const doc = div.ownerDocument
+		const fieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+
+		// Create and set the legend
+		const legend = doc.createElement('legend') as HTMLLegendElement;
+		legend.textContent = `Player: ${this.name}`;
+		fieldset.appendChild(legend);
+
+		// Add elements inside the fieldset
+		const onholdlabel = doc.createElement('label') as HTMLLabelElement
+		onholdlabel.textContent = `On Hold:${this.onHold}`
+		const outofcombatlabel = doc.createElement('label') as HTMLLabelElement
+		outofcombatlabel.textContent = `Out of Combat:${this.outOfCombat}`
+		const levelheadedlabel = doc.createElement('label') as HTMLLabelElement
+		levelheadedlabel.textContent = `Level Headed:${this.levelHeaded}`
+		const impLevelHeadedlabel = doc.createElement('label') as HTMLLabelElement
+		impLevelHeadedlabel.textContent = `Improved Level Headed:${this.impLevelHeaded}`
+		const quicklabel = doc.createElement('label') as HTMLLabelElement
+		quicklabel.textContent = `Quick:${this.quick}`
+		const hesitantlabel = doc.createElement('label') as HTMLLabelElement
+		hesitantlabel.textContent = `Hesitant:${this.hesitant}`
+		const choosecardlable = doc.createElement('label') as HTMLLabelElement
+		choosecardlable.textContent = `Chooses Card:${this.chooseCard}`
+		const playerdiv = doc.createElement('div') as HTMLDivElement
+		const carddiv = doc.createElement('div') as HTMLDivElement
+		
+		fieldset.appendChild(onholdlabel);
+		fieldset.appendChild(outofcombatlabel);
+		fieldset.appendChild(levelheadedlabel);
+		fieldset.appendChild(impLevelHeadedlabel);
+		fieldset.appendChild(quicklabel);
+		fieldset.appendChild(hesitantlabel);
+		fieldset.appendChild(choosecardlable);		
+		fieldset.appendChild(carddiv)
+		playerdiv.appendChild(fieldset)
+
 		for (const c of this.hand) {
-			c.draw(div, scale, x, y)
-			x = x + Card.inc
+			c.render(carddiv, scale, x, y)
+			x = x + Card.spreadinc
 		}
+		div.appendChild(playerdiv)
 	}
 }
 
 export class Deck {
 	players: Player[] = []
 	cards: Card[] = []
-	backs: SVGSVGElement[] = []
-	back: SVGElement
+
 	discardPool: Card[] = []
 	specialPool: Card[] = []
 
@@ -118,12 +183,7 @@ export class Deck {
 
 	constructor(obj: HTMLObjectElement) {
 		this.scale = 1
-		const svg = obj.contentDocument
-		const elements = svg?.querySelectorAll("[cardback]")?.values()
-		for (const el of elements ?? []) {
-			this.backs.push(el as SVGSVGElement)
-		}
-		this.back = this.backs[Math.floor(Math.random() * (this.backs.length + 1))]
+
 		this.initializeDeck(obj)
 		this.shuffle()
 	}
@@ -137,6 +197,12 @@ export class Deck {
 		}
 	}
 
+	setBack(n: number) {
+		for (const c of this.drawnCards()){
+			c.setBack(n)
+		}
+	}
+
 	drawnCards(): Card[] {
 		let ret: Card[] = []
 		ret = ret.concat(this.discardPool)
@@ -145,10 +211,6 @@ export class Deck {
 			ret = ret.concat(player.hand)
 		}
 		return ret
-	}
-
-	changeBack(back: number) {
-		this.back = this.backs[Math.max(0, Math.min(this.backs.length, back - 1))]
 	}
 
 	shuffle() {
@@ -164,73 +226,60 @@ export class Deck {
 		this.cards = bottom.concat(top);
 	}
 
-	dealFromTop(player: Player, numCards: number) {
-		this.moveToPool(player.hand, this.cards, numCards, true)
-	}
-
-	dealFromBottom(player: Player, numCards: number) {
-		this.moveToPool(player.hand, this.cards, numCards, false)
+	dealFromTop(hand: Card[], numCards: number, dir: Facing) {
+		this.moveToPool(hand, this.cards, numCards, true, dir)
 	}
 
 	returnCardsToDeck(from: Card[], numCards: number = 0) {
-		this.moveToPool(this.cards, from, numCards)
+		this.moveToPool(this.cards, from, numCards, true, Facing.Down)
 	}
 
 	moveToDiscardPool(from: Card[], numCards: number = 0) {
-		this.moveToPool(this.discardPool, from, numCards)
+		this.moveToPool(this.discardPool, from, numCards, true, Facing.Up)
 	}
 
 	moveToSpecialPool(from: Card[], numCards: number = 0) {
-		this.moveToPool(this.specialPool, from, numCards)
+		this.moveToPool(this.specialPool, from, numCards, true, Facing.Up)
 	}
 
-	moveToPool(to: Card[], from: Card[], numCards: number = 0, top: boolean = true) {
+	moveToPool(to: Card[], from: Card[], numCards: number = 0, top: boolean, dir: Facing) {
 		const limit = numCards === 0 ? from.length : Math.min(numCards, from.length)
 		for (let i = 0; i < limit; i++) {
+			let card = null
 			if (top) {
-				to.push(from.shift()!)
+				card = from.shift()!
 			} else {
-				to.push(from.pop()!)
+				card = from.pop()!
 			}
+			if (dir != Facing.None) card.dir = dir
+			to.push(card)
 		}
 	}
 
-	drawBack(div: HTMLDivElement, x: number, y: number) {
-		const svg = div.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg")
-		svg.innerHTML = this.back.innerHTML
-		div.appendChild(svg)
-		Card.scale(svg, this.scale, this.scale)
-		let cls: string[] = ["position-absolute", "small-card"]
-		svg.classList.remove(...cls)
-		svg.classList.add(...cls)
-		svg.style.top = `${y}px`
-		svg.style.left = `${x}px`
-	}
-
-	draw(div: HTMLDivElement) {
+	render(div: HTMLDivElement) {
 		//draw deck	
 		let y = 500
 		let x = 0
 
-		for (let i = 0; i < this.cards.length; i++) {
-			this.drawBack(div, x, y)
-			x = x + 3
+		for (const c of this.cards) {
+			c.render(div, this.scale, x, y)
+			x = x + Card.stackedinc
 		}
 
 		//draw dicard
 		x = 0
 		y = y + 100
 		for (const c of this.discardPool) {
-			c.draw(div, this.scale, x, y)
-			x = x + Card.inc
+			c.render(div, this.scale, x, y)
+			x = x + Card.spreadinc
 		}
 
 		//draw special
 		x = 0
 		y = y + 100
 		for (const c of this.specialPool) {
-			c.draw(div, this.scale, x, y)
-			x = x + Card.inc
+			c.render(div, this.scale, x, y)
+			x = x + Card.spreadinc
 		}
 	}
 }
@@ -245,25 +294,36 @@ export class Game {
 		this.div = container
 	}
 
-	addPlayer(name: string) {
-		this.deck.players.push(new Player(name));
+	addPlayer(name: string): Player {
+		const p = new Player(name)
+		this.deck.players.push(p);
+		return p
 	}
 
-	draw() {
+	render() {
 		//draw deck
-		this.deck.draw(this.div)
+		this.deck.render(this.div)
 		//draw player hands
 		let y = 700
 		let x = 0
 		for (const p of this.deck.players) {
-			p.draw(this.div, this.deck.scale, x, y)
+			p.render(this.div, this.deck.scale, x, y)
 			y = y + 120
 		}
 	}
-
+	testplayers: string[] = ["h", "il", "lh", "oh", "oc", "q", "lhq", "ilq"]
 	startGame() {
 		this.deck.shuffle();
-		// Add game logic here
+		for (const pn of this.testplayers) {
+			let p = this.addPlayer(pn)
+			let pnl = pn.toLowerCase()
+			p.hesitant = pnl.indexOf("h") >= 0
+			p.impLevelHeaded = pnl.indexOf("il") >= 0
+			p.levelHeaded = pnl.indexOf("lh") >= 0
+			p.onHold = pnl.indexOf("oh") >= 0
+			p.outOfCombat = pnl.indexOf("oc") >= 0
+			p.quick = pnl.indexOf("q") >= 0
+		}
 	}
 
 	newRound() {
@@ -273,10 +333,32 @@ export class Game {
 	}
 
 	newGame() {
-		for (const p of this.deck.players) {
-			this.deck.moveToDiscardPool(p.hand)
-		}
+		this.newRound()
 		this.deck.moveToDiscardPool(this.deck.specialPool)
 		this.deck.returnCardsToDeck(this.deck.discardPool)
+	}
+
+	drawInitiative() {
+		for (const p of this.deck.players) {
+			if (p.hesitant) {
+				p.quick = false
+				p.levelHeaded = false
+				p.impLevelHeaded = false
+			}
+			if (p.onHold)
+				return
+			this.deck.moveToDiscardPool(p.hand)
+			if (p.outOfCombat)
+				return
+			this.deck.dealFromTop(p.hand, 1, Facing.Up)
+			if (p.impLevelHeaded)
+				this.deck.dealFromTop(p.hand, 1, Facing.Up)
+			if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
+				this.deck.dealFromTop(p.hand, 1, Facing.Up)
+			if (p.quick)
+				while (p.hand.every(c => c.value <= 5)) {
+					this.deck.dealFromTop(p.hand, 1, Facing.Up)
+				}
+		}
 	}
 }
