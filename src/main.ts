@@ -27,7 +27,7 @@ window.addEventListener("load", () => {
     console.info(`cards loaded [${svgElement.id}]`)
     // Perform operations on svgElement
     const game = new Game(document.getElementById('hidden-svg') as HTMLObjectElement, document.getElementById('svgContainer') as HTMLDivElement)
-
+    game.deck.setBack(7)
     game.startGame()
 
     game.drawInitiative()

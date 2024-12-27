@@ -45,7 +45,7 @@ export class Card {
 	backidx: number = 0
 	color: Color
 
-	constructor(rank: number, obj: HTMLObjectElement, backx: number = 3) {
+	constructor(rank: number, obj: HTMLObjectElement, backx: number = 2) {
 		this.rank = rank
 		this.dir = Facing.Down
 		const svg = obj.contentDocument
@@ -80,16 +80,18 @@ export class Card {
 		return `${this.value} of ${this.suit}`;
 	}
 
-	render(div: HTMLDivElement, scale: number, x: number, y: number) {
-		const svg = div.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg")
+	render(container: HTMLDivElement, scale: number, x: number, y: number) {
+		const svg = container.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
 		svg.innerHTML = this.getImageSvg()
-		div.appendChild(svg)
-		Card.scale(svg, scale, scale)
+		container.appendChild(svg)
 		let cls: string[] = ["position-absolute", "small-card"]
-		svg.classList.remove(...cls)
 		svg.classList.add(...cls)
+		const bbox = svg.getBBox()
+		if (bbox.width > 0 && bbox.height > 0)
+			svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 		svg.style.top = `${y}px`
 		svg.style.left = `${x}px`
+		//Card.scale(svg, scale, scale)
 	}
 
 	static scale(svg: SVGSVGElement, x: number, y: number) {
@@ -97,9 +99,6 @@ export class Card {
 		trans.setScale(x, y)
 		svg.transform.baseVal.clear
 		svg.transform.baseVal.appendItem(trans)
-		svg.parentElement?.offsetWidth
-		const bbox = svg.getBBox()
-		svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 	}
 }
 
@@ -127,16 +126,19 @@ export class Player {
 		}
 	}
 
-	render(div: HTMLDivElement, scale: number, x: number, y: number) {
-		const doc = div.ownerDocument
+	render(container: HTMLDivElement, scale: number, x: number, y: number) {
+		const doc = container.ownerDocument
 		const fieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const playerdiv = doc.createElement('div') as HTMLDivElement
+		const carddiv = doc.createElement('div') as HTMLDivElement
+		carddiv.classList.add(...["position-relative", "small-card"])
+		container.appendChild(playerdiv)
+		playerdiv.appendChild(fieldset)
 
-		// Create and set the legend
 		const legend = doc.createElement('legend') as HTMLLegendElement;
 		legend.textContent = `Player: ${this.name}`;
 		fieldset.appendChild(legend);
 
-		// Add elements inside the fieldset
 		const onholdlabel = doc.createElement('label') as HTMLLabelElement
 		onholdlabel.textContent = `On Hold:${this.onHold}`
 		const outofcombatlabel = doc.createElement('label') as HTMLLabelElement
@@ -151,24 +153,20 @@ export class Player {
 		hesitantlabel.textContent = `Hesitant:${this.hesitant}`
 		const choosecardlable = doc.createElement('label') as HTMLLabelElement
 		choosecardlable.textContent = `Chooses Card:${this.chooseCard}`
-		const playerdiv = doc.createElement('div') as HTMLDivElement
-		const carddiv = doc.createElement('div') as HTMLDivElement
-		
-		fieldset.appendChild(onholdlabel);
-		fieldset.appendChild(outofcombatlabel);
-		fieldset.appendChild(levelheadedlabel);
-		fieldset.appendChild(impLevelHeadedlabel);
-		fieldset.appendChild(quicklabel);
-		fieldset.appendChild(hesitantlabel);
-		fieldset.appendChild(choosecardlable);		
+
+		fieldset.appendChild(onholdlabel)
+		fieldset.appendChild(outofcombatlabel)
+		fieldset.appendChild(levelheadedlabel)
+		fieldset.appendChild(impLevelHeadedlabel)
+		fieldset.appendChild(quicklabel)
+		fieldset.appendChild(hesitantlabel)
+		fieldset.appendChild(choosecardlable)
 		fieldset.appendChild(carddiv)
-		playerdiv.appendChild(fieldset)
 
 		for (const c of this.hand) {
 			c.render(carddiv, scale, x, y)
 			x = x + Card.spreadinc
 		}
-		div.appendChild(playerdiv)
 	}
 }
 
@@ -183,7 +181,6 @@ export class Deck {
 
 	constructor(obj: HTMLObjectElement) {
 		this.scale = 1
-
 		this.initializeDeck(obj)
 		this.shuffle()
 	}
@@ -198,7 +195,7 @@ export class Deck {
 	}
 
 	setBack(n: number) {
-		for (const c of this.drawnCards()){
+		for (const c of this.drawnCards()) {
 			c.setBack(n)
 		}
 	}
@@ -256,29 +253,49 @@ export class Deck {
 		}
 	}
 
-	render(div: HTMLDivElement) {
-		//draw deck	
-		let y = 500
-		let x = 0
+	render(container: HTMLDivElement) {
+		const doc = container.ownerDocument
+		const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const deckdiv = doc.createElement('div') as HTMLDivElement
+		const deckcarddiv = doc.createElement('div') as HTMLDivElement
+		deckcarddiv.classList.add(...["position-relative", "small-card"])
+		deckdiv.classList.add("position-relative")
+		container.appendChild(deckdiv)
+		deckdiv.appendChild(deckfieldset)
+		deckfieldset.appendChild(deckcarddiv)
 
+		//draw deck
+		let x = 0
+		let y = 0
 		for (const c of this.cards) {
-			c.render(div, this.scale, x, y)
+			c.render(deckcarddiv, this.scale, x, y)
 			x = x + Card.stackedinc
 		}
+		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const discarddiv = doc.createElement('div') as HTMLDivElement
+		const discardcarddiv = doc.createElement('div') as HTMLDivElement
+		discardcarddiv.classList.add(...["position-relative", "small-card"])
+		discarddiv.classList.add("position-relative")
+		container.appendChild(discarddiv)
+		discarddiv.appendChild(discardfieldset)
+		discardfieldset.appendChild(discardcarddiv)
 
 		//draw dicard
-		x = 0
-		y = y + 100
 		for (const c of this.discardPool) {
-			c.render(div, this.scale, x, y)
+			c.render(discardcarddiv, this.scale, x, y)
 			x = x + Card.spreadinc
 		}
-
+		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const specialdiv = doc.createElement('div') as HTMLDivElement
+		const specialcarddiv = doc.createElement('div') as HTMLDivElement
+		specialcarddiv.classList.add(...["position-relative", "small-card"])
+		specialdiv.classList.add("position-relative")
+		container.appendChild(specialdiv)
+		specialdiv.appendChild(specialfieldset)
+		specialfieldset.appendChild(specialcarddiv)
 		//draw special
-		x = 0
-		y = y + 100
 		for (const c of this.specialPool) {
-			c.render(div, this.scale, x, y)
+			c.render(specialcarddiv, this.scale, x, y)
 			x = x + Card.spreadinc
 		}
 	}
@@ -304,14 +321,13 @@ export class Game {
 		//draw deck
 		this.deck.render(this.div)
 		//draw player hands
-		let y = 700
+		let y = 0
 		let x = 0
 		for (const p of this.deck.players) {
 			p.render(this.div, this.deck.scale, x, y)
-			y = y + 120
 		}
 	}
-	testplayers: string[] = ["h", "il", "lh", "oh", "oc", "q", "lhq", "ilq"]
+	testplayers: string[] = ["h", "il", "lh", "a", "a", "q", "lhq", "ilq"]
 	startGame() {
 		this.deck.shuffle();
 		for (const pn of this.testplayers) {
