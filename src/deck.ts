@@ -112,6 +112,10 @@ export class Deck {
 		}
 	}
 
+	jokerDrawn(): boolean {
+		return this.players.some(p => p.hasJoker()) || this.discardPool.some(c => c.isJoker()) || this.specialPool.some(c => c.isJoker())
+	}
+
 	removeRender(container: HTMLDivElement) {
 		for (let str of ["Draw", "Discard", "Pool"]) {
 			const rem = container.querySelector(`div[id="${str}"]`);
@@ -141,6 +145,12 @@ export class Deck {
 		for (const c of this.cards) {
 			c.render(deckcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStackedDown())
+		}
+		if (this.jokerDrawn()) {
+			const joke = doc.createElement('label')
+			joke.classList.add('btn-info')
+			joke.textContent = 'Joker Drawn! Shuffle and issue Bennys.'
+			deckfieldset.appendChild(joke);
 		}
 
 		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement

@@ -20,6 +20,10 @@ export class Player {
 		this.hand.push(card);
 	}
 
+	hasJoker():boolean {
+		return this.hand.some(c => c.isJoker() === true);
+	}
+	
 	removeCard(card: Card) {
 		const index = this.hand.indexOf(card)
 		if (index > -1) {

@@ -67,20 +67,26 @@ export class Card {
 	static cardStackedDown(): string {
 		const rootStyles = getComputedStyle(document.documentElement)
 		return rootStyles.getPropertyValue('--card-stacked-down-inc').trim()
-	}  //= '.25rem'
+	}
+
 	static cardStacked(): string {
 		const rootStyles = getComputedStyle(document.documentElement)
 		return rootStyles.getPropertyValue('--card-stacked-inc').trim()
-	} //= '.5rem'
+	}
+
 	static cardSpread(): string {
 		const rootStyles = getComputedStyle(document.documentElement)
 		return rootStyles.getPropertyValue('--card-spread-inc').trim()
-	}//= '3rem'
+	}
 
+	isJoker(): boolean {
+		return (this.value===15)
+	}
 
 	setBack(back: number) {
 		this.backidx = Math.max(0, Math.min(back, Card.backs.length - 1))
 	}
+
 	back(): SVGElement {
 		return Card.backs[this.backidx]
 	}
