@@ -1,10 +1,13 @@
+import { Player } from "./player"
+
 // Enum for card suits
 export enum Suit {
 	Hearts = "Hearts",
 	Diamonds = "Diamonds",
 	Clubs = "Clubs",
 	Spades = "Spades",
-	Joker = "Joker"
+	RedJoker = "RedJoker",
+	BlackJoker = "BlackJoker"
 }
 
 // Enum for card values
@@ -35,8 +38,11 @@ export enum Facing {
 // Card class
 export class Card {
 	static backs: SVGSVGElement[] = []
-	static stackedinc: number = 2
-	static spreadinc: number = 100
+	static stackeddowninc: string = '.25rem'
+	static stackedupinc: string = '.5rem'
+	static spreadinc: string = '3rem'
+	static abscard: string[] = ["position-absolute", "small-card"]
+	static relcard: string[] = ["position-relative", "small-card"]
 	rank: number
 	dir: Facing = Facing.Down
 	suit: Suit
@@ -45,10 +51,11 @@ export class Card {
 	backidx: number = 0
 	color: Color
 
-	constructor(rank: number, obj: HTMLObjectElement, backx: number = 2) {
+	constructor(rank: number, backx: number = 2) {
 		this.rank = rank
 		this.dir = Facing.Down
-		const svg = obj.contentDocument
+		const obj = document.getElementById("cards-svg") as HTMLObjectElement
+		const svg =  obj.contentDocument
 		if (Card.backs.length === 0) {
 			const elements = svg?.querySelectorAll("[cardback]")?.values()
 			for (const el of elements ?? []) {
@@ -59,7 +66,7 @@ export class Card {
 		this.setBack(backx)
 		this.value = Number(this.face.getAttribute("number")) as Value
 		this.suit = this.face.getAttribute("suit") as Suit
-		this.color = (this.suit === Suit.Hearts || this.suit === Suit.Diamonds) ? Color.Red : Color.Black
+		this.color = (this.suit === Suit.Spades || this.suit === Suit.Clubs || this.suit === Suit.BlackJoker) ? Color.Black : Color.Red
 	}
 	setBack(back: number) {
 		this.backidx = Math.max(0, Math.min(back, Card.backs.length - 1))
@@ -77,120 +84,55 @@ export class Card {
 	}
 
 	toString(): string {
-		return `${this.value} of ${this.suit}`;
+		if (this.dir === Facing.Up)
+			return `${Value[this.value]} of ${(this.value === Value.Joker) ? this.color : this.suit}`
+		else
+			return 'card'
 	}
 
-	render(container: HTMLDivElement, scale: number, x: number, y: number) {
-		const svg = container.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
+	render(container: HTMLDivElement, x: number, y: number) {
+		const doc = container.ownerDocument
+		const div = doc.createElement('div') as HTMLDivElement
+		const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
 		svg.innerHTML = this.getImageSvg()
-		container.appendChild(svg)
-		let cls: string[] = ["position-absolute", "small-card"]
-		svg.classList.add(...cls)
+		div.appendChild(svg)
+		container.appendChild(div)
+		div.title = this.toString()
+		svg.classList.add(...Card.abscard)
 		const bbox = svg.getBBox()
 		if (bbox.width > 0 && bbox.height > 0)
 			svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 		svg.style.top = `${y}px`
 		svg.style.left = `${x}px`
-		//Card.scale(svg, scale, scale)
-	}
-
-	static scale(svg: SVGSVGElement, x: number, y: number) {
-		const trans = svg.createSVGTransform()
-		trans.setScale(x, y)
-		svg.transform.baseVal.clear
-		svg.transform.baseVal.appendItem(trans)
-	}
-}
-
-export class Player {
-	hand: Card[] = [];
-
-	public onHold: boolean = false;
-	public outOfCombat: boolean = false;
-	public levelHeaded: boolean = false;
-	public impLevelHeaded: boolean = false;
-	public quick: boolean = false;
-	public chooseCard: boolean = false;
-	public hesitant: boolean = false;
-
-	constructor(public name: string) { }
-
-	addCard(card: Card) {
-		this.hand.push(card);
-	}
-
-	removeCard(card: Card) {
-		const index = this.hand.indexOf(card);
-		if (index > -1) {
-			this.hand.splice(index, 1);
-		}
-	}
-
-	render(container: HTMLDivElement, scale: number, x: number, y: number) {
-		const doc = container.ownerDocument
-		const fieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
-		const playerdiv = doc.createElement('div') as HTMLDivElement
-		const carddiv = doc.createElement('div') as HTMLDivElement
-		carddiv.classList.add(...["position-relative", "small-card"])
-		container.appendChild(playerdiv)
-		playerdiv.appendChild(fieldset)
-
-		const legend = doc.createElement('legend') as HTMLLegendElement;
-		legend.textContent = `Player: ${this.name}`;
-		fieldset.appendChild(legend);
-
-		const onholdlabel = doc.createElement('label') as HTMLLabelElement
-		onholdlabel.textContent = `On Hold:${this.onHold}`
-		const outofcombatlabel = doc.createElement('label') as HTMLLabelElement
-		outofcombatlabel.textContent = `Out of Combat:${this.outOfCombat}`
-		const levelheadedlabel = doc.createElement('label') as HTMLLabelElement
-		levelheadedlabel.textContent = `Level Headed:${this.levelHeaded}`
-		const impLevelHeadedlabel = doc.createElement('label') as HTMLLabelElement
-		impLevelHeadedlabel.textContent = `Improved Level Headed:${this.impLevelHeaded}`
-		const quicklabel = doc.createElement('label') as HTMLLabelElement
-		quicklabel.textContent = `Quick:${this.quick}`
-		const hesitantlabel = doc.createElement('label') as HTMLLabelElement
-		hesitantlabel.textContent = `Hesitant:${this.hesitant}`
-		const choosecardlable = doc.createElement('label') as HTMLLabelElement
-		choosecardlable.textContent = `Chooses Card:${this.chooseCard}`
-
-		fieldset.appendChild(onholdlabel)
-		fieldset.appendChild(outofcombatlabel)
-		fieldset.appendChild(levelheadedlabel)
-		fieldset.appendChild(impLevelHeadedlabel)
-		fieldset.appendChild(quicklabel)
-		fieldset.appendChild(hesitantlabel)
-		fieldset.appendChild(choosecardlable)
-		fieldset.appendChild(carddiv)
-
-		for (const c of this.hand) {
-			c.render(carddiv, scale, x, y)
-			x = x + Card.spreadinc
-		}
 	}
 }
 
 export class Deck {
 	players: Player[] = []
 	cards: Card[] = []
-
 	discardPool: Card[] = []
 	specialPool: Card[] = []
 
 	public scale: number = 1
 
-	constructor(obj: HTMLObjectElement) {
+	constructor() {
 		this.scale = 1
-		this.initializeDeck(obj)
+		this.initializeDeck()
 		this.shuffle()
 	}
 
-	initializeDeck(obj: HTMLObjectElement) {
+	static rem2px(remstr: string): number {
+		const rem = parseFloat(remstr)
+		const rootFontSize = parseInt(getComputedStyle(document.documentElement).fontSize, 10);
+		return rem * rootFontSize;
+	  }
+
+	initializeDeck() {
 		if (this.cards.length > 0) {
 			this.cards = []
 		}
 		for (let i = 1; i <= 56; i++) {
-			this.cards.push(new Card(i, obj));
+			this.cards.push(new Card(i));
 		}
 	}
 
@@ -253,128 +195,79 @@ export class Deck {
 		}
 	}
 
+	removeRender(container: HTMLDivElement) {
+		const divToRemove = container.querySelector(`div[title="Draw Deck"]`);
+		if (divToRemove) {
+			// If div is found, remove it from the DOM
+			divToRemove.remove();
+		} 
+
+		const divToRemove2 = container.querySelector(`div[title="Discard Pile"]`);
+		if (divToRemove2) {
+			// If div is found, remove it from the DOM
+			divToRemove2.remove();
+		} 
+
+		const divToRemove3 = container.querySelector(`div[title="Card Pool"]`);
+		if (divToRemove3) {
+			// If div is found, remove it from the DOM
+			divToRemove3.remove();
+		} 
+	}
+
+
 	render(container: HTMLDivElement) {
+		let x = 0
+		let y = 0		
 		const doc = container.ownerDocument
-		const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+		const deckleg = doc.createElement('legend') as HTMLLegendElement
+		deckleg.textContent = 'Draw Deck'
+		deckfieldset.appendChild(deckleg)
 		const deckdiv = doc.createElement('div') as HTMLDivElement
+		deckdiv.title=deckleg.textContent
 		const deckcarddiv = doc.createElement('div') as HTMLDivElement
-		deckcarddiv.classList.add(...["position-relative", "small-card"])
-		deckdiv.classList.add("position-relative")
+		deckcarddiv.classList.add(...Card.relcard)
+		deckdiv.classList.add(Card.relcard[0])
 		container.appendChild(deckdiv)
 		deckdiv.appendChild(deckfieldset)
 		deckfieldset.appendChild(deckcarddiv)
-
-		//draw deck
-		let x = 0
-		let y = 0
 		for (const c of this.cards) {
-			c.render(deckcarddiv, this.scale, x, y)
-			x = x + Card.stackedinc
+			c.render(deckcarddiv, x, y)
+			x = x + Deck.rem2px(Card.stackeddowninc)
 		}
-		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+		const discardleg = doc.createElement('legend') as HTMLLegendElement
+		discardleg.textContent = 'Discard Pile'
+		discardfieldset.appendChild(discardleg)
 		const discarddiv = doc.createElement('div') as HTMLDivElement
+		discarddiv.title=discardleg.textContent
 		const discardcarddiv = doc.createElement('div') as HTMLDivElement
-		discardcarddiv.classList.add(...["position-relative", "small-card"])
-		discarddiv.classList.add("position-relative")
+		discardcarddiv.classList.add(...Card.relcard)
+		discarddiv.classList.add(Card.relcard[0])
 		container.appendChild(discarddiv)
 		discarddiv.appendChild(discardfieldset)
 		discardfieldset.appendChild(discardcarddiv)
-
-		//draw dicard
 		for (const c of this.discardPool) {
-			c.render(discardcarddiv, this.scale, x, y)
-			x = x + Card.spreadinc
+			c.render(discardcarddiv, x, y)
+			x = x + Deck.rem2px(Card.stackedupinc)
 		}
-		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
+
+		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+		const specialleg = doc.createElement('legend') as HTMLLegendElement
+		specialleg.textContent = 'Card Pool'
+		specialfieldset.appendChild(specialleg)
 		const specialdiv = doc.createElement('div') as HTMLDivElement
+		specialdiv.title = specialleg.textContent
 		const specialcarddiv = doc.createElement('div') as HTMLDivElement
-		specialcarddiv.classList.add(...["position-relative", "small-card"])
-		specialdiv.classList.add("position-relative")
+		specialcarddiv.classList.add(...Card.relcard)
+		specialdiv.classList.add(Card.relcard[0])
 		container.appendChild(specialdiv)
 		specialdiv.appendChild(specialfieldset)
 		specialfieldset.appendChild(specialcarddiv)
-		//draw special
 		for (const c of this.specialPool) {
-			c.render(specialcarddiv, this.scale, x, y)
-			x = x + Card.spreadinc
-		}
-	}
-}
-
-// Game class
-export class Game {
-	deck: Deck
-	div: HTMLDivElement
-
-	constructor(cardobject: HTMLObjectElement, container: HTMLDivElement) {
-		this.deck = new Deck(cardobject)
-		this.div = container
-	}
-
-	addPlayer(name: string): Player {
-		const p = new Player(name)
-		this.deck.players.push(p);
-		return p
-	}
-
-	render() {
-		//draw deck
-		this.deck.render(this.div)
-		//draw player hands
-		let y = 0
-		let x = 0
-		for (const p of this.deck.players) {
-			p.render(this.div, this.deck.scale, x, y)
-		}
-	}
-	testplayers: string[] = ["h", "il", "lh", "a", "a", "q", "lhq", "ilq"]
-	startGame() {
-		this.deck.shuffle();
-		for (const pn of this.testplayers) {
-			let p = this.addPlayer(pn)
-			let pnl = pn.toLowerCase()
-			p.hesitant = pnl.indexOf("h") >= 0
-			p.impLevelHeaded = pnl.indexOf("il") >= 0
-			p.levelHeaded = pnl.indexOf("lh") >= 0
-			p.onHold = pnl.indexOf("oh") >= 0
-			p.outOfCombat = pnl.indexOf("oc") >= 0
-			p.quick = pnl.indexOf("q") >= 0
-		}
-	}
-
-	newRound() {
-		for (const p of this.deck.players) {
-			this.deck.moveToDiscardPool(p.hand)
-		}
-	}
-
-	newGame() {
-		this.newRound()
-		this.deck.moveToDiscardPool(this.deck.specialPool)
-		this.deck.returnCardsToDeck(this.deck.discardPool)
-	}
-
-	drawInitiative() {
-		for (const p of this.deck.players) {
-			if (p.hesitant) {
-				p.quick = false
-				p.levelHeaded = false
-				p.impLevelHeaded = false
-			}
-			if (p.onHold)
-				return
-			this.deck.moveToDiscardPool(p.hand)
-			if (p.outOfCombat)
-				return
-			this.deck.dealFromTop(p.hand, 1, Facing.Up)
-			if (p.impLevelHeaded)
-				this.deck.dealFromTop(p.hand, 1, Facing.Up)
-			if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
-				this.deck.dealFromTop(p.hand, 1, Facing.Up)
-			if (p.quick)
-				while (p.hand.every(c => c.value <= 5)) {
-					this.deck.dealFromTop(p.hand, 1, Facing.Up)
-				}
+			c.render(specialcarddiv, x, y)
+			x = x + Deck.rem2px(Card.spreadinc)
 		}
 	}
 }
