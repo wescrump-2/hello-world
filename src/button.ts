@@ -12,8 +12,8 @@ export class ButtonFactory {
 		const svgDocument = svgButtons.contentDocument?.getRootNode() as SVGSVGElement
 		if (svgDocument) {
 			const path = svgDocument.querySelector(`[class="${imagekey}"]`) as SVGSVGElement
-			svg.style.height = "1.4em"
-			svg.style.width = "1.4em"
+			svg.style.height = "1.6em"
+			svg.style.width = "1.6em"
 			const root = svgDocument.getRootNode().firstChild as SVGElement
 			const h = root.style.height.replace("px", "")
 			const w = root.style.width.replace("px", "")
@@ -22,4 +22,15 @@ export class ButtonFactory {
 		}
 		return but
 	}
+	static toggle(event: Event) {
+		const className = 'btn-success'
+		if (event.currentTarget instanceof HTMLButtonElement) {
+		  if (event.currentTarget.classList.contains(className)) {
+			event.currentTarget.classList.remove(className);
+		  } else {
+			event.currentTarget.classList.add(className);
+		  }
+		}
+		document.body.offsetHeight
+	  }
 }

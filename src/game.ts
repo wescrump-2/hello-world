@@ -19,6 +19,16 @@ export class Game {
 		return p
 	}
 
+	removePlayer(player: Player) {
+		const index = this.deck.players.findIndex(p => p.id === player.id);
+		if (index !== -1) {
+			const p = this.deck.players[index]
+			this.deck.moveToDiscardPool(p.hand)
+			this.deck.players.splice(index, 1);
+		}
+	}
+
+
 	render() {
 		//draw deck
 		this.deck.removeRender(this.div)
@@ -31,9 +41,9 @@ export class Game {
 			p.render(this.div, x, y)
 		}
 	}
-	testplayers: string[] = ["h", "il", "lh", "a", "q", "lhq", "ilq"]
+	testplayers: string[] = ["h", "il", "q", "lhq", "ilq"]
 	startGame() {
-		this.newGame()
+		this.deck.newGame()
 		this.deck.shuffle();
 		for (const pn of this.testplayers) {
 			let p = this.addPlayer(pn)
@@ -47,17 +57,6 @@ export class Game {
 		}
 	}
 
-	newRound() {
-		for (const p of this.deck.players) {
-			this.deck.moveToDiscardPool(p.hand)
-		}
-	}
-
-	newGame() {
-		this.newRound()
-		this.deck.moveToDiscardPool(this.deck.specialPool)
-		this.deck.returnCardsToDeck(this.deck.discardPool)
-	}
 
 	drawInitiative() {
 		for (const p of this.deck.players) {

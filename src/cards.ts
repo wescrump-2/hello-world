@@ -1,3 +1,5 @@
+import { ButtonFactory } from "./button"
+import { Game } from "./game"
 import { Player } from "./player"
 
 // Enum for card suits
@@ -55,7 +57,7 @@ export class Card {
 		this.rank = rank
 		this.dir = Facing.Down
 		const obj = document.getElementById("cards-svg") as HTMLObjectElement
-		const svg =  obj.contentDocument
+		const svg = obj.contentDocument
 		if (Card.backs.length === 0) {
 			const elements = svg?.querySelectorAll("[cardback]")?.values()
 			for (const el of elements ?? []) {
@@ -112,7 +114,7 @@ export class Deck {
 	cards: Card[] = []
 	discardPool: Card[] = []
 	specialPool: Card[] = []
-
+	use4jokers: boolean = false
 	public scale: number = 1
 
 	constructor() {
@@ -125,13 +127,34 @@ export class Deck {
 		const rem = parseFloat(remstr)
 		const rootFontSize = parseInt(getComputedStyle(document.documentElement).fontSize, 10);
 		return rem * rootFontSize;
-	  }
+	}
+
+	newRound() {
+		for (const p of this.players) {
+			this.moveToDiscardPool(p.hand)
+		}
+	}
+
+	newGame() {
+		this.newRound()
+		this.moveToDiscardPool(this.specialPool)
+		this.returnCardsToDeck(this.discardPool)
+		this.shuffle()
+	}
+
+	toggleJokers() {
+		this.use4jokers = !this.use4jokers
+		this.newGame()
+		this.initializeDeck()
+		this.shuffle()
+	}
 
 	initializeDeck() {
 		if (this.cards.length > 0) {
 			this.cards = []
 		}
-		for (let i = 1; i <= 56; i++) {
+		const size = (this.use4jokers) ? 56 : 54
+		for (let i = 1; i <= size; i++) {
 			this.cards.push(new Card(i));
 		}
 	}
@@ -196,36 +219,25 @@ export class Deck {
 	}
 
 	removeRender(container: HTMLDivElement) {
-		const divToRemove = container.querySelector(`div[title="Draw Deck"]`);
-		if (divToRemove) {
-			// If div is found, remove it from the DOM
-			divToRemove.remove();
-		} 
-
-		const divToRemove2 = container.querySelector(`div[title="Discard Pile"]`);
-		if (divToRemove2) {
-			// If div is found, remove it from the DOM
-			divToRemove2.remove();
-		} 
-
-		const divToRemove3 = container.querySelector(`div[title="Card Pool"]`);
-		if (divToRemove3) {
-			// If div is found, remove it from the DOM
-			divToRemove3.remove();
-		} 
+		for (let str of ["Draw", "Discard", "Pool"]) {
+			const rem = container.querySelector(`div[id="${str}"]`);
+			if (rem) {
+				rem.remove();
+			}
+		}
 	}
-
 
 	render(container: HTMLDivElement) {
 		let x = 0
-		let y = 0		
+		let y = 0
 		const doc = container.ownerDocument
 		const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 		const deckleg = doc.createElement('legend') as HTMLLegendElement
-		deckleg.textContent = 'Draw Deck'
+		deckleg.textContent = `Draw Deck [${this.cards.length}]`
 		deckfieldset.appendChild(deckleg)
 		const deckdiv = doc.createElement('div') as HTMLDivElement
-		deckdiv.title=deckleg.textContent
+		deckdiv.title = deckleg.textContent
+		deckdiv.id = "Draw"
 		const deckcarddiv = doc.createElement('div') as HTMLDivElement
 		deckcarddiv.classList.add(...Card.relcard)
 		deckdiv.classList.add(Card.relcard[0])
@@ -236,12 +248,14 @@ export class Deck {
 			c.render(deckcarddiv, x, y)
 			x = x + Deck.rem2px(Card.stackeddowninc)
 		}
+
 		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 		const discardleg = doc.createElement('legend') as HTMLLegendElement
-		discardleg.textContent = 'Discard Pile'
+		discardleg.textContent = `Discard Pile [${this.discardPool.length}]`
 		discardfieldset.appendChild(discardleg)
 		const discarddiv = doc.createElement('div') as HTMLDivElement
-		discarddiv.title=discardleg.textContent
+		discarddiv.title = discardleg.textContent
+		discarddiv.id = "Discard"
 		const discardcarddiv = doc.createElement('div') as HTMLDivElement
 		discardcarddiv.classList.add(...Card.relcard)
 		discarddiv.classList.add(Card.relcard[0])
@@ -255,10 +269,11 @@ export class Deck {
 
 		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 		const specialleg = doc.createElement('legend') as HTMLLegendElement
-		specialleg.textContent = 'Card Pool'
+		specialleg.textContent = `Card Pool [${this.specialPool.length}]`
 		specialfieldset.appendChild(specialleg)
 		const specialdiv = doc.createElement('div') as HTMLDivElement
 		specialdiv.title = specialleg.textContent
+		specialdiv.id = "Pool"
 		const specialcarddiv = doc.createElement('div') as HTMLDivElement
 		specialcarddiv.classList.add(...Card.relcard)
 		specialdiv.classList.add(Card.relcard[0])
@@ -267,7 +282,14 @@ export class Deck {
 		specialfieldset.appendChild(specialcarddiv)
 		for (const c of this.specialPool) {
 			c.render(specialcarddiv, x, y)
-			x = x + Deck.rem2px(Card.spreadinc)
+			x = x + Deck.rem2px(Card.spreadinc) 
 		}
+
+		const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
+		cp.addEventListener('click', () => {
+			Game.instance.deck.moveToSpecialPool(Game.instance.deck.cards, 1)
+			Game.instance.render()
+		})
+		specialfieldset.appendChild(cp)
 	}
 }
