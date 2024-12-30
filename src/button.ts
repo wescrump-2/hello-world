@@ -5,7 +5,7 @@ export class ButtonFactory {
 		but.id = id
 		but.title = title
 		but.classList.add('btn')
-		but.setAttribute('data-uuid', uuid)
+		but.setAttribute('data-pid', uuid)
 		but.appendChild(svg)
 		//get source of image
 		const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement

@@ -1,17 +1,18 @@
-import { ButtonFactory } from "./button";
-import { Card, Deck, Facing } from "./cards";
-import { Game } from "./game";
+import { ButtonFactory } from "./button"
+import { Card, Facing } from "./cards"
+import { Deck } from "./deck"
+import { Game } from "./game"
 
 export class Player {
-	hand: Card[] = [];
-	public id = crypto.randomUUID()
-	public onHold: boolean = false;
-	public outOfCombat: boolean = false;
-	public levelHeaded: boolean = false;
-	public impLevelHeaded: boolean = false;
-	public quick: boolean = false;
-	public chooseCard: boolean = false;
-	public hesitant: boolean = false;
+	hand: Card[] = []
+	public id = Game.shortUUID()
+	public onHold: boolean = false
+	public outOfCombat: boolean = false
+	public levelHeaded: boolean = false
+	public impLevelHeaded: boolean = false
+	public quick: boolean = false
+	public chooseCard: boolean = false
+	public hesitant: boolean = false
 
 	constructor(public name: string) { }
 
@@ -20,16 +21,16 @@ export class Player {
 	}
 
 	removeCard(card: Card) {
-		const index = this.hand.indexOf(card);
+		const index = this.hand.indexOf(card)
 		if (index > -1) {
-			this.hand.splice(index, 1);
+			this.hand.splice(index, 1)
 		}
 	}
 	removeRender(but: HTMLElement) {
 		const ppdiv = but.parentElement?.parentElement?.parentElement as HTMLElement
-	    const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`);
+	    const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`)
 		if (divToRemove) {
-			divToRemove.remove();
+			divToRemove.remove()
 		}
 	}
 
@@ -147,7 +148,7 @@ export class Player {
 	}
 
 	static getPlayer(but:HTMLButtonElement) : Player {
-		let pid = but.getAttribute('data-uuid') as string
+		let pid = but.getAttribute('data-pid') as string
 		let p = Game.instance.deck.players.find(item => item.id === pid) as Player
 		return p
 	}
