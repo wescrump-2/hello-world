@@ -25,10 +25,10 @@ export class Player {
 			this.hand.splice(index, 1);
 		}
 	}
-	removeRender(container: HTMLDivElement) {
-		const divToRemove = container.querySelector(`div[title="${this.name}"]`);
+	removeRender(but: HTMLElement) {
+		const ppdiv = but.parentElement?.parentElement?.parentElement as HTMLElement
+	    const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`);
 		if (divToRemove) {
-			// If div is found, remove it from the DOM
 			divToRemove.remove();
 		}
 	}
@@ -36,16 +36,20 @@ export class Player {
 	render(container: HTMLDivElement, x: number, y: number) {
 		const doc = container.ownerDocument
 		const fieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
-		const playerdiv = doc.createElement('div') as HTMLDivElement
-		playerdiv.title = this.name
-		const carddiv = doc.createElement('div') as HTMLDivElement
-		carddiv.classList.add(...Card.relcard)
-		container.appendChild(playerdiv)
-		playerdiv.appendChild(fieldset)
 		const legend = doc.createElement('legend') as HTMLLegendElement;
-		legend.textContent = `Player: ${this.name}`;
-		fieldset.appendChild(legend);
+		legend.textContent = `Player: ${this.name}`
+		fieldset.appendChild(legend)
+		fieldset.classList.add("flex-container")
+		fieldset.title=this.name
+		fieldset.setAttribute('data-pid', this.id)		
+		const playerdiv = doc.createElement('div') as HTMLDivElement
+		playerdiv.classList.add("flex-item")
+		const carddiv = doc.createElement('div') as HTMLDivElement
+		carddiv.classList.add("flex-item")
+		carddiv.classList.add(...Card.relcard)
+		fieldset.appendChild(playerdiv)
 		fieldset.appendChild(carddiv)
+		container.appendChild(fieldset)
 
 		const ooc = ButtonFactory.getButton("ooc", "Out of Combat", "truce", this.id)
 		if (this.outOfCombat) ooc.classList.add("btn-success")
@@ -54,7 +58,7 @@ export class Player {
 			p.outOfCombat = !p.outOfCombat
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(ooc)
+		playerdiv.appendChild(ooc)
 
 		const oh = ButtonFactory.getButton("oh", "On Hold", "halt", this.id)
 		if (this.onHold) oh.classList.add("btn-success")
@@ -63,7 +67,33 @@ export class Player {
 			p.onHold = !p.onHold
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(oh)
+		playerdiv.appendChild(oh)
+
+		const pu = ButtonFactory.getButton("pu", "Draw a Card", "card-pickup", this.id)
+		pu.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			Game.instance.deck.dealFromTop(p.hand, 1, Facing.Up)
+			Game.instance.render()
+		})
+		playerdiv.appendChild(pu)
+
+		const dh = ButtonFactory.getButton("dh", "Discard Hand", "card-discard", this.id)
+		dh.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			Game.instance.deck.moveToDiscardPool(p.hand, 0)
+			Game.instance.render()
+		})
+		playerdiv.appendChild(dh)
+
+		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+		rp.classList.add("btn-danger")
+		rp.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			p.removeRender(this)
+			Game.instance.removePlayer(p)
+			Game.instance.render()
+		})
+		playerdiv.appendChild(rp)
 
 		const hes = ButtonFactory.getButton("hes", "Hesitant Hindrance", "uncertainty", this.id)
 		if (this.hesitant) hes.classList.add("btn-success")		
@@ -72,7 +102,7 @@ export class Player {
 			p.hesitant = !p.hesitant
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(hes)
+		playerdiv.appendChild(hes)
 
 		const qk = ButtonFactory.getButton("qk", "Quick Edge", "sprint", this.id)
 		if (this.quick) qk.classList.add("btn-success")
@@ -81,7 +111,7 @@ export class Player {
 			p.quick = !p.quick
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(qk)
+		playerdiv.appendChild(qk)
 
 		const lh = ButtonFactory.getButton("lh", "Level Headed Edge", "scales", this.id)
 		if (this.levelHeaded) lh.classList.add("btn-success")
@@ -90,7 +120,7 @@ export class Player {
 			p.levelHeaded = !p.levelHeaded
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(lh)
+		playerdiv.appendChild(lh)
 
 		const ilh = ButtonFactory.getButton("ilh", "Improved Level Headed Edge", "scales-exclaim", this.id)
 		if (this.impLevelHeaded) ilh.classList.add("btn-success")		
@@ -99,7 +129,7 @@ export class Player {
 			p.impLevelHeaded = !p.impLevelHeaded
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(ilh)
+		playerdiv.appendChild(ilh)
 
 		const cc = ButtonFactory.getButton("cc", "Choose Card", "card-exchange", this.id)
 		if (this.impLevelHeaded) cc.classList.add("btn-success")		
@@ -108,38 +138,11 @@ export class Player {
 			p.chooseCard = !p.chooseCard
 			ButtonFactory.toggle(event)
 		})
-		fieldset.appendChild(cc)
-
-		const pu = ButtonFactory.getButton("pu", "Draw a Card", "card-pickup", this.id)
-		pu.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			Game.instance.deck.dealFromTop(p.hand, 1, Facing.Up)
-			Game.instance.render()
-		})
-		fieldset.appendChild(pu)
-
-		const dh = ButtonFactory.getButton("dh", "Discard Hand", "card-discard", this.id)
-		dh.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			Game.instance.deck.moveToDiscardPool(p.hand, 0)
-			Game.instance.render()
-		})
-		fieldset.appendChild(dh)
-
-		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
-		rp.classList.add("btn-danger")
-		rp.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			Game.instance.removePlayer(p)
-			this.parentElement?.remove()
-			Game.instance.render()
-		})
-		fieldset.appendChild(rp)
-
+		playerdiv.appendChild(cc)
 
 		for (const c of this.hand) {
 			c.render(carddiv, x, y)
-			x = x + Deck.rem2px(Card.spreadinc)
+			x = x + Deck.rem2px(Card.cardSpread())
 		}
 	}
 

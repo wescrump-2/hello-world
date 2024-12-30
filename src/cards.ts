@@ -40,9 +40,6 @@ export enum Facing {
 // Card class
 export class Card {
 	static backs: SVGSVGElement[] = []
-	static stackeddowninc: string = '.25rem'
-	static stackedupinc: string = '.5rem'
-	static spreadinc: string = '3rem'
 	static abscard: string[] = ["position-absolute", "small-card"]
 	static relcard: string[] = ["position-relative", "small-card"]
 	rank: number
@@ -70,6 +67,21 @@ export class Card {
 		this.suit = this.face.getAttribute("suit") as Suit
 		this.color = (this.suit === Suit.Spades || this.suit === Suit.Clubs || this.suit === Suit.BlackJoker) ? Color.Black : Color.Red
 	}
+
+	static cardStackedDown(): string {
+		const rootStyles = getComputedStyle(document.documentElement)
+		return rootStyles.getPropertyValue('--card-stacked-down-inc').trim()
+	}  //= '.25rem'
+	static cardStacked(): string {
+		const rootStyles = getComputedStyle(document.documentElement)
+		return rootStyles.getPropertyValue('--card-stacked-inc').trim()
+	} //= '.5rem'
+	static cardSpread(): string {
+		const rootStyles = getComputedStyle(document.documentElement)
+		return rootStyles.getPropertyValue('--card-spread-inc').trim()
+	}//= '3rem'
+
+
 	setBack(back: number) {
 		this.backidx = Math.max(0, Math.min(back, Card.backs.length - 1))
 	}
@@ -246,7 +258,7 @@ export class Deck {
 		deckfieldset.appendChild(deckcarddiv)
 		for (const c of this.cards) {
 			c.render(deckcarddiv, x, y)
-			x = x + Deck.rem2px(Card.stackeddowninc)
+			x = x + Deck.rem2px(Card.cardStackedDown())
 		}
 
 		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
@@ -264,7 +276,7 @@ export class Deck {
 		discardfieldset.appendChild(discardcarddiv)
 		for (const c of this.discardPool) {
 			c.render(discardcarddiv, x, y)
-			x = x + Deck.rem2px(Card.stackedupinc)
+			x = x + Deck.rem2px(Card.cardStacked())
 		}
 
 		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
@@ -282,7 +294,7 @@ export class Deck {
 		specialfieldset.appendChild(specialcarddiv)
 		for (const c of this.specialPool) {
 			c.render(specialcarddiv, x, y)
-			x = x + Deck.rem2px(Card.spreadinc) 
+			x = x + Deck.rem2px(Card.cardStacked())
 		}
 
 		const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
