@@ -20,10 +20,46 @@ export class Player {
 		this.hand.push(card);
 	}
 
-	hasJoker():boolean {
+	drawInitiative() {
+		let g = Game.instance
+		let p = this
+		if (p.hesitant) {
+			p.quick = false
+			p.levelHeaded = false
+			p.impLevelHeaded = false
+		}
+		if (p.onHold)
+			return
+		g.deck.moveToDiscardPool(p.hand)
+		if (p.outOfCombat)
+			return
+		g.deck.dealFromTop(p.hand, 1, Facing.Up)
+		if (p.impLevelHeaded)
+			g.deck.dealFromTop(p.hand, 1, Facing.Up)
+		if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
+			g.deck.dealFromTop(p.hand, 1, Facing.Up)
+		if (p.quick)
+			while (p.hand.every(c => c.value <= 5)) {
+				g.deck.dealFromTop(p.hand, 1, Facing.Up)
+			}
+	}
+	drawInterlude() {
+		let g = Game.instance
+		let p = this
+		g.deck.moveToDiscardPool(p.hand)
+		g.deck.dealFromTop(p.hand, 1, Facing.Up)
+	}
+
+	discardHand() {
+		let g = Game.instance
+		let p = this
+		g.deck.moveToDiscardPool(p.hand, 0)
+	}
+
+	hasJoker(): boolean {
 		return this.hand.some(c => c.isJoker() === true);
 	}
-	
+
 	removeCard(card: Card) {
 		const index = this.hand.indexOf(card)
 		if (index > -1) {
@@ -32,7 +68,7 @@ export class Player {
 	}
 	removeRender(but: HTMLElement) {
 		const ppdiv = but.parentElement?.parentElement?.parentElement as HTMLElement
-	    const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`)
+		const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`)
 		if (divToRemove) {
 			divToRemove.remove()
 		}
@@ -45,7 +81,7 @@ export class Player {
 		legend.textContent = `Player: ${this.name}`
 		fieldset.appendChild(legend)
 		fieldset.classList.add("flex-container")
-		fieldset.title=this.name
+		fieldset.title = this.name
 		fieldset.setAttribute('data-pid', this.id)
 
 		const playerdiv = doc.createElement('div') as HTMLDivElement
@@ -102,7 +138,7 @@ export class Player {
 		playerdiv.appendChild(rp)
 
 		const hes = ButtonFactory.getButton("hes", "Hesitant Hindrance", "uncertainty", this.id)
-		if (this.hesitant) hes.classList.add("btn-success")		
+		if (this.hesitant) hes.classList.add("btn-success")
 		hes.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.hesitant = !p.hesitant
@@ -129,7 +165,7 @@ export class Player {
 		playerdiv.appendChild(lh)
 
 		const ilh = ButtonFactory.getButton("ilh", "Improved Level Headed Edge", "scales-exclaim", this.id)
-		if (this.impLevelHeaded) ilh.classList.add("btn-success")		
+		if (this.impLevelHeaded) ilh.classList.add("btn-success")
 		ilh.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.impLevelHeaded = !p.impLevelHeaded
@@ -138,7 +174,7 @@ export class Player {
 		playerdiv.appendChild(ilh)
 
 		const cc = ButtonFactory.getButton("cc", "Choose Card", "card-exchange", this.id)
-		if (this.impLevelHeaded) cc.classList.add("btn-success")		
+		if (this.impLevelHeaded) cc.classList.add("btn-success")
 		cc.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.chooseCard = !p.chooseCard
@@ -152,7 +188,7 @@ export class Player {
 		}
 	}
 
-	static getPlayer(but:HTMLButtonElement) : Player {
+	static getPlayer(but: HTMLButtonElement): Player {
 		let pid = but.getAttribute('data-pid') as string
 		let p = Game.instance.deck.players.find(item => item.id === pid) as Player
 		return p

@@ -187,7 +187,7 @@ export class Deck {
 			const jokediv = doc.createElement('div')
 			jokediv.classList.add('alert-danger')
 			const joke = doc.createElement('label')
-			joke.textContent = 'Joker Drawn Shuffle and issue Bennys'
+			joke.textContent = 'Joker Drawn! Reshuffle and issue Bennies.'
 			jokediv.appendChild(joke)
 			deckfieldset.appendChild(jokediv);
 		}
@@ -229,7 +229,7 @@ export class Deck {
 		specialfieldset.title = "Card Pool"
 
 		const specialdiv = doc.createElement('div') as HTMLDivElement
-		specialdiv.classList.add("flex-item-1")
+		specialdiv.classList.add("flex-item-3")
 		specialdiv.classList.add(...Card.relcard)
 		const specialcarddiv = doc.createElement('div') as HTMLDivElement
 		specialcarddiv.classList.add("flex-item-2")

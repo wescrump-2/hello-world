@@ -1,13 +1,14 @@
 import './style.css'
-import { setupButtons} from './counter.ts'
+import OBR from "@owlbear-rodeo/sdk"
+import { setupContextMenu } from "./contextmenu"
+import { setupInitiativeList } from "./initiativelist.ts"
 import cardsImage from '/cards.svg'
 import buttonsImage from '/buttons.svg'
 import { Game } from './game.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
-
-    <div id="svgbuttons"></div>
+    <ul id="initiative-list"></ul>
     <div id="svgContainer"></div>
     <script src="cards.js"></script>
   </div>
@@ -26,8 +27,12 @@ window.addEventListener("load", () => {
     game.drawInitiative()
 
     game.render()
-    setupButtons(document.querySelector<HTMLDivElement>('#app')!)
   } else {
     console.error("Failed to load SVG document")
   }
-});
+})
+
+OBR.onReady(() => {
+  setupContextMenu()
+  setupInitiativeList(document.querySelector("#initiative-list") as HTMLElement);
+})
