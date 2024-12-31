@@ -46,11 +46,12 @@ export class Player {
 		fieldset.appendChild(legend)
 		fieldset.classList.add("flex-container")
 		fieldset.title=this.name
-		fieldset.setAttribute('data-pid', this.id)		
+		fieldset.setAttribute('data-pid', this.id)
+
 		const playerdiv = doc.createElement('div') as HTMLDivElement
-		playerdiv.classList.add("flex-item")
+		playerdiv.classList.add("flex-item-1")
 		const carddiv = doc.createElement('div') as HTMLDivElement
-		carddiv.classList.add("flex-item")
+		carddiv.classList.add("flex-item-2")
 		carddiv.classList.add(...Card.relcard)
 		fieldset.appendChild(playerdiv)
 		fieldset.appendChild(carddiv)

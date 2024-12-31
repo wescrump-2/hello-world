@@ -21,7 +21,7 @@
   --spacing: 6px;
   --border: 1px solid var(--theme-color);
   --border-radius: 6px;
-  --card-spread-inc: 3em;
+  --card-spread-inc: 2em;
   --card-stacked-inc: .5em;
   --card-stacked-down-inc: .2em;
 }
@@ -38,7 +38,7 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
+  /* display: flex; */
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -55,6 +55,12 @@ h1 {
   margin: 0 auto;
   padding: .02rem;
   text-align: center;
+}
+
+.alert-danger {
+  color: #842029;
+  background-color: #f8d7da;
+  border-color: #f5c2c7;
 }
 
 .logo {
@@ -274,8 +280,13 @@ body .btn:disabled:hover {
   display: flex;
   justify-content: space-between;
 }
-.flex-item {
-  width: 40%; /* To leave some gap between columns */
+.flex-item-1 {
+  width: 36%; /* To leave some gap between columns */
+  border: none;
+  box-sizing: border-box;
+}
+.flex-item-2 {
+  width: 62%; /* To leave some gap between columns */
   border: none;
   box-sizing: border-box;
 }

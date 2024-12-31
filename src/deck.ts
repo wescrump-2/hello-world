@@ -4,23 +4,28 @@ import { Game } from "./game"
 import { Player } from "./player"
 
 export class Deck {
-	players: Player[] = []
-	cards: Card[] = []
-	discardPool: Card[] = []
-	specialPool: Card[] = []
-	use4jokers: boolean = false
-	public scale: number = 1
+	players: Player[]
+	cards: Card[]
+	discardPool: Card[]
+	specialPool: Card[]
+	use4jokers: boolean
+	public scale: number
 
 	constructor() {
+		this.players = []
+		this.cards = []
+		this.discardPool = []
+		this.specialPool = []
+		this.use4jokers = false
 		this.scale = 1
+
 		this.initializeDeck()
 		this.shuffle()
 	}
 
 	static rem2px(remstr: string): number {
 		const rem = parseFloat(remstr)
-		const rootFontSize = parseInt(getComputedStyle(document.documentElement).fontSize, 10);
-		return rem * rootFontSize;
+		return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
 	}
 
 	newRound() {
@@ -118,7 +123,7 @@ export class Deck {
 
 	removeRender(container: HTMLDivElement) {
 		for (let str of ["Draw", "Discard", "Pool"]) {
-			const rem = container.querySelector(`div[id="${str}"]`);
+			const rem = container.querySelector(`fieldset[id="${str}"]`);
 			if (rem) {
 				rem.remove();
 			}
@@ -133,57 +138,106 @@ export class Deck {
 		const deckleg = doc.createElement('legend') as HTMLLegendElement
 		deckleg.textContent = `Draw Deck [${this.cards.length}]`
 		deckfieldset.appendChild(deckleg)
+		deckfieldset.classList.add('flex-container')
+		deckfieldset.id = "Draw"
 		const deckdiv = doc.createElement('div') as HTMLDivElement
-		deckdiv.title = deckleg.textContent
-		deckdiv.id = "Draw"
-		const deckcarddiv = doc.createElement('div') as HTMLDivElement
-		deckcarddiv.classList.add(...Card.relcard)
+		deckdiv.classList.add('flex-item-3')
 		deckdiv.classList.add(Card.relcard[0])
-		container.appendChild(deckdiv)
-		deckdiv.appendChild(deckfieldset)
+		const deckcarddiv = doc.createElement('div') as HTMLDivElement
+		deckcarddiv.classList.add('flex-item-2')
+		deckcarddiv.classList.add(...Card.relcard)
+		deckfieldset.appendChild(deckdiv)
 		deckfieldset.appendChild(deckcarddiv)
+		container.appendChild(deckfieldset)
+
 		for (const c of this.cards) {
 			c.render(deckcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStackedDown())
 		}
+		const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
+		di.addEventListener('click', () => {
+			Game.instance.drawInitiative()
+			Game.instance.render()
+		})
+		deckdiv.appendChild(di)
+
+		const dint = ButtonFactory.getButton("dint", "Deal Interlude", "card-pick", "")
+		dint.addEventListener('click', () => {
+			Game.instance.drawInterlude()
+			Game.instance.render()
+		})
+		deckdiv.appendChild(dint)
+
+		const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
+		shf.addEventListener('click', () => {
+			Game.instance.deck.newGame()
+			Game.instance.render()
+		})
+		deckdiv.appendChild(shf)
+
+		const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
+		joke.addEventListener('click', function (event) {
+			Game.instance.deck.toggleJokers()
+			ButtonFactory.toggle(event)
+			Game.instance.render()
+		})
+		deckdiv.appendChild(joke)
+
 		if (this.jokerDrawn()) {
+			const jokediv = doc.createElement('div')
+			jokediv.classList.add('alert-danger')
 			const joke = doc.createElement('label')
-			joke.classList.add('btn-info')
-			joke.textContent = 'Joker Drawn! Shuffle and issue Bennys.'
-			deckfieldset.appendChild(joke);
+			joke.textContent = 'Joker Drawn Shuffle and issue Bennys'
+			jokediv.appendChild(joke)
+			deckfieldset.appendChild(jokediv);
 		}
 
 		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 		const discardleg = doc.createElement('legend') as HTMLLegendElement
 		discardleg.textContent = `Discard Pile [${this.discardPool.length}]`
 		discardfieldset.appendChild(discardleg)
+		discardfieldset.classList.add("flex-container")
+		discardfieldset.id = "Discard"
+		discardfieldset.title = "Discard Pile"
 		const discarddiv = doc.createElement('div') as HTMLDivElement
-		discarddiv.title = discardleg.textContent
-		discarddiv.id = "Discard"
-		const discardcarddiv = doc.createElement('div') as HTMLDivElement
-		discardcarddiv.classList.add(...Card.relcard)
+		discarddiv.classList.add("flex-item-3")
 		discarddiv.classList.add(Card.relcard[0])
-		container.appendChild(discarddiv)
-		discarddiv.appendChild(discardfieldset)
+		const discardcarddiv = doc.createElement('div') as HTMLDivElement
+		discardcarddiv.classList.add("flex-item-2")
+		discardcarddiv.classList.add(...Card.relcard)
+		discardfieldset.appendChild(discarddiv)
 		discardfieldset.appendChild(discardcarddiv)
+		container.appendChild(discardfieldset)
 		for (const c of this.discardPool) {
 			c.render(discardcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStacked())
 		}
 
+		const dp = ButtonFactory.getButton("dp", "Discard All Hands", "card-burn", "")
+		dp.addEventListener('click', () => {
+			Game.instance.discardPlayers()
+			Game.instance.render()
+		})
+		discarddiv.appendChild(dp)
+
 		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 		const specialleg = doc.createElement('legend') as HTMLLegendElement
 		specialleg.textContent = `Card Pool [${this.specialPool.length}]`
 		specialfieldset.appendChild(specialleg)
+		specialfieldset.classList.add("flex-container")
+		specialfieldset.id = "Pool"
+		specialfieldset.title = "Card Pool"
+
 		const specialdiv = doc.createElement('div') as HTMLDivElement
-		specialdiv.title = specialleg.textContent
-		specialdiv.id = "Pool"
+		specialdiv.classList.add("flex-item-1")
+		specialdiv.classList.add(...Card.relcard)
 		const specialcarddiv = doc.createElement('div') as HTMLDivElement
+		specialcarddiv.classList.add("flex-item-2")
 		specialcarddiv.classList.add(...Card.relcard)
-		specialdiv.classList.add(Card.relcard[0])
-		container.appendChild(specialdiv)
-		specialdiv.appendChild(specialfieldset)
+		specialfieldset.appendChild(specialdiv)
 		specialfieldset.appendChild(specialcarddiv)
+		container.appendChild(specialfieldset)
+
 		for (const c of this.specialPool) {
 			c.render(specialcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStacked())
@@ -194,6 +248,6 @@ export class Deck {
 			Game.instance.deck.moveToSpecialPool(Game.instance.deck.cards, 1)
 			Game.instance.render()
 		})
-		specialfieldset.appendChild(cp)
+		specialdiv.appendChild(cp)
 	}
 }

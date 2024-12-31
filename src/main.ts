@@ -6,12 +6,13 @@ import { Game } from './game.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
-    <object id="cards-svg" width="0" height="0" data="${cardsImage}" type="image/svg+xml"></object>
-    <object id="buttons-svg" width="0" height="0" data="${buttonsImage}" type="image/svg+xml"></object> 
+
     <div id="svgbuttons"></div>
     <div id="svgContainer"></div>
     <script src="cards.js"></script>
   </div>
+  <object id="cards-svg" width="0" height="0" data="${cardsImage}" type="image/svg+xml"></object>
+  <object id="buttons-svg" width="0" height="0" data="${buttonsImage}" type="image/svg+xml"></object>   
 `
 window.addEventListener("load", () => {
   const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
