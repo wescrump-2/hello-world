@@ -21,9 +21,10 @@
   --spacing: 6px;
   --border: 1px solid var(--theme-color);
   --border-radius: 6px;
-  --card-spread-inc: 2em;
-  --card-stacked-inc: .5em;
+  --card-spread-inc: 3.2em;
+  --card-stacked-inc: .45em;
   --card-stacked-down-inc: .2em;
+  --button-size: 1.1em;
 }
 
 a {
@@ -270,7 +271,7 @@ body .btn:disabled:hover {
 
 .small-card {
   height: 4rem;
-  margin: 2px
+  margin: 1px
 }
 
 .selected-card {
@@ -281,12 +282,18 @@ body .btn:disabled:hover {
   justify-content: space-between;
 }
 .flex-item-1 {
-  width: 36%; /* To leave some gap between columns */
+  width: 10rem;
   border: none;
   box-sizing: border-box;
 }
 .flex-item-2 {
-  width: 62%; /* To leave some gap between columns */
+  width: 92%;
+  border: none;
+  box-sizing: border-box;
+}
+
+.flex-item-3 {
+  width: 4.5rem;
   border: none;
   box-sizing: border-box;
 }

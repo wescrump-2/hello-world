@@ -3,6 +3,7 @@ import { Player } from "./player"
 
 // Game class
 export class Game {
+
 	static instance: Game
 	deck: Deck
 	div: HTMLDivElement
@@ -27,9 +28,15 @@ export class Game {
 			this.deck.players.splice(index, 1);
 		}
 	}
-
+	  preventScrolling() {
+		document.body.style.overflow = 'hidden';
+	  }
+	  
+	    allowScrolling() {
+		document.body.style.overflow = 'auto';
+	  }
 	render() {
-		//draw deck
+		this.preventScrolling()
 		this.deck.removeRender(this.div)
 		this.deck.render(this.div)
 		//draw player hands
@@ -39,8 +46,10 @@ export class Game {
 			p.removeRender(this.div)
 			p.render(this.div, x, y)
 		}
+		this.allowScrolling()
 	}
-	testplayers: string[] = ["h", "il", "q", "lhq", "ilq"]
+
+	testplayers: string[] = ["h", "il", "q",]
 	startGame() {
 		this.deck.newGame()
 		this.deck.shuffle();
@@ -68,7 +77,7 @@ export class Game {
 		}
 	}
 
-	discardHand() {
+	discardAllHands() {
 		for (const p of this.deck.players) {
 			p.discardHand()
 		}

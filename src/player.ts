@@ -10,6 +10,8 @@ export class Player {
 	public outOfCombat: boolean = false
 	public levelHeaded: boolean = false
 	public impLevelHeaded: boolean = false
+	public tactician: boolean = false
+	public mastertactician: boolean = false
 	public quick: boolean = false
 	public chooseCard: boolean = false
 	public hesitant: boolean = false
@@ -93,99 +95,135 @@ export class Player {
 		fieldset.appendChild(carddiv)
 		container.appendChild(fieldset)
 
-		const ooc = ButtonFactory.getButton("ooc", "Out of Combat", "truce", this.id)
-		if (this.outOfCombat) ooc.classList.add("btn-success")
-		ooc.addEventListener('click', function (event) {
+
+		const drawcard = ButtonFactory.getButton("drawcard", "Draw a Card", "card-pickup", this.id)
+		drawcard.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			p.drawCard()
+			Game.instance.render()
+		})
+		playerdiv.appendChild(drawcard)
+
+		const drawhand = ButtonFactory.getButton("drawhand", "Draw Hand", "poker-hand", this.id)
+		drawhand.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			p.drawInitiative()
+			Game.instance.render()
+		})
+		playerdiv.appendChild(drawhand)
+
+		const outcombat = ButtonFactory.getButton("outcombat", "Out of Combat", "truce", this.id)
+		if (this.outOfCombat) outcombat.classList.add("btn-success")
+			outcombat.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.outOfCombat = !p.outOfCombat
 			ButtonFactory.toggle(event)
 		})
-		playerdiv.appendChild(ooc)
+		playerdiv.appendChild(outcombat)
 
-		const oh = ButtonFactory.getButton("oh", "On Hold", "halt", this.id)
-		if (this.onHold) oh.classList.add("btn-success")
-		oh.addEventListener('click', function (event) {
+		const onhold = ButtonFactory.getButton("onhold", "On Hold", "halt", this.id)
+		if (this.onHold) onhold.classList.add("btn-success")
+			onhold.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.onHold = !p.onHold
 			ButtonFactory.toggle(event)
 		})
-		playerdiv.appendChild(oh)
+		playerdiv.appendChild(onhold)
 
-		const pu = ButtonFactory.getButton("pu", "Draw a Card", "card-pickup", this.id)
-		pu.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			Game.instance.deck.dealFromTop(p.hand, 1, Facing.Up)
-			Game.instance.render()
-		})
-		playerdiv.appendChild(pu)
 
-		const dh = ButtonFactory.getButton("dh", "Discard Hand", "card-discard", this.id)
-		dh.addEventListener('click', function () {
+		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", this.id)
+		discardhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			Game.instance.deck.moveToDiscardPool(p.hand, 0)
 			Game.instance.render()
 		})
-		playerdiv.appendChild(dh)
+		playerdiv.appendChild(discardhand)
 
-		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
-		rp.classList.add("btn-danger")
-		rp.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			p.removeRender(this)
-			Game.instance.removePlayer(p)
-			Game.instance.render()
-		})
-		playerdiv.appendChild(rp)
+		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+		// rp.classList.add("btn-danger")
+		// rp.addEventListener('click', function () {
+		// 	let p = Player.getPlayer(this)
+		// 	p.removeRender(this)
+		// 	Game.instance.removePlayer(p)
+		// 	Game.instance.render()
+		// })
+		// playerdiv.appendChild(rp)
 
-		const hes = ButtonFactory.getButton("hes", "Hesitant Hindrance", "uncertainty", this.id)
-		if (this.hesitant) hes.classList.add("btn-success")
-		hes.addEventListener('click', function (event) {
+		const hesitant = ButtonFactory.getButton("hesitant", "Hesitant Hindrance", "uncertainty", this.id)
+		if (this.hesitant) hesitant.classList.add("btn-success")
+			hesitant.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.hesitant = !p.hesitant
 			ButtonFactory.toggle(event)
 		})
-		playerdiv.appendChild(hes)
+		playerdiv.appendChild(hesitant)
 
-		const qk = ButtonFactory.getButton("qk", "Quick Edge", "sprint", this.id)
-		if (this.quick) qk.classList.add("btn-success")
-		qk.addEventListener('click', function (event) {
+		const quick = ButtonFactory.getButton("quick", "Quick Edge", "sprint", this.id)
+		if (this.quick) quick.classList.add("btn-success")
+			quick.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.quick = !p.quick
 			ButtonFactory.toggle(event)
 		})
-		playerdiv.appendChild(qk)
+		playerdiv.appendChild(quick)
 
-		const lh = ButtonFactory.getButton("lh", "Level Headed Edge", "scales", this.id)
-		if (this.levelHeaded) lh.classList.add("btn-success")
-		lh.addEventListener('click', function (event) {
+		const tacttype = (this.mastertactician)?"aces":"ace"
+		const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, this.id)
+		if (this.tactician || this.mastertactician) tactician.classList.add("btn-success")
+			tactician.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
-			p.levelHeaded = !p.levelHeaded
-			ButtonFactory.toggle(event)
+			if (p.mastertactician) {
+				p.mastertactician=false
+				p.tactician=false
+			} else if (p.tactician && !p.mastertactician)
+			{
+				p.mastertactician=true
+				p.tactician=true
+			} else {
+				p.tactician = true
+				p.mastertactician = false
+			}
+			ButtonFactory.toggle(event, tacttype)
 		})
-		playerdiv.appendChild(lh)
+		playerdiv.appendChild(tactician)
 
-		const ilh = ButtonFactory.getButton("ilh", "Improved Level Headed Edge", "scales-exclaim", this.id)
-		if (this.impLevelHeaded) ilh.classList.add("btn-success")
-		ilh.addEventListener('click', function (event) {
+		const lvlheadtype = (this.impLevelHeaded)?"scales-exclaim":"scales"
+		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, this.id)
+		if (this.levelHeaded || this.impLevelHeaded) levelhead.classList.add("btn-success")
+			levelhead.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
-			p.impLevelHeaded = !p.impLevelHeaded
-			ButtonFactory.toggle(event)
+			if (p.impLevelHeaded) {
+				p.impLevelHeaded=false
+				p.levelHeaded=false
+			} else if (p.levelHeaded && !p.impLevelHeaded)
+			{
+				p.impLevelHeaded=true
+				p.levelHeaded=true
+			} else {
+				p.levelHeaded = true
+				p.impLevelHeaded = false
+			}
+			ButtonFactory.toggle(event,lvlheadtype)
 		})
-		playerdiv.appendChild(ilh)
+		playerdiv.appendChild(levelhead)
 
-		const cc = ButtonFactory.getButton("cc", "Choose Card", "card-exchange", this.id)
-		if (this.impLevelHeaded) cc.classList.add("btn-success")
-		cc.addEventListener('click', function (event) {
+		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", this.id)
+		if (this.chooseCard) choose.classList.add("btn-success")
+			choose.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.chooseCard = !p.chooseCard
 			ButtonFactory.toggle(event)
 		})
-		playerdiv.appendChild(cc)
+		playerdiv.appendChild(choose)
 
 		for (const c of this.hand) {
 			c.render(carddiv, x, y)
 			x = x + Deck.rem2px(Card.cardSpread())
 		}
+	}
+
+	drawCard() {
+		Game.instance.deck.dealFromTop(this.hand, 1, Facing.Up)
 	}
 
 	static getPlayer(but: HTMLButtonElement): Player {
