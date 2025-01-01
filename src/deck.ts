@@ -28,6 +28,10 @@ export class Deck {
 		return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
 	}
 
+	getPlayer(pid: string): Player {
+		return this.players.find(item => item.id === pid) as Player
+	}
+
 	newRound() {
 		for (const p of this.players) {
 			this.moveToDiscardPool(p.hand)
@@ -121,93 +125,123 @@ export class Deck {
 		return this.players.some(p => p.hasJoker()) || this.discardPool.some(c => c.isJoker()) || this.specialPool.some(c => c.isJoker())
 	}
 
-	removeRender(container: HTMLDivElement) {
-		for (let str of ["Draw", "Discard", "Pool", "Joker"]) {
-			const rem = container.querySelector(`div[id="${str}"],fieldset[id="${str}"]`)
-			if (rem) {
-				rem.remove()
-			}
-		}
-	}
+	// removeRender(container: HTMLDivElement) {
+	// 	for (let str of ["Pool"]) {
+	// 		const rem = container.querySelector(`div[id="${str}"],fieldset[id="${str}"]`)
+	// 		if (rem) {
+	// 			rem.remove()
+	// 		}
+	// 	}
+	// }
 
 	render(container: HTMLDivElement) {
 		const doc = container.ownerDocument
-		if (this.jokerDrawn()) {
-			const jokediv = doc.createElement('div')
-			jokediv.id='Joker'
+		let jokediv = doc.getElementById('JokerMsg');
+		if (!jokediv) {
+			jokediv = doc.createElement('div')
+			jokediv.id = 'JokerMsg'
 			jokediv.classList.add('alert-danger')
 			const joke = doc.createElement('label')
 			joke.textContent = 'Joker Drawn Reshuffle and issue Bennies.'
 			jokediv.appendChild(joke)
 			container.appendChild(jokediv);
 		}
-		const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-		const deckleg = doc.createElement('legend') as HTMLLegendElement
+		if (this.jokerDrawn()) {
+			jokediv.style.display = "display"
+		} else {
+			jokediv.style.display = "none"
+		}
+		let deckcarddiv = doc.getElementById('drawdeckcards') as HTMLDivElement
+		if (!deckcarddiv) {
+			const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const deckleg = doc.createElement('legend') as HTMLLegendElement
+			deckfieldset.appendChild(deckleg)
+			deckfieldset.classList.add('flex-container')
+			deckfieldset.id = "Draw"
+			const deckdiv = doc.createElement('div') as HTMLDivElement
+			deckdiv.classList.add('flex-item-3')
+			deckdiv.classList.add(Card.relcard[0])
+			deckcarddiv = doc.createElement('div') as HTMLDivElement
+			deckcarddiv.classList.add('flex-item-2')
+			deckcarddiv.classList.add(...Card.relcard)
+			deckcarddiv.id = "drawdeckcards"
+			deckfieldset.appendChild(deckdiv)
+			deckfieldset.appendChild(deckcarddiv)
+			container.appendChild(deckfieldset)
+
+			const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
+			di.addEventListener('click', () => {
+				Game.instance.drawInitiative()
+				Game.instance.render()
+			})
+			deckdiv.appendChild(di)
+
+			const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
+			dint.addEventListener('click', () => {
+				Game.instance.drawInterlude()
+				Game.instance.render()
+			})
+			deckdiv.appendChild(dint)
+
+			const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
+			shf.addEventListener('click', () => {
+				Game.instance.deck.newGame()
+				Game.instance.render()
+			})
+			deckdiv.appendChild(shf)
+
+			const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
+			if (this.use4jokers) joke.classList.add("btn-success")
+			joke.addEventListener('click', function (event) {
+				Game.instance.deck.toggleJokers()
+				ButtonFactory.toggle(event)
+				Game.instance.render()
+			})
+			deckdiv.appendChild(joke)
+		}
+		let deckleg = deckcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		deckleg.textContent = `Draw Deck [${this.cards.length}]`
-		deckfieldset.appendChild(deckleg)
-		deckfieldset.classList.add('flex-container')
-		deckfieldset.id = "Draw"
-		const deckdiv = doc.createElement('div') as HTMLDivElement
-		deckdiv.classList.add('flex-item-3')
-		deckdiv.classList.add(Card.relcard[0])
-		const deckcarddiv = doc.createElement('div') as HTMLDivElement
-		deckcarddiv.classList.add('flex-item-2')
-		deckcarddiv.classList.add(...Card.relcard)
-		deckfieldset.appendChild(deckdiv)
-		deckfieldset.appendChild(deckcarddiv)
-		container.appendChild(deckfieldset)
+		while (deckcarddiv.firstChild) {
+			deckcarddiv.removeChild(deckcarddiv.firstChild);
+		}
 		let x = 0
 		let y = 0
 		for (const c of this.cards) {
 			c.render(deckcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStackedDown())
 		}
-		const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
-		di.addEventListener('click', () => {
-			Game.instance.drawInitiative()
-			Game.instance.render()
-		})
-		deckdiv.appendChild(di)
+		let discardcarddiv = doc.getElementById("discardpilecards") as HTMLDivElement
+		if (!discardcarddiv) {
+			const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const discardleg = doc.createElement('legend') as HTMLLegendElement
+			discardfieldset.appendChild(discardleg)
+			discardfieldset.classList.add("flex-container")
+			discardfieldset.id = "Discard"
+			discardfieldset.title = "Discard Pile"
+			const discarddiv = doc.createElement('div') as HTMLDivElement
+			discarddiv.classList.add("flex-item-3")
+			discarddiv.classList.add(Card.relcard[0])
+			discardcarddiv = doc.createElement('div') as HTMLDivElement
+			discardcarddiv.id = "discardpilecards"
+			discardcarddiv.classList.add("flex-item-2")
+			discardcarddiv.classList.add(...Card.relcard)
+			discardfieldset.appendChild(discarddiv)
+			discardfieldset.appendChild(discardcarddiv)
+			container.appendChild(discardfieldset)
 
-		const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
-		dint.addEventListener('click', () => {
-			Game.instance.drawInterlude()
-			Game.instance.render()
-		})
-		deckdiv.appendChild(dint)
-
-		const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
-		shf.addEventListener('click', () => {
-			Game.instance.deck.newGame()
-			Game.instance.render()
-		})
-		deckdiv.appendChild(shf)
-
-		const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
-		if (this.use4jokers) joke.classList.add("btn-success")
-		joke.addEventListener('click', function (event) {
-			Game.instance.deck.toggleJokers()
-			ButtonFactory.toggle(event)
-			Game.instance.render()
-		})
-		deckdiv.appendChild(joke)
-
-		const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-		const discardleg = doc.createElement('legend') as HTMLLegendElement
+			const dp = ButtonFactory.getButton("dp", "Discard All Hands", "card-burn", "")
+			dp.addEventListener('click', () => {
+				Game.instance.discardAllHands()
+				Game.instance.render()
+			})
+			discarddiv.appendChild(dp)
+		}
+		let discardleg = discardcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		discardleg.textContent = `Discard Pile [${this.discardPool.length}]`
-		discardfieldset.appendChild(discardleg)
-		discardfieldset.classList.add("flex-container")
-		discardfieldset.id = "Discard"
-		discardfieldset.title = "Discard Pile"
-		const discarddiv = doc.createElement('div') as HTMLDivElement
-		discarddiv.classList.add("flex-item-3")
-		discarddiv.classList.add(Card.relcard[0])
-		const discardcarddiv = doc.createElement('div') as HTMLDivElement
-		discardcarddiv.classList.add("flex-item-2")
-		discardcarddiv.classList.add(...Card.relcard)
-		discardfieldset.appendChild(discarddiv)
-		discardfieldset.appendChild(discardcarddiv)
-		container.appendChild(discardfieldset)
+		while (discardcarddiv.firstChild) {
+			discardcarddiv.removeChild(discardcarddiv.firstChild);
+		}
+
 		x = 0
 		y = 0
 		for (const c of this.discardPool) {
@@ -215,49 +249,51 @@ export class Deck {
 			x = x + Deck.rem2px(Card.cardStacked())
 		}
 
-		const dp = ButtonFactory.getButton("dp", "Discard All Hands", "card-burn", "")
-		dp.addEventListener('click', () => {
-			Game.instance.discardAllHands()
-			Game.instance.render()
-		})
-		discarddiv.appendChild(dp)
+		let specialcarddiv = doc.getElementById("cardpoolcards") as HTMLDivElement
+		if (!specialcarddiv) {
+			const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const specialleg = doc.createElement('legend') as HTMLLegendElement
+			
+			specialfieldset.appendChild(specialleg)
+			specialfieldset.classList.add("flex-container")
+			specialfieldset.id = "Pool"
+			specialfieldset.title = "Card Pool"
 
-		const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-		const specialleg = doc.createElement('legend') as HTMLLegendElement
+			const specialdiv = doc.createElement('div') as HTMLDivElement
+			specialdiv.classList.add("flex-item-3")
+			specialdiv.classList.add(...Card.relcard)
+			specialcarddiv = doc.createElement('div') as HTMLDivElement
+			specialcarddiv.id = "cardpoolcards"
+			specialcarddiv.classList.add("flex-item-2")
+			specialcarddiv.classList.add(...Card.relcard)
+			specialfieldset.appendChild(specialdiv)
+			specialfieldset.appendChild(specialcarddiv)
+			container.appendChild(specialfieldset)
+			const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
+			cp.addEventListener('click', () => {
+				this.moveToSpecialPool(this.cards, 1)
+				Game.instance.render()
+			})
+			specialdiv.appendChild(cp)
+
+			const discardpool = ButtonFactory.getButton("discardpool", "Discard Card Pool", "card-burn", "")
+			discardpool.addEventListener('click', () => {
+				this.moveToDiscardPool(this.specialPool, 0)
+				Game.instance.render()
+			})
+			specialdiv.appendChild(discardpool)
+		}
+		let specialleg = specialcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		specialleg.textContent = `Card Pool [${this.specialPool.length}]`
-		specialfieldset.appendChild(specialleg)
-		specialfieldset.classList.add("flex-container")
-		specialfieldset.id = "Pool"
-		specialfieldset.title = "Card Pool"
+		while (specialcarddiv.firstChild) {
+			specialcarddiv.removeChild(specialcarddiv.firstChild);
+		}
 
-		const specialdiv = doc.createElement('div') as HTMLDivElement
-		specialdiv.classList.add("flex-item-3")
-		specialdiv.classList.add(...Card.relcard)
-		const specialcarddiv = doc.createElement('div') as HTMLDivElement
-		specialcarddiv.classList.add("flex-item-2")
-		specialcarddiv.classList.add(...Card.relcard)
-		specialfieldset.appendChild(specialdiv)
-		specialfieldset.appendChild(specialcarddiv)
-		container.appendChild(specialfieldset)
 		x = 0
 		y = 0
 		for (const c of this.specialPool) {
 			c.render(specialcarddiv, x, y)
 			x = x + Deck.rem2px(Card.cardStacked())
 		}
-
-		const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
-		cp.addEventListener('click', () => {
-			this.moveToSpecialPool(this.cards, 1)
-			Game.instance.render()
-		})
-		specialdiv.appendChild(cp)
-
-		const discardpool = ButtonFactory.getButton("discardpool", "Discard Card Pool", "card-burn", "")
-		discardpool.addEventListener('click', () => {
-			this.moveToDiscardPool(this.specialPool, 0)
-			Game.instance.render()
-		})
-		specialdiv.appendChild(discardpool)
 	}
 }

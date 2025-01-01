@@ -1,14 +1,17 @@
 import OBR from "@owlbear-rodeo/sdk";
-
+import { Game } from "./game";
 const ID = "com.wescrump.initiative-tracker";
 
 interface InitiativeMetadata {
-  initiative: string;
+  playerid: string
+  playername: string
 }
 
 interface InitiativeItem {
-  initiative: string;
-  name: string;
+  playerid: string
+  playername: string
+  cardname: string
+  sequence: number
 }
 
 export function setupInitiativeList(element: HTMLElement): void {
@@ -19,21 +22,43 @@ export function setupInitiativeList(element: HTMLElement): void {
     for (const item of items) {
       const metadata: InitiativeMetadata = item.metadata[`${ID}/metadata`];
       if (metadata) {
+        //see if player is already created in initiative
+        let p=Game.instance.deck.getPlayer(metadata.playerid)
+        if (!p) {
+          // if not, create them, give name and unique id from metadata
+          p = Game.instance.addPlayer(metadata.playername)
+          p.id=metadata.playerid
+        }
+        const c=p.bestCard()
+        let cn="No cards"
+        let seq=0
+        if (c){
+          cn=c.toString()
+          seq=c.sequence
+        }
         initiativeItems.push({
-          initiative: metadata.initiative,
-          name: item.name,
+          playerid: metadata.playerid,
+          playername: p.name,
+          cardname: cn,
+          sequence: seq,
         });
+      }
+    }
+    //Remove players not in metadata items
+    for (const p of Game.instance.deck.players) {
+      if (initiativeItems.find(item => item.playerid === p.id)===undefined) {
+        Game.instance.removePlayer(p)
       }
     }
     // Sort so the highest initiative value is on top
     const sortedItems = initiativeItems.sort(
-      (a, b) => parseFloat(b.initiative) - parseFloat(a.initiative)
+      (a, b) => b.sequence - a.sequence
     );
     // Create new list nodes for each initiative item
     const nodes = [];
     for (const initiativeItem of sortedItems) {
       const node = document.createElement("li");
-      node.innerHTML = `${initiativeItem.name} (${initiativeItem.initiative})`;
+      node.innerHTML = `${initiativeItem.playername} (${initiativeItem.cardname})`;
       nodes.push(node);
     }
     element.replaceChildren(...nodes);

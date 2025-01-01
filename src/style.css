@@ -84,6 +84,9 @@ h1 {
 }
 
 legend {
+  font-family: Anton, "Trebuchet MS", "Lucida Sans", "Lucida Grande", Verdana, Geneva, Tahoma, sans-serif;
+  font-size: medium;
+  font-weight: bolder;
   text-align: left;
   margin-bottom: 0;
 }

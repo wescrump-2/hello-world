@@ -8,8 +8,8 @@ export enum Suit {
 	BlackJoker = "BlackJoker"
 }
 
-// Enum for card values
-export enum Value {
+// Enum for card ranks
+export enum Rank {
 	Two = 2,
 	Three = 3,
 	Four = 4,
@@ -38,16 +38,16 @@ export class Card {
 	static backs: SVGSVGElement[] = []
 	static abscard: string[] = ["position-absolute", "small-card"]
 	static relcard: string[] = ["position-relative", "small-card"]
-	rank: number
+	sequence: number
 	dir: Facing = Facing.Down
 	suit: Suit
-	value: Value
+	rank: Rank
 	face: SVGElement
 	backidx: number = 0
 	color: Color
 
-	constructor(rank: number, backx: number = 2) {
-		this.rank = rank
+	constructor(seq: number, backx: number = 2) {
+		this.sequence = seq
 		this.dir = Facing.Down
 		const obj = document.getElementById("cards-svg") as HTMLObjectElement
 		const svg = obj.contentDocument
@@ -57,9 +57,9 @@ export class Card {
 				Card.backs.push(el as SVGSVGElement)
 			}
 		}
-		this.face = svg?.querySelector(`[rank="${rank}"]`) as SVGElement
+		this.face = svg?.querySelector(`[sequence="${seq}"]`) as SVGElement
 		this.setBack(backx)
-		this.value = Number(this.face.getAttribute("number")) as Value
+		this.rank = Number(this.face.getAttribute("rank")) as Rank
 		this.suit = this.face.getAttribute("suit") as Suit
 		this.color = (this.suit === Suit.Spades || this.suit === Suit.Clubs || this.suit === Suit.BlackJoker) ? Color.Black : Color.Red
 	}
@@ -80,7 +80,7 @@ export class Card {
 	}
 
 	isJoker(): boolean {
-		return (this.value===15)
+		return (this.rank===15)
 	}
 
 	setBack(back: number) {
@@ -101,7 +101,7 @@ export class Card {
 
 	toString(): string {
 		if (this.dir === Facing.Up)
-			return `${Value[this.value]} of ${(this.value === Value.Joker) ? this.color : this.suit}`
+			return `${Rank[this.rank]} of ${(this.rank === Rank.Joker) ? this.color : this.suit}`
 		else
 			return 'card'
 	}

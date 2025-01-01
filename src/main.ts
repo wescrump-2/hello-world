@@ -21,10 +21,10 @@ window.addEventListener("load", () => {
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     const game = new Game(document.getElementById('svgContainer') as HTMLDivElement)
-    game.deck.setBack(4)
+    game.deck.setBack(7)
     game.startGame()
 
-    game.drawInitiative()
+    //game.drawInitiative()
 
     game.render()
   } else {
