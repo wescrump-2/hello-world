@@ -5,19 +5,32 @@ import { Game } from "./game"
 
 export class Player {
 
-	hand: Card[] = []
-	public id = Game.shortUUID()
-	public onHold: boolean = false
-	public outOfCombat: boolean = false
-	public levelHeaded: boolean = false
-	public impLevelHeaded: boolean = false
-	public tactician: boolean = false
-	public mastertactician: boolean = false
-	public quick: boolean = false
-	public chooseCard: boolean = false
-	public hesitant: boolean = false
+	hand: Card[]
+	public id:string
+	public onHold: boolean 
+	public outOfCombat: boolean 
+	public levelHeaded: boolean 
+	public impLevelHeaded: boolean 
+	public tactician: boolean 
+	public mastertactician: boolean 
+	public quick: boolean 
+	public chooseCard: boolean 
+	public hesitant: boolean  
 
-	constructor(public name: string) { }
+	constructor(public name: string) {
+		this.hand = []
+		this.id = Game.shortUUID()
+		this.onHold=false
+		this.onHold = false
+		this.outOfCombat = false
+		this.levelHeaded = false
+		this.impLevelHeaded= false
+		this.tactician = false
+		this.mastertactician= false
+		this.quick= false
+		this.chooseCard = false
+		this.hesitant = false
+	 }
 
 	addCard(card: Card) {
 		this.hand.push(card);
