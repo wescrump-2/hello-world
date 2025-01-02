@@ -48,20 +48,9 @@ export class Game {
 		if (flgexisting) Game.instance.render()
 	}
 	render() {
-		//this.deck.removeRender(this.div)
 		this.deck.render(this.div)
-		//draw player hands
-		let y = 0
-		let x = 0
-		this.deck.players.sort((a, b) => {
-			const aa = (a.bestCard() === undefined) ? 0 : a.bestCard()?.sequence ?? 0
-			const bb = (b.bestCard() === undefined) ? 0 : b.bestCard()?.sequence ?? 0
-			return bb - aa
-		})
-		for (const p of this.deck.players) {
-			p.removeRender()
-			p.render(this.div, x, y)
-		}
+		this.deck.renderPlayers(this.div)
+		this.deck.setCurrentPlayer(this.deck.players[0]?.id)	
 	}
 
 	testplayers: string[] = []

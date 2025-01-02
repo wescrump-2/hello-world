@@ -8,7 +8,7 @@ import { Player } from "./player"
 export class Deck {
 	players: Player[]
 	currentRound: number
-	currentTurn: number
+	currentPlayer: string
 	cards: Card[]
 	discardPool: Card[]
 	specialPool: Card[]
@@ -17,8 +17,8 @@ export class Deck {
 
 	constructor() {
 		this.players = []
-		this.currentRound=0
-		this.currentTurn=0
+		this.currentRound = 0
+		this.currentPlayer = ""
 		this.cards = []
 		this.discardPool = []
 		this.specialPool = []
@@ -34,7 +34,7 @@ export class Deck {
 		return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
 	}
 
-	getPlayer(pid: string|null): Player {
+	getPlayer(pid: string | null): Player {
 		return this.players.find(item => item.id === pid) as Player
 	}
 
@@ -137,7 +137,7 @@ export class Deck {
 		this.renderDiscardPile(container)
 		this.renderCardPool(container)
 		if (this.jokerDrawn()) {
-		  this.showNotification('Joker Drawn Reshuffle and issue Bennies.',"WARNING")
+			this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
 		}
 
 	}
@@ -318,11 +318,37 @@ export class Deck {
 		}
 	}
 
-	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
-		try {
-			await OBR.notification.show(message, level)
-		} catch (error) {
-			console.error('Failed to show notification:', error)
+	renderPlayers(div: HTMLDivElement) {
+		let y = 0
+		let x = 0
+		this.players.sort((a, b) => {
+			const aa = (a.bestCard() === undefined) ? 0 : a.bestCard()?.sequence ?? 0
+			const bb = (b.bestCard() === undefined) ? 0 : b.bestCard()?.sequence ?? 0
+			return bb - aa
+		})
+		let np = true
+		for (const p of this.players) {
+			p.removeRender()
+			p.render(div, x, y)
+			np = false
 		}
 	}
-}
+
+	setCurrentPlayer(pid: string) {
+		this.currentPlayer = pid
+		for (let fs of document.querySelectorAll('fieldset[data-pid]')) {
+			if (fs.getAttribute('data-pid') === pid) {
+				fs.classList.add("nextplayer")
+			} else {
+				fs.classList.remove("nextplayer")
+			}
+		}
+	}
+	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
+			try {
+				await OBR.notification.show(message, level)
+			} catch (error) {
+				console.error('Failed to show notification:', error)
+			}
+		}
+	}

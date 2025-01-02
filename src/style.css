@@ -24,7 +24,7 @@
   --card-spread-inc: 3.2em;
   --card-stacked-inc: .45em;
   --card-stacked-down-inc: .2em;
-  --button-size: 1.1em;
+  --button-size: 1.3em;
 }
 
 a {
@@ -80,7 +80,7 @@ h1 {
 }
 
 .card {
-  padding: .1em;
+  padding: .01em;
 }
 
 legend {
@@ -92,7 +92,12 @@ legend {
 }
 
 fieldset {
+  border-width:thick;
   border-radius: var(--border-radius);
+}
+
+fieldset.nextplayer{
+  border-color:cornflowerblue;
 }
 
 .read-the-docs {
@@ -273,8 +278,9 @@ body .btn:disabled:hover {
 }
 
 .small-card {
-  height: 4rem;
-  margin: 1px
+  height: 4.9rem;
+  margin: 0px;
+  padding: 1px;
 }
 
 .selected-card {

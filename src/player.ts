@@ -172,6 +172,9 @@ export class Player {
 		outcombat.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.outOfCombat = !p.outOfCombat
+			if (p.outOfCombat) {
+				p.discardHand()
+			}
 			ButtonFactory.toggle(event)
 		})
 		playerdiv.appendChild(outcombat)
