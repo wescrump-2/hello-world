@@ -326,11 +326,9 @@ export class Deck {
 			const bb = (b.bestCard() === undefined) ? 0 : b.bestCard()?.sequence ?? 0
 			return bb - aa
 		})
-		let np = true
 		for (const p of this.players) {
 			p.removeRender()
 			p.render(div, x, y)
-			np = false
 		}
 	}
 
