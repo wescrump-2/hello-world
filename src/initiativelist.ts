@@ -14,7 +14,7 @@ interface InitiativeItem {
   sequence: number
 }
 
-export function setupInitiativeList(element: HTMLElement): void {
+export function setupInitiativeList(): void {
   const renderList = (items: any[]): void => {
     // Get the name and initiative of any item with
     // our initiative metadata

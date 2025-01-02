@@ -34,5 +34,5 @@ window.addEventListener("load", () => {
 
 OBR.onReady(() => {
   setupContextMenu()
-  setupInitiativeList(document.querySelector("#initiative-list") as HTMLElement);
+  setupInitiativeList() //document.querySelector("#initiative-list") as HTMLElement);
 })
