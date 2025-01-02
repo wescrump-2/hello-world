@@ -6,8 +6,6 @@ export class ButtonFactory {
 		but.classList.add('btn')
 		but.setAttribute('data-pid', uuid)
 		ButtonFactory.setImage(imagekey, but)
-
-
 		return but
 	}
 	static setImage(imagekey: string, but: HTMLButtonElement) {

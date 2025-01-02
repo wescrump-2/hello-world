@@ -7,6 +7,8 @@ import { Player } from "./player"
 
 export class Deck {
 	players: Player[]
+	currentRound: number
+	currentTurn: number
 	cards: Card[]
 	discardPool: Card[]
 	specialPool: Card[]
@@ -15,6 +17,8 @@ export class Deck {
 
 	constructor() {
 		this.players = []
+		this.currentRound=0
+		this.currentTurn=0
 		this.cards = []
 		this.discardPool = []
 		this.specialPool = []
@@ -30,7 +34,7 @@ export class Deck {
 		return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
 	}
 
-	getPlayer(pid: string): Player {
+	getPlayer(pid: string|null): Player {
 		return this.players.find(item => item.id === pid) as Player
 	}
 

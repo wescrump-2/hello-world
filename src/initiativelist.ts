@@ -1,6 +1,6 @@
-import OBR from "@owlbear-rodeo/sdk";
-import { Game } from "./game";
-const ID = "com.wescrump.initiative-tracker";
+import OBR, { isImage } from "@owlbear-rodeo/sdk"
+import { Game } from "./game"
+
 
 export interface InitiativeMetadata {
   playerid: string
@@ -13,35 +13,36 @@ interface InitiativeItem {
   cardname: string
   sequence: number
 }
-
-export function setupInitiativeList(): void {
+// export async function startupClean(){
+//   OBR.onReady
+//   let flgexisting = false
+//   let changes = []
+//   const characters = await OBR.scene.items.getItems((item) => item.layer === "CHARACTER" && isImage(item))
+//   for (const item of characters) {
+//     const charmeta: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeItem
+//     if (charmeta) {
+//       delete charmeta
+//       flgexisting=true
+//     }
+//   }
+//   if (flgexisting) Game.instance.render()
+//     OBR.scene.items.onChange(renderList)
+// } 
+export async function setupInitiativeList(): Promise<void> {
+  // start up, find chars with metadata and create players for them if needed
   const renderList = (items: any[]): void => {
     // Get the name and initiative of any item with
     // our initiative metadata
+    let flgrender = false
     const initiativeItems: InitiativeItem[] = [];
     for (const item of items) {
-      const metadata: InitiativeMetadata = item.metadata[`${ID}/metadata`];
-      if (metadata) {
-        //see if player is already created in initiative
-        let p = Game.instance.deck.getPlayer(metadata.playerid)
-        if (!p) {
-          // if not, create them, give name and unique id from metadata
-          p = Game.instance.addPlayer(metadata.playername)
-          p.id = metadata.playerid
+      if (item.layer === "CHARACTER" && isImage(item)) {
+        const metadata: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata
+        if (metadata) {
+          let inititem = rehydratePlayer(metadata)
+          initiativeItems.push(inititem);
+          flgrender = true
         }
-        const c = p.bestCard()
-        let cn = "No cards"
-        let seq = 0
-        if (c) {
-          cn = c.toString()
-          seq = c.sequence
-        }
-        initiativeItems.push({
-          playerid: metadata.playerid,
-          playername: p.name,
-          cardname: cn,
-          sequence: seq,
-        });
       }
     }
 
@@ -49,21 +50,33 @@ export function setupInitiativeList(): void {
     for (const p of result) {
       p.removeRender()
       Game.instance.removePlayer(p)
+      flgrender = true
     }
-    Game.instance.render()
 
-    // Sort so the highest initiative value is on top
-    // const sortedItems = initiativeItems.sort(
-    //   (a, b) => b.sequence - a.sequence
-    // );
-    // Create new list nodes for each initiative item
-    // const nodes = [];
-    // for (const initiativeItem of sortedItems) {
-    //   const node = document.createElement("li");
-    //   node.innerHTML = `${initiativeItem.playername} (${initiativeItem.cardname})`;
-    //   nodes.push(node);
-    // }
-    // element.replaceChildren(...nodes);
+    if (flgrender) {
+      Game.instance.render()
+    }
   };
-  OBR.scene.items.onChange(renderList);
+  OBR.scene.items.onChange(renderList)
+}
+function rehydratePlayer(metadata: InitiativeMetadata): InitiativeItem {
+  let p = Game.instance.deck.getPlayer(metadata.playerid)
+  if (!p) {
+    // if not, create them, give name and unique id from metadata
+    p = Game.instance.addPlayer(metadata.playername)
+    p.id = metadata.playerid
+  }
+  const c = p.bestCard()
+  let cn = "No cards"
+  let seq = 0
+  if (c) {
+    cn = c.toString()
+    seq = c.sequence
+  }
+  return {
+    playerid: p.id,
+    playername: p.name,
+    cardname: cn,
+    sequence: seq,
+  }
 }

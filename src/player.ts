@@ -134,7 +134,7 @@ export class Player {
 		fieldset.appendChild(carddiv)
 		container.appendChild(fieldset)
 
-		const drawcard = ButtonFactory.getButton("drawcard", "Draw a Card", "card-pickup", this.id)
+		const drawcard = ButtonFactory.getButton("drawcard", "Draw a Card", "card-pickup", "") //this.id)
 		drawcard.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawCard()
@@ -142,7 +142,7 @@ export class Player {
 		})
 		playerdiv.appendChild(drawcard)
 
-		const drawhand = ButtonFactory.getButton("drawhand", "Draw Hand", "poker-hand", this.id)
+		const drawhand = ButtonFactory.getButton("drawhand", "Draw Hand", "poker-hand", "") //this.id)
 		drawhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawInitiative()
@@ -150,7 +150,7 @@ export class Player {
 		})
 		playerdiv.appendChild(drawhand)
 
-		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", this.id)
+		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
 		if (this.chooseCard) choose.classList.add("btn-success")
 		choose.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
@@ -159,7 +159,7 @@ export class Player {
 		})
 		playerdiv.appendChild(choose)
 
-		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", this.id)
+		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
 		discardhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			Game.instance.deck.moveToDiscardPool(p.hand, 0)
@@ -167,7 +167,7 @@ export class Player {
 		})
 		playerdiv.appendChild(discardhand)
 
-		const outcombat = ButtonFactory.getButton("outcombat", "Out of Combat", "truce", this.id)
+		const outcombat = ButtonFactory.getButton("outcombat", "Out of Combat", "truce", "") //this.id)
 		if (this.outOfCombat) outcombat.classList.add("btn-success")
 		outcombat.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
@@ -176,7 +176,7 @@ export class Player {
 		})
 		playerdiv.appendChild(outcombat)
 
-		const onhold = ButtonFactory.getButton("onhold", "On Hold", "halt", this.id)
+		const onhold = ButtonFactory.getButton("onhold", "On Hold", "halt", "") //this.id)
 		if (this.onHold) onhold.classList.add("btn-success")
 		onhold.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
@@ -185,17 +185,18 @@ export class Player {
 		})
 		playerdiv.appendChild(onhold)
 
-		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", "") //this.id)
 		// rp.classList.add("btn-danger")
 		// rp.addEventListener('click', function () {
 		// 	let p = Player.getPlayer(this)
 		// 	p.removeRender()
 		// 	Game.instance.removePlayer(p)
+		// 	Game.instance.removePlayerMetadata(p)
 		// 	Game.instance.render()
 		// })
 		// playerdiv.appendChild(rp)
 
-		const hesitant = ButtonFactory.getButton("hesitant", "Hesitant Hindrance", "uncertainty", this.id)
+		const hesitant = ButtonFactory.getButton("hesitant", "Hesitant Hindrance", "uncertainty", "") //this.id)
 		if (this.hesitant) hesitant.classList.add("btn-success")
 		hesitant.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
@@ -204,7 +205,7 @@ export class Player {
 		})
 		playerdiv.appendChild(hesitant)
 
-		const quick = ButtonFactory.getButton("quick", "Quick Edge", "sprint", this.id)
+		const quick = ButtonFactory.getButton("quick", "Quick Edge", "sprint", "") //this.id)
 		if (this.quick) quick.classList.add("btn-success")
 		quick.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
@@ -214,7 +215,7 @@ export class Player {
 		playerdiv.appendChild(quick)
 
 		// const tacttype = (this.mastertactician) ? "aces" : "ace"
-		// const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, this.id)
+		// const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, "") //this.id)
 		// if (this.tactician || this.mastertactician) tactician.classList.add("btn-success")
 		// tactician.addEventListener('click', function () {
 		// 	let p = Player.getPlayer(this)
@@ -233,7 +234,7 @@ export class Player {
 		// playerdiv.appendChild(tactician)
 
 		const lvlheadtype = (this.impLevelHeaded) ? "scales-exclaim" : "scales"
-		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, this.id)
+		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, "") //this.id)
 		if (this.levelHeaded || this.impLevelHeaded) levelhead.classList.add("btn-success")
 		levelhead.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
@@ -262,7 +263,12 @@ export class Player {
 	}
 
 	static getPlayer(but: HTMLButtonElement): Player {
-		let pid = but.getAttribute('data-pid') as string
+		let element=but as HTMLElement
+		let pid = element.getAttribute('data-pid')
+		while (!pid && element){
+			element=element.parentElement as HTMLElement
+			pid=element.getAttribute('data-pid')
+		}
 		let p = Game.instance.deck.getPlayer(pid)
 		return p
 	}

@@ -1,5 +1,7 @@
+import OBR, { isImage } from "@owlbear-rodeo/sdk"
 import { Deck } from "./deck"
 import { Player } from "./player"
+import { InitiativeMetadata } from "./initiativelist"
 
 // Game class
 export class Game {
@@ -7,6 +9,7 @@ export class Game {
 	static instance: Game
 	deck: Deck
 	div: HTMLDivElement
+	static ID = "com.wescrump.initiative-tracker"
 
 	constructor(container: HTMLDivElement) {
 		this.deck = new Deck()
@@ -25,10 +28,25 @@ export class Game {
 		if (index !== -1) {
 			const p = this.deck.players[index]
 			this.deck.moveToDiscardPool(p.hand)
-			this.deck.players.splice(index, 1);
+			this.deck.players.splice(index, 1)
+			this.removePlayerMetadata(p)
 		}
 	}
 
+	async removePlayerMetadata(p: Player) {
+		let flgexisting = false
+		const characters = await OBR.scene.items.getItems((item) => item.layer === "CHARACTER" && isImage(item))
+		for (const item of characters) {
+		  const charmeta: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata
+		  if (charmeta) {
+			if (p.id===charmeta.playerid) {
+				delete item.metadata[`${Game.ID}/metadata`]
+			flgexisting=true
+			}
+		  }
+		}
+		if (flgexisting) Game.instance.render()
+	}
 	render() {
 		//this.deck.removeRender(this.div)
 		this.deck.render(this.div)
@@ -36,8 +54,8 @@ export class Game {
 		let y = 0
 		let x = 0
 		this.deck.players.sort((a, b) => {
-			const aa = (a.bestCard()===undefined)?0:a.bestCard()?.sequence??0
-			const bb = (b.bestCard()===undefined)?0:b.bestCard()?.sequence??0
+			const aa = (a.bestCard() === undefined) ? 0 : a.bestCard()?.sequence ?? 0
+			const bb = (b.bestCard() === undefined) ? 0 : b.bestCard()?.sequence ?? 0
 			return bb - aa
 		})
 		for (const p of this.deck.players) {
