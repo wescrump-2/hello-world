@@ -41,12 +41,12 @@ export class Game {
 			return bb - aa
 		})
 		for (const p of this.deck.players) {
-			p.removeRender(this.div)
+			p.removeRender()
 			p.render(this.div, x, y)
 		}
 	}
 
-	testplayers: string[] = ["h"]
+	testplayers: string[] = []
 	startGame() {
 		this.deck.newGame()
 		this.deck.shuffle();
@@ -98,3 +98,4 @@ export class Game {
 		return `${hexUUID.slice(0, 8)}-${hexUUID.slice(8, 12)}-${hexUUID.slice(12, 16)}-${hexUUID.slice(16, 20)}-${hexUUID.slice(20)}`;
 	}
 }
+

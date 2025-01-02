@@ -1,5 +1,7 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { Game } from "./game";
+import { Player } from "./player";
+import { InitiativeMetadata } from "./initiativelist";
 const ID = "com.wescrump.initiative-tracker";
 
 export function setupContextMenu() {
@@ -29,24 +31,32 @@ export function setupContextMenu() {
 				(item) => item.metadata[`${ID}/metadata`] === undefined
 			);
 			if (addToInitiative) {
-				//let initiative = window.prompt("Enter the initiative value");
 				OBR.scene.items.updateItems(context.items, (items) => {
 					for (let item of items) {
 						const player = Game.instance.addPlayer(item.name)
-						let initiative= player.id
-						let playername= player.name
 						item.metadata[`${ID}/metadata`] = {
-							initiative,
-							playername,
+							playerid: player.id,
+							playername: player.name,
 						};
 					}
 					Game.instance.render()
 				});
 			} else {
 				OBR.scene.items.updateItems(context.items, (items) => {
+					let flgrender = false
 					for (let item of items) {
+						let md = item.metadata[`${ID}/metadata`] as InitiativeMetadata | undefined
+						if (md) {
+							let p = Game.instance.deck.getPlayer(md.playerid) as Player
+							if (p) {
+								p.removeRender()
+								Game.instance.removePlayer(p)
+							}
+							flgrender = true
+						}
 						delete item.metadata[`${ID}/metadata`]
 					}
+					if (flgrender) Game.instance.render()
 				});
 			}
 		},

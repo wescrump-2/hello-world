@@ -5,10 +5,10 @@ import { setupInitiativeList } from "./initiativelist.ts"
 import cardsImage from '/cards.svg'
 import buttonsImage from '/buttons.svg'
 import { Game } from './game.ts'
+import { Card } from './cards.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
-    <ul id="initiative-list"></ul>
     <div id="svgContainer"></div>
     <script src="cards.js"></script>
   </div>
@@ -21,7 +21,7 @@ window.addEventListener("load", () => {
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     const game = new Game(document.getElementById('svgContainer') as HTMLDivElement)
-    game.deck.setBack(7)
+    game.deck.setBack(Math.floor(Math.random()*Card.backs.length+1))
     game.startGame()
 
     //game.drawInitiative()

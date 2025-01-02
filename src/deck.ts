@@ -1,3 +1,5 @@
+import OBR from "@owlbear-rodeo/sdk";
+
 import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Game } from "./game"
@@ -125,16 +127,18 @@ export class Deck {
 		return this.players.some(p => p.hasJoker()) || this.discardPool.some(c => c.isJoker()) || this.specialPool.some(c => c.isJoker())
 	}
 
-	// removeRender(container: HTMLDivElement) {
-	// 	for (let str of ["Pool"]) {
-	// 		const rem = container.querySelector(`div[id="${str}"],fieldset[id="${str}"]`)
-	// 		if (rem) {
-	// 			rem.remove()
-	// 		}
-	// 	}
-	// }
-
 	render(container: HTMLDivElement) {
+		//this.renderJoker(container)
+		this.renderDraw(container)
+		this.renderDiscardPile(container)
+		this.renderCardPool(container)
+		if (this.jokerDrawn()) {
+		  this.showNotification('Joker Drawn Reshuffle and issue Bennies.',"WARNING")
+		}
+
+	}
+
+	renderJoker(container: HTMLDivElement) {
 		const doc = container.ownerDocument
 		let jokediv = doc.getElementById('JokerMsg');
 		if (!jokediv) {
@@ -147,10 +151,13 @@ export class Deck {
 			container.appendChild(jokediv);
 		}
 		if (this.jokerDrawn()) {
-			jokediv.style.display = "display"
+			jokediv.style.display = "block"
 		} else {
 			jokediv.style.display = "none"
 		}
+	}
+	renderDraw(container: HTMLDivElement) {
+		const doc = container.ownerDocument
 		let deckcarddiv = doc.getElementById('drawdeckcards') as HTMLDivElement
 		if (!deckcarddiv) {
 			const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
@@ -199,17 +206,23 @@ export class Deck {
 			})
 			deckdiv.appendChild(joke)
 		}
+
 		let deckleg = deckcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		deckleg.textContent = `Draw Deck [${this.cards.length}]`
+
 		while (deckcarddiv.firstChild) {
 			deckcarddiv.removeChild(deckcarddiv.firstChild);
 		}
+
 		let x = 0
-		let y = 0
 		for (const c of this.cards) {
-			c.render(deckcarddiv, x, y)
+			c.render(deckcarddiv, x, 0)
 			x = x + Deck.rem2px(Card.cardStackedDown())
 		}
+	}
+
+	renderDiscardPile(container: HTMLDivElement) {
+		const doc = container.ownerDocument
 		let discardcarddiv = doc.getElementById("discardpilecards") as HTMLDivElement
 		if (!discardcarddiv) {
 			const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
@@ -236,29 +249,32 @@ export class Deck {
 			})
 			discarddiv.appendChild(dp)
 		}
+
 		let discardleg = discardcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		discardleg.textContent = `Discard Pile [${this.discardPool.length}]`
+
 		while (discardcarddiv.firstChild) {
 			discardcarddiv.removeChild(discardcarddiv.firstChild);
 		}
 
-		x = 0
-		y = 0
+		let x = 0
 		for (const c of this.discardPool) {
-			c.render(discardcarddiv, x, y)
+			c.render(discardcarddiv, x, 0)
 			x = x + Deck.rem2px(Card.cardStacked())
 		}
 
+	}
+
+	renderCardPool(container: HTMLDivElement) {
+		const doc = container.ownerDocument
 		let specialcarddiv = doc.getElementById("cardpoolcards") as HTMLDivElement
 		if (!specialcarddiv) {
 			const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
 			const specialleg = doc.createElement('legend') as HTMLLegendElement
-			
 			specialfieldset.appendChild(specialleg)
 			specialfieldset.classList.add("flex-container")
 			specialfieldset.id = "Pool"
 			specialfieldset.title = "Card Pool"
-
 			const specialdiv = doc.createElement('div') as HTMLDivElement
 			specialdiv.classList.add("flex-item-3")
 			specialdiv.classList.add(...Card.relcard)
@@ -283,17 +299,26 @@ export class Deck {
 			})
 			specialdiv.appendChild(discardpool)
 		}
+
 		let specialleg = specialcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
 		specialleg.textContent = `Card Pool [${this.specialPool.length}]`
+
 		while (specialcarddiv.firstChild) {
 			specialcarddiv.removeChild(specialcarddiv.firstChild);
 		}
 
-		x = 0
-		y = 0
+		let x = 0
 		for (const c of this.specialPool) {
-			c.render(specialcarddiv, x, y)
+			c.render(specialcarddiv, x, 0)
 			x = x + Deck.rem2px(Card.cardStacked())
+		}
+	}
+
+	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
+		try {
+			await OBR.notification.show(message, level)
+		} catch (error) {
+			console.error('Failed to show notification:', error)
 		}
 	}
 }

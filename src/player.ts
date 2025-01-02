@@ -6,31 +6,32 @@ import { Game } from "./game"
 export class Player {
 
 	hand: Card[]
-	public id:string
-	public onHold: boolean 
-	public outOfCombat: boolean 
-	public levelHeaded: boolean 
-	public impLevelHeaded: boolean 
-	public tactician: boolean 
-	public mastertactician: boolean 
-	public quick: boolean 
-	public chooseCard: boolean 
-	public hesitant: boolean  
+	public id: string
+	public onHold: boolean
+	public outOfCombat: boolean
+	public levelHeaded: boolean
+	public impLevelHeaded: boolean
+	public tactician: boolean
+	public mastertactician: boolean
+	public quick: boolean
+	public chooseCard: boolean
+	public hesitant: boolean
 
 	constructor(public name: string) {
 		this.hand = []
 		this.id = Game.shortUUID()
-		this.onHold=false
+		this.onHold = false
 		this.onHold = false
 		this.outOfCombat = false
 		this.levelHeaded = false
-		this.impLevelHeaded= false
+		this.impLevelHeaded = false
 		this.tactician = false
-		this.mastertactician= false
-		this.quick= false
+		this.mastertactician = false
+		this.quick = false
 		this.chooseCard = false
 		this.hesitant = false
-	 }
+		console.log(`name:${this.name}  id:[${this.id}]`)
+	}
 
 	addCard(card: Card) {
 		this.hand.push(card);
@@ -107,10 +108,8 @@ export class Player {
 		}
 	}
 
-
-	removeRender(but: HTMLElement) {
-		const ppdiv = but.parentElement?.parentElement?.parentElement as HTMLElement
-		const divToRemove = ppdiv.querySelector(`fieldset[data-pid="${this.id}"]`)
+	removeRender() {
+		const divToRemove = document.querySelector(`fieldset[data-pid="${this.id}"]`)
 		if (divToRemove) {
 			divToRemove.remove()
 		}
@@ -135,7 +134,6 @@ export class Player {
 		fieldset.appendChild(carddiv)
 		container.appendChild(fieldset)
 
-
 		const drawcard = ButtonFactory.getButton("drawcard", "Draw a Card", "card-pickup", this.id)
 		drawcard.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
@@ -151,6 +149,23 @@ export class Player {
 			Game.instance.render()
 		})
 		playerdiv.appendChild(drawhand)
+
+		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", this.id)
+		if (this.chooseCard) choose.classList.add("btn-success")
+		choose.addEventListener('click', function (event) {
+			let p = Player.getPlayer(this)
+			p.chooseCard = !p.chooseCard
+			ButtonFactory.toggle(event)
+		})
+		playerdiv.appendChild(choose)
+
+		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", this.id)
+		discardhand.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			Game.instance.deck.moveToDiscardPool(p.hand, 0)
+			Game.instance.render()
+		})
+		playerdiv.appendChild(discardhand)
 
 		const outcombat = ButtonFactory.getButton("outcombat", "Out of Combat", "truce", this.id)
 		if (this.outOfCombat) outcombat.classList.add("btn-success")
@@ -170,24 +185,15 @@ export class Player {
 		})
 		playerdiv.appendChild(onhold)
 
-
-		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", this.id)
-		discardhand.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			Game.instance.deck.moveToDiscardPool(p.hand, 0)
-			Game.instance.render()
-		})
-		playerdiv.appendChild(discardhand)
-
-		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
-		rp.classList.add("btn-danger")
-		rp.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			p.removeRender(this)
-			Game.instance.removePlayer(p)
-			Game.instance.render()
-		})
-		playerdiv.appendChild(rp)
+		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+		// rp.classList.add("btn-danger")
+		// rp.addEventListener('click', function () {
+		// 	let p = Player.getPlayer(this)
+		// 	p.removeRender()
+		// 	Game.instance.removePlayer(p)
+		// 	Game.instance.render()
+		// })
+		// playerdiv.appendChild(rp)
 
 		const hesitant = ButtonFactory.getButton("hesitant", "Hesitant Hindrance", "uncertainty", this.id)
 		if (this.hesitant) hesitant.classList.add("btn-success")
@@ -207,24 +213,24 @@ export class Player {
 		})
 		playerdiv.appendChild(quick)
 
-		const tacttype = (this.mastertactician) ? "aces" : "ace"
-		const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, this.id)
-		if (this.tactician || this.mastertactician) tactician.classList.add("btn-success")
-		tactician.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			if (p.mastertactician) {
-				p.mastertactician = false
-				p.tactician = false
-			} else if (p.tactician && !p.mastertactician) {
-				p.mastertactician = true
-				p.tactician = true
-			} else {
-				p.tactician = true
-				p.mastertactician = false
-			}
-			Game.instance.render()
-		})
-		playerdiv.appendChild(tactician)
+		// const tacttype = (this.mastertactician) ? "aces" : "ace"
+		// const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, this.id)
+		// if (this.tactician || this.mastertactician) tactician.classList.add("btn-success")
+		// tactician.addEventListener('click', function () {
+		// 	let p = Player.getPlayer(this)
+		// 	if (p.mastertactician) {
+		// 		p.mastertactician = false
+		// 		p.tactician = false
+		// 	} else if (p.tactician && !p.mastertactician) {
+		// 		p.mastertactician = true
+		// 		p.tactician = true
+		// 	} else {
+		// 		p.tactician = true
+		// 		p.mastertactician = false
+		// 	}
+		// 	Game.instance.render()
+		// })
+		// playerdiv.appendChild(tactician)
 
 		const lvlheadtype = (this.impLevelHeaded) ? "scales-exclaim" : "scales"
 		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, this.id)
@@ -244,15 +250,6 @@ export class Player {
 			Game.instance.render()
 		})
 		playerdiv.appendChild(levelhead)
-
-		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", this.id)
-		if (this.chooseCard) choose.classList.add("btn-success")
-		choose.addEventListener('click', function (event) {
-			let p = Player.getPlayer(this)
-			p.chooseCard = !p.chooseCard
-			ButtonFactory.toggle(event)
-		})
-		playerdiv.appendChild(choose)
 
 		for (const c of this.hand) {
 			c.render(carddiv, x, y)
