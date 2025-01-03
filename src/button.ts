@@ -15,7 +15,6 @@ export class ButtonFactory {
 			but.appendChild(svg)
 		}
 
-		//get source of image
 		const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
 		const svgDocument = svgButtons.contentDocument?.getRootNode() as SVGSVGElement
 		if (svgDocument) {
@@ -51,6 +50,5 @@ export class ButtonFactory {
 				}
 			}
 		}
-		//document.body.offsetHeight
 	}
 }

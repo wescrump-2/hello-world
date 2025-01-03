@@ -22,8 +22,9 @@
   --border: 1px solid var(--theme-color);
   --border-radius: 6px;
   --card-spread-inc: 3.2em;
-  --card-stacked-inc: .45em;
-  --card-stacked-down-inc: .2em;
+  --card-stacked-inc: .42em;
+  --card-stacked-down-inc: .3em;
+  --card-height:3.7rem;
   --button-size: 1.3em;
 }
 
@@ -281,9 +282,9 @@ body .btn:disabled:hover {
 }
 
 .small-card {
-  height: 5rem;
+  height: var(--card-height);
   margin: 0px;
-  padding: 3px;
+  padding: 0px;
 }
 
 .selected-card {
@@ -294,7 +295,7 @@ body .btn:disabled:hover {
   justify-content: space-between;
 }
 .flex-item-1 {
-  width: 7rem;
+  width: 12rem;
   border: none;
   box-sizing: border-box;
 }

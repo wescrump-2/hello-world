@@ -69,7 +69,8 @@ export class Deck {
 	}
 
 	setBack(n: number) {
-		for (const c of this.drawnCards()) {
+		this.shuffle()
+		for (const c of this.cards) {
 			c.setBack(n)
 		}
 	}
@@ -342,6 +343,7 @@ export class Deck {
 			}
 		}
 	}
+
 	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
 			try {
 				await OBR.notification.show(message, level)

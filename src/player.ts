@@ -52,10 +52,16 @@ export class Player {
 		}
 		return undefined
 	}
+
 	lowCard(): Card | undefined {
 		if (this.hand.length > 0) {
+			if (this.hasJoker()) {
+				const jokerItem = this.hand.reduce((joke, current) =>
+					joke.isJoker() ? joke : current)
+				return jokerItem
+			}
 			const lowestValueItem = this.hand.reduce((min, current) =>
-				min.sequence < current.sequence || min.isJoker() ? min : current)
+				min.sequence < current.sequence ? min : current)
 			return lowestValueItem
 		}
 		return undefined
@@ -188,17 +194,6 @@ export class Player {
 		})
 		playerdiv.appendChild(onhold)
 
-		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", "") //this.id)
-		// rp.classList.add("btn-danger")
-		// rp.addEventListener('click', function () {
-		// 	let p = Player.getPlayer(this)
-		// 	p.removeRender()
-		// 	Game.instance.removePlayer(p)
-		// 	Game.instance.removePlayerMetadata(p)
-		// 	Game.instance.render()
-		// })
-		// playerdiv.appendChild(rp)
-
 		const hesitant = ButtonFactory.getButton("hesitant", "Hesitant Hindrance", "uncertainty", "") //this.id)
 		if (this.hesitant) hesitant.classList.add("btn-success")
 		hesitant.addEventListener('click', function (event) {
@@ -255,6 +250,18 @@ export class Player {
 		})
 		playerdiv.appendChild(levelhead)
 
+		// fixme, not sure how to delete metadata from but press yet...
+		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", "") //this.id)
+		// rp.classList.add("btn-danger")
+		// rp.addEventListener('click', function () {
+		// 	let p = Player.getPlayer(this)
+		// 	p.removeRender()
+		// 	Game.instance.removePlayer(p)
+		// 	Game.instance.removePlayerMetadata(p)
+		// 	Game.instance.render()
+		// })
+		// playerdiv.appendChild(rp)
+
 		for (const c of this.hand) {
 			c.render(carddiv, x, y)
 			x = x + Deck.rem2px(Card.cardSpread())
@@ -266,11 +273,11 @@ export class Player {
 	}
 
 	static getPlayer(but: HTMLButtonElement): Player {
-		let element=but as HTMLElement
+		let element = but as HTMLElement
 		let pid = element.getAttribute('data-pid')
-		while (!pid && element){
-			element=element.parentElement as HTMLElement
-			pid=element.getAttribute('data-pid')
+		while (!pid && element) {
+			element = element.parentElement as HTMLElement
+			pid = element.getAttribute('data-pid')
 		}
 		let p = Game.instance.deck.getPlayer(pid)
 		return p

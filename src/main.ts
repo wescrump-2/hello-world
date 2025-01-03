@@ -21,18 +21,16 @@ window.addEventListener("load", () => {
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     const game = new Game(document.getElementById('svgContainer') as HTMLDivElement)
-    game.deck.setBack(Math.floor(Math.random()*Card.backs.length+1))
+    game.deck.setBack(Math.floor(Math.random()*(Card.backs.length+1.0)))
     game.startGame()
-
-    //game.drawInitiative()
-
     game.render()
   } else {
     console.error("Failed to load SVG document")
   }
 })
 
-OBR.onReady(() => {
+OBR.onReady(async () => {
   setupContextMenu()
-  setupInitiativeList() //document.querySelector("#initiative-list") as HTMLElement);
+  setupInitiativeList() 
+  Game.instance.updateGameOBState(await Game.instance.getCharacterItems())
 })

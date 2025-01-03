@@ -1,11 +1,10 @@
 import OBR, { isImage } from "@owlbear-rodeo/sdk"
 import { Deck } from "./deck"
 import { Player } from "./player"
-import { InitiativeMetadata } from "./initiativelist"
+import { InitiativeItem, InitiativeMetadata } from "./initiativelist"
 
 // Game class
 export class Game {
-
 	static instance: Game
 	deck: Deck
 	div: HTMLDivElement
@@ -37,27 +36,27 @@ export class Game {
 		let flgexisting = false
 		const characters = await OBR.scene.items.getItems((item) => item.layer === "CHARACTER" && isImage(item))
 		for (const item of characters) {
-		  const charmeta: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata
-		  if (charmeta) {
-			if (p.id===charmeta.playerid) {
-				delete item.metadata[`${Game.ID}/metadata`]
-			flgexisting=true
+			const charmeta: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata
+			if (charmeta) {
+				if (p.id === charmeta.playerid) {
+					delete item.metadata[`${Game.ID}/metadata`]
+					flgexisting = true
+				}
 			}
-		  }
 		}
 		if (flgexisting) Game.instance.render()
 	}
+
 	render() {
 		this.deck.render(this.div)
 		this.deck.renderPlayers(this.div)
-		this.deck.setCurrentPlayer(this.deck.players[0]?.id)	
+		this.deck.setCurrentPlayer(this.deck.players[0]?.id)
 	}
 
-	testplayers: string[] = []
-	startGame() {
-		this.deck.newGame()
-		this.deck.shuffle();
-		for (const pn of this.testplayers) {
+
+	private testPlayers() {
+		const testplayers:string[] = []
+		for (const pn of testplayers) {
 			let p = this.addPlayer(pn)
 			let pnl = pn.toLowerCase()
 			p.hesitant = pnl.indexOf("h") >= 0
@@ -67,6 +66,11 @@ export class Game {
 			p.outOfCombat = pnl.indexOf("oc") >= 0
 			p.quick = pnl.indexOf("q") >= 0
 		}
+	}
+	startGame() {
+		this.deck.newGame()
+		this.deck.shuffle()
+		this.testPlayers()
 	}
 
 	drawInitiative() {
@@ -86,6 +90,68 @@ export class Game {
 			p.discardHand()
 		}
 	}
+
+	async getCharacterItems() {
+		let r: any[] = []
+		try {
+			const characters = await OBR.scene.items.getItems((item) => {
+				return item.layer === "CHARACTER" && isImage(item);
+			});
+			return characters
+		} catch (error) {
+			console.error("Failed to get character items:", error);
+		}
+		return r
+	}
+	
+	updateGameOBState(items: any[]) {
+		let flgrender = false
+		const initiativeItems: InitiativeItem[] = [];
+		for (const item of items) {
+			if (item.layer === "CHARACTER" && isImage(item)) {
+				const metadata: InitiativeMetadata = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata
+				if (metadata) {
+					let inititem = this.rehydratePlayer(metadata)
+					initiativeItems.push(inititem);
+					flgrender = true
+				}
+			}
+		}
+
+		const result = Game.instance.deck.players.filter(p => !initiativeItems.find(item => p.id === item.playerid));
+		for (const p of result) {
+			p.removeRender()
+			Game.instance.removePlayer(p)
+			flgrender = true
+		}
+
+		if (flgrender) {
+			Game.instance.render()
+		}
+	}
+
+	rehydratePlayer(metadata: InitiativeMetadata): InitiativeItem {
+		let p = Game.instance.deck.getPlayer(metadata.playerid)
+		if (!p) {
+			// if not, create them, give name and unique id from metadata
+			p = Game.instance.addPlayer(metadata.playername)
+			p.id = metadata.playerid
+		}
+		const c = p.bestCard()
+		let cn = "No cards"
+		let seq = 0
+		if (c) {
+			cn = c.toString()
+			seq = c.sequence
+		}
+		return {
+			playerid: p.id,
+			playername: p.name,
+			cardname: cn,
+			sequence: seq,
+		}
+	}
+
 	static shortUUID(): string {
 		const uuid = crypto.randomUUID()
 		const cleanUUID = uuid.replace(/-/g, '');
