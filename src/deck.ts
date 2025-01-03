@@ -1,38 +1,15 @@
-import OBR, { isImage, Item } from "@owlbear-rodeo/sdk"
+import OBR, { isImage } from "@owlbear-rodeo/sdk"
 import { Player } from "./player"
 import { InitiativeItem, InitiativeMetadata } from "./contextmenu"
 import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Util } from "./util"
 
-// // Define types for clarity
-// interface Metadata {
-// 	[key: string]: any;
-//   }
-
-//   interface Item {
-// 	id: string
-// 	layer: string
-// 	name: string
-// 	createdUserId: string
-// 	zIndex: number
-// 	lastModified:string
-// 	type: string
-// 	visible: boolean
-// 	locked: boolean
-// 	metadata: {
-// 	  [key: string]: Metadata
-// 	};
-// 	// Include other properties as needed
-//   }
-
-
 export interface DeckMetadata {
 	drawdeck: number[]
 	discardpile: number[]
 	cardpool: number[]
 }
-
 
 export class Deck {
 	private static instance: Deck
@@ -41,9 +18,6 @@ export class Deck {
 	svgbuttons!: HTMLObjectElement
 	svgcontainer!: HTMLDivElement
 
-	// cards: Card[]=[]
-	// discardPool: Card[]=[]
-	// specialPool: Card[]=[]
 	players: Player[] = []
 
 	//game state
@@ -119,8 +93,6 @@ export class Deck {
 			this.moveToDiscardPool(p.hand)
 		}
 	}
-
-
 
 	toggleJokers() {
 		this.use4jokers = !this.use4jokers
@@ -245,7 +217,6 @@ export class Deck {
 					console.error("Failed to remove metadata from character:", error);
 				}
 		}
-
 
 	render() {
 			this.renderDeck(this.svgcontainer)
