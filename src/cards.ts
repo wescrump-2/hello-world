@@ -35,6 +35,10 @@ export enum Facing {
 
 // Card class
 export class Card {
+	static isJoker(c: number): unknown {
+		return (c>53)
+	}
+	static _cards: Card[] = []
 	static backs: SVGSVGElement[] = []
 	static abscard: string[] = ["position-absolute", "small-card"]
 	static relcard: string[] = ["position-relative", "small-card"]
@@ -46,8 +50,21 @@ export class Card {
 	backidx: number = 0
 	color: Color
 
-	constructor(seq: number, backx: number = 2) {
-		this.sequence = seq
+	static get cards(): Card[] {
+		if (Card._cards.length === 0) {
+			for (let i = 1; i <= 56; i++) {
+				Card._cards.push(new Card(i))
+			}
+		}
+		return Card._cards
+	}
+	static byId(seq: number): Card {
+		let s = Math.max(1,Math.min(56,seq))
+		return Card.cards.find(c => c.sequence === s)!
+	}
+	 
+	constructor(sequence: number, curBack: number = 0) {
+		this.sequence = sequence
 		this.dir = Facing.Down
 		const obj = document.getElementById("cards-svg") as HTMLObjectElement
 		const svg = obj.contentDocument
@@ -57,8 +74,8 @@ export class Card {
 				Card.backs.push(el as SVGSVGElement)
 			}
 		}
-		this.face = svg?.querySelector(`[sequence="${seq}"]`) as SVGElement
-		this.setBack(backx)
+		this.face = svg?.querySelector(`[sequence="${sequence}"]`) as SVGElement
+		this.setBack(curBack)
 		this.rank = Number(this.face.getAttribute("rank")) as Rank
 		this.suit = this.face.getAttribute("suit") as Suit
 		this.color = (this.suit === Suit.Spades || this.suit === Suit.Clubs || this.suit === Suit.BlackJoker) ? Color.Black : Color.Red
@@ -80,7 +97,7 @@ export class Card {
 	}
 
 	isJoker(): boolean {
-		return (this.rank===15)
+		return (this.rank === 15)
 	}
 
 	setBack(back: number) {

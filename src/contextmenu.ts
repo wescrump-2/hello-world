@@ -1,11 +1,23 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { Game } from "./game";
 import { Player } from "./player";
-import { InitiativeMetadata } from "./initiativelist";
+import { Util } from "./util";
+import { Deck } from "./deck";
+
+export interface InitiativeMetadata {
+	playerid: string
+	playername: string
+  }
+  
+  export interface InitiativeItem {
+	playerid: string
+	playername: string
+	cardname: string
+	sequence: number
+  }
 
 export function setupContextMenu() {
 	OBR.contextMenu.create({
-		id: `${Game.ID}/context-menu`,
+		id: `${Util.ID}/context-menu`,
 		icons: [
 			{
 				icon: "/add.svg",
@@ -13,7 +25,7 @@ export function setupContextMenu() {
 				filter: {
 					every: [
 						{ key: "layer", value: "CHARACTER" },
-						{ key: ["metadata", `${Game.ID}/metadata`], value: undefined },
+						{ key: ["metadata", `${Util.ID}/metadata`], value: undefined },
 					],
 				},
 			},
@@ -27,37 +39,45 @@ export function setupContextMenu() {
 		],
 		onClick(context) {
 			const addToInitiative = context.items.every(
-				(item) => item.metadata[`${Game.ID}/metadata`] === undefined
+				(item) => item.metadata[`${Util.ID}/metadata`] === undefined
 			);
 			if (addToInitiative) {
 				OBR.scene.items.updateItems(context.items, (items) => {
 					for (let item of items) {
-						const player = Game.instance.addPlayer(item.name)
-						item.metadata[`${Game.ID}/metadata`] = {
+						const player = Deck.getInstance().addPlayer(item.name)
+						item.metadata[`${Util.ID}/metadata`] = {
 							playerid: player.id,
 							playername: player.name,
 						};
 					}
-					Game.instance.render()
+					Deck.getInstance().render()
 				});
 			} else {
 				OBR.scene.items.updateItems(context.items, (items) => {
 					let flgrender = false
 					for (let item of items) {
-						let md = item.metadata[`${Game.ID}/metadata`] as InitiativeMetadata | undefined
+						let md = item.metadata[`${Util.ID}/metadata`] as InitiativeMetadata | undefined
 						if (md) {
-							let p = Game.instance.deck.getPlayer(md.playerid) as Player
+							let p = Deck.getInstance().getPlayer(md.playerid) as Player
 							if (p) {
 								p.removeRender()
-								Game.instance.removePlayer(p)
+								Deck.getInstance().removePlayer(p)
 							}
 							flgrender = true
 						}
-						delete item.metadata[`${Game.ID}/metadata`]
+						delete item.metadata[`${Util.ID}/metadata`]
 					}
-					if (flgrender) Game.instance.render()
+					if (flgrender) Deck.getInstance().render()
 				});
 			}
 		},
 	});
 }
+
+
+export async function setupInitiativeList(): Promise<void> {
+	function renderList(items: any[]): void {
+	  Deck.getInstance().updateGameOBState(items)
+	}
+	OBR.scene.items.onChange(renderList)
+  }

@@ -1,74 +1,118 @@
 import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Deck } from "./deck"
-import { Game } from "./game"
+import { Util } from "./util"
+
+export interface PlayerMeta {
+	hand: number[]
+	id: string
+	name: string
+	owner: string
+	onHold: boolean
+	outOfCombat: boolean
+	levelHeaded: boolean
+	impLevelHeaded: boolean
+	tactician: boolean
+	mastertactician: boolean
+	quick: boolean
+	chooseCard: boolean
+	hesitant: boolean
+}
 
 export class Player {
+	private meta: PlayerMeta = {
+		hand: [],
+		id: "",
+		name: "",
+		owner: "",
+		onHold: false,
+		outOfCombat: false,
+		levelHeaded: false,
+		impLevelHeaded: false,
+		tactician: false,
+		mastertactician: false,
+		quick: false,
+		chooseCard: false,
+		hesitant: false
+	}
 
-	hand: Card[]
-	public id: string
-	public onHold: boolean
-	public outOfCombat: boolean
-	public levelHeaded: boolean
-	public impLevelHeaded: boolean
-	public tactician: boolean
-	public mastertactician: boolean
-	public quick: boolean
-	public chooseCard: boolean
-	public hesitant: boolean
+	//hand: Card[] //fixme
+	get hand(): number[] {return this.meta.hand}
+	get id(): string { return this.meta.id }
+	set id(newId: string) { this.meta.id = newId }
+	get name(): string { return this.meta.name }
+	set name(newName: string) { this.meta.name = newName }
+	get owner(): string { return this.meta.owner }
+	set owner(newowner: string) { this.meta.owner = newowner }
+	get onHold(): boolean { return this.meta.onHold }
+	set onHold(newonHold: boolean) { this.meta.onHold = newonHold }
+	get outOfCombat(): boolean { return this.meta.outOfCombat }
+	set outOfCombat(newoutOfCombat: boolean) { this.meta.outOfCombat = newoutOfCombat }
+	get levelHeaded(): boolean { return this.meta.levelHeaded }
+	set levelHeaded(newlevelHeaded: boolean) { this.meta.levelHeaded = newlevelHeaded }
+	get impLevelHeaded(): boolean { return this.meta.levelHeaded }
+	set impLevelHeaded(newimpLevelHeaded: boolean) { this.meta.impLevelHeaded = newimpLevelHeaded }
+	get tactician(): boolean { return this.meta.tactician }
+	set tactician(newtactician: boolean) { this.meta.tactician = newtactician }
+	get mastertactician(): boolean { return this.meta.mastertactician }
+	set mastertactician(newmastertactician: boolean) { this.meta.mastertactician = newmastertactician }
+	get quick(): boolean { return this.meta.quick }
+	set quick(newquick: boolean) { this.meta.quick = newquick }
+	get chooseCard(): boolean { return this.meta.chooseCard }
+	set chooseCard(newchooseCard: boolean) { this.meta.chooseCard = newchooseCard }
+	get hesitant(): boolean { return this.meta.hesitant }
+	set hesitant(newhesitant: boolean) { this.meta.hesitant = newhesitant }
 
-	constructor(public name: string) {
-		this.hand = []
-		this.id = Game.shortUUID()
-		this.onHold = false
-		this.onHold = false
-		this.outOfCombat = false
-		this.levelHeaded = false
-		this.impLevelHeaded = false
-		this.tactician = false
-		this.mastertactician = false
-		this.quick = false
-		this.chooseCard = false
-		this.hesitant = false
+	get getMeta(): PlayerMeta { return this.meta }
+	set setMeta(newMeta: PlayerMeta) { this.meta  = newMeta }
+
+	constructor(name: string) {
+		this.meta.name=name
+		this.meta.id=Util.shortUUID()
 		console.log(`name:${this.name}  id:[${this.id}]`)
 	}
 
-	addCard(card: Card) {
+	addCard(card: number) {
 		this.hand.push(card);
 	}
 
-	bestCard(): Card | undefined {
+	bestCard(): number {
 		if (this.hesitant) {
 			return this.lowCard()
 		} else {
 			return this.highCard()
 		}
 	}
-	highCard(): Card | undefined {
+
+	highCard(): number {
 		if (this.hand.length > 0) {
-			const highestValueItem = this.hand.reduce((max, current) =>
-				max.sequence > current.sequence ? max : current)
-			return highestValueItem
+			const high = this.hand.reduce((max, current) =>
+				max > current ? max : current)
+			return high
 		}
-		return undefined
+		return 1
 	}
 
-	lowCard(): Card | undefined {
+	lowCard(): number {
 		if (this.hand.length > 0) {
 			if (this.hasJoker()) {
-				const jokerItem = this.hand.reduce((joke, current) =>
-					joke.isJoker() ? joke : current)
-				return jokerItem
+				const joker = this.hand.reduce((j, current) =>
+					Card.isJoker(j) ? j : current)
+				return joker
 			}
-			const lowestValueItem = this.hand.reduce((min, current) =>
-				min.sequence < current.sequence ? min : current)
-			return lowestValueItem
+			const low = this.hand.reduce((min, current) =>
+				min < current ? min : current)
+			return low
 		}
-		return undefined
+		return -1
+	}
+
+	drawCard() {
+		Deck.getInstance().dealFromTop(this.hand, 1, Facing.Up)
 	}
 
 	drawInitiative() {
-		let g = Game.instance
+		let deck = Deck.getInstance()
 		let p = this
 		if (p.hesitant) {
 			p.quick = false
@@ -77,41 +121,46 @@ export class Player {
 		}
 		if (p.onHold)
 			return
-		g.deck.moveToDiscardPool(p.hand)
+		deck.moveToDiscardPool(p.hand)
 		if (p.outOfCombat)
 			return
-		g.deck.dealFromTop(p.hand, 1, Facing.Up)
+		deck.dealFromTop(p.hand, 1, Facing.Up)
 		if (p.impLevelHeaded)
-			g.deck.dealFromTop(p.hand, 1, Facing.Up)
+			deck.dealFromTop(p.hand, 1, Facing.Up)
 		if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
-			g.deck.dealFromTop(p.hand, 1, Facing.Up)
+			deck.dealFromTop(p.hand, 1, Facing.Up)
 		if (p.quick)
-			while (p.hand.every(c => c.rank <= 5)) {
-				g.deck.dealFromTop(p.hand, 1, Facing.Up)
+			while (p.hand.every(c => Card.byId(c).rank <= 5)) {
+				deck.dealFromTop(p.hand, 1, Facing.Up)
 			}
 	}
+
 	drawInterlude() {
-		let g = Game.instance
+		let deck = Deck.getInstance()
 		let p = this
-		g.deck.moveToDiscardPool(p.hand)
-		g.deck.dealFromTop(p.hand, 1, Facing.Up)
+		deck.moveToDiscardPool(p.hand)
+		deck.dealFromTop(p.hand, 1, Facing.Up)
 	}
 
 	discardHand() {
-		let g = Game.instance
+		let deck = Deck.getInstance()
 		let p = this
-		g.deck.moveToDiscardPool(p.hand, 0)
+		deck.moveToDiscardPool(p.hand, 0)
 	}
 
 	hasJoker(): boolean {
-		return this.hand.some(c => c.isJoker() === true);
+		return this.hand.some(c => c>52);
 	}
 
-	removeCard(card: Card) {
-		const index = this.hand.indexOf(card)
-		if (index > -1) {
-			this.hand.splice(index, 1)
+	static getPlayer(but: HTMLButtonElement): Player {
+		let element = but as HTMLElement
+		let pid = element.getAttribute('data-pid')
+		while (!pid && element) {
+			element = element.parentElement as HTMLElement
+			pid = element.getAttribute('data-pid')
 		}
+		let p = Deck.getInstance().getPlayer(pid)
+		return p
 	}
 
 	removeRender() {
@@ -144,7 +193,7 @@ export class Player {
 		drawcard.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawCard()
-			Game.instance.render()
+			Deck.getInstance().render()
 		})
 		playerdiv.appendChild(drawcard)
 
@@ -152,7 +201,7 @@ export class Player {
 		drawhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawInitiative()
-			Game.instance.render()
+			Deck.getInstance().render()
 		})
 		playerdiv.appendChild(drawhand)
 
@@ -168,8 +217,8 @@ export class Player {
 		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
 		discardhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
-			Game.instance.deck.moveToDiscardPool(p.hand, 0)
-			Game.instance.render()
+			Deck.getInstance().moveToDiscardPool(p.hand, 0)
+			Deck.getInstance().render()
 		})
 		playerdiv.appendChild(discardhand)
 
@@ -246,40 +295,26 @@ export class Player {
 				p.levelHeaded = true
 				p.impLevelHeaded = false
 			}
-			Game.instance.render()
+			Deck.getInstance().render()
 		})
 		playerdiv.appendChild(levelhead)
 
-		// fixme, not sure how to delete metadata from but press yet...
-		// const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", "") //this.id)
-		// rp.classList.add("btn-danger")
-		// rp.addEventListener('click', function () {
-		// 	let p = Player.getPlayer(this)
-		// 	p.removeRender()
-		// 	Game.instance.removePlayer(p)
-		// 	Game.instance.removePlayerMetadata(p)
-		// 	Game.instance.render()
-		// })
-		// playerdiv.appendChild(rp)
+		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+		rp.classList.add("btn-danger")
+		rp.addEventListener('click', function () {
+			let p = Player.getPlayer(this)
+			p.removeRender()
+			Deck.getInstance().removePlayer(p)
+			Deck.getInstance().removePlayerMetadata(p)
+			Deck.getInstance().render()
+		})
+		playerdiv.appendChild(rp)
 
 		for (const c of this.hand) {
-			c.render(carddiv, x, y)
-			x = x + Deck.rem2px(Card.cardSpread())
+			let card = Card.byId(c)
+			card.render(carddiv, x, y)
+			x = x + Util.rem2px(Card.cardSpread())
 		}
 	}
 
-	drawCard() {
-		Game.instance.deck.dealFromTop(this.hand, 1, Facing.Up)
-	}
-
-	static getPlayer(but: HTMLButtonElement): Player {
-		let element = but as HTMLElement
-		let pid = element.getAttribute('data-pid')
-		while (!pid && element) {
-			element = element.parentElement as HTMLElement
-			pid = element.getAttribute('data-pid')
-		}
-		let p = Game.instance.deck.getPlayer(pid)
-		return p
-	}
 }
