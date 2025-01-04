@@ -1,14 +1,18 @@
-import OBR, { isImage } from "@owlbear-rodeo/sdk"
+import OBR from "@owlbear-rodeo/sdk"
 import { Player } from "./player"
-import { InitiativeItem, InitiativeMetadata } from "./contextmenu"
 import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Util } from "./util"
 
-export interface DeckMetadata {
+export interface DeckMeta {
 	drawdeck: number[]
 	discardpile: number[]
 	cardpool: number[]
+	currentRound: number
+	currentPlayer: number
+	back: number
+	use4jokers: boolean
+	scale: number
 }
 
 export class Deck {
@@ -17,33 +21,59 @@ export class Deck {
 	// graphic assets
 	svgbuttons!: HTMLObjectElement
 	svgcontainer!: HTMLDivElement
-
+	jokerNotified: boolean = false
 	players: Player[] = []
 
 	//game state
-	drawdeck: number[] = []
-	discardpile: number[] = []
-	cardpool: number[] = []
-	playerorder: number[] = []
-	currentRound: number = 0
-	currentPlayer: number = -1
-	use4jokers: boolean = false
-	scale: number = 1
+	private meta: DeckMeta = {
+		back: 0,
+		cardpool: [],
+		currentPlayer: -1,
+		currentRound: 0,
+		discardpile: [],
+		drawdeck: [],
+		scale: 1,
+		use4jokers: false,
+	}
 
+	get getMeta(): DeckMeta { return this.meta }
+	set setMeta(newMeta: DeckMeta) { this.meta = newMeta }
+
+	get back(): number { return this.meta.back }
+	set back(n: number) { this.meta.back = n }
+	get cardpool(): number[] { return this.meta.cardpool }
+	set cardpool(cp: number[]) { this.meta.cardpool = cp }
+	get currentPlayer(): number { return this.meta.currentPlayer }
+	set currentPlayer(cp: number) { this.meta.currentPlayer = cp }
+	get currentRound(): number { return this.meta.currentRound }
+	set currentRound(cr: number) { this.meta.currentRound = cr }
+	get discardpile(): number[] { return this.meta.discardpile }
+	set discardpile(dp: number[]) { this.meta.discardpile = dp }
+	get drawdeck(): number[] { return this.meta.drawdeck }
+	set drawdeck(dd: number[]) { this.meta.drawdeck = dd }
+	get scale(): number { return this.meta.scale }
+	set scale(s: number) { this.meta.scale = s }
+	get use4jokers(): boolean { return this.meta.use4jokers }
+	set use4jokers(uj: boolean) { this.meta.use4jokers = uj }
+	get backsvg(): SVGElement {
+		return Card.backs[this.back]
+	}
+
+	getImageSvg(c: Card): string {
+		let img = c.face.innerHTML
+		if (c.dir != Facing.Up) {
+			img = this.backsvg.innerHTML
+		}
+		return img
+	}
 	public static getInstance(): Deck {
 		if (!Deck.instance) {
 			Deck.instance = new Deck();
 			Deck.instance.svgbuttons = document.getElementById('buttons-svg') as HTMLObjectElement
 			Deck.instance.svgcontainer = document.getElementById('svgContainer') as HTMLDivElement
-			Deck.instance.initializeDeck()
 			Deck.instance.shuffle()
 		}
 		return Deck.instance;
-	}
-
-	startGame() {
-		this.newGame()
-		this.testPlayers()
 	}
 
 	newGame() {
@@ -51,19 +81,6 @@ export class Deck {
 		this.moveToDiscardPool(this.cardpool)
 		this.returnCardsToDeck(this.discardpile)
 		this.shuffle()
-	}
-	private testPlayers() {
-		const testplayers: string[] = []
-		for (const pn of testplayers) {
-			let p = this.addPlayer(pn)
-			let pnl = pn.toLowerCase()
-			p.hesitant = pnl.indexOf("h") >= 0
-			p.impLevelHeaded = pnl.indexOf("il") >= 0
-			p.levelHeaded = pnl.indexOf("lh") >= 0
-			p.onHold = pnl.indexOf("oh") >= 0
-			p.outOfCombat = pnl.indexOf("oc") >= 0
-			p.quick = pnl.indexOf("q") >= 0
-		}
 	}
 
 	drawInitiative() {
@@ -97,25 +114,17 @@ export class Deck {
 	toggleJokers() {
 		this.use4jokers = !this.use4jokers
 		this.newGame()
-		this.initializeDeck()
 		this.shuffle()
 	}
 
 	initializeDeck() {
-		Card.cards.length
-		if (this.drawdeck.length > 0) {
-			this.drawdeck = []
-		}
 		const size = (this.use4jokers) ? 56 : 54
+		this.jokerNotified=false
+		this.drawdeck=[]
+		this.discardpile=[]
+		this.cardpool=[]
 		for (let i = 1; i <= size; i++) {
 			this.drawdeck.push(i);  //new Card(i)
-		}
-	}
-
-	setBack(n: number) {
-		this.shuffle()
-		for (const c of Card.cards) {
-			c.setBack(n)
 		}
 	}
 
@@ -130,6 +139,8 @@ export class Deck {
 	}
 
 	shuffle() {
+
+		this.initializeDeck()
 		for (let i = this.drawdeck.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
 			[this.drawdeck[i], this.drawdeck[j]] = [this.drawdeck[j], this.drawdeck[i]];
@@ -171,8 +182,20 @@ export class Deck {
 			if (dir != Facing.None) {
 				card.dir = dir
 			}
-			to.push(cid)
+			if (cid != 0 && !to.includes(cid)) {
+				//console.log(`to array extensible:${Object.isExtensible(to)}  sealed:${Object.isSealed(to)} frozen:${Object.isFrozen(to)}`)
+				to.push(cid)
+			} else {
+				console.log(`found duplicate card [${cid}]`)
+			}
 		}
+	}
+
+	extractPlayerCards(p: Player) {
+		const removeSet = new Set(p.hand)
+		this.drawdeck = this.drawdeck.filter(item => !removeSet.has(item))
+		this.discardpile = this.discardpile.filter(item => !removeSet.has(item))
+		this.cardpool = this.cardpool.filter(item => !removeSet.has(item))
 	}
 
 	jokerDrawn(): boolean {
@@ -191,321 +214,243 @@ export class Deck {
 			const p = this.players[index]
 			this.moveToDiscardPool(p.hand)
 			this.players.splice(index, 1)
-			this.removePlayerMetadata(p)
+			player.removeOBR()
 		}
 	}
 
-	async removePlayerMetadata(p: Player) {
-		const metakey = `${Util.ID}/metadata`
-		try {
-			// Update the item with the given characterId
-			await OBR.scene.items.updateItems(
-				(item) => 
-				  item.layer === "CHARACTER" &&
-				  isImage(item) &&
-				  item.metadata[metakey] !=undefined,
-				(characters) => {
-				  for (let character of characters) {
-					let pmd =character.metadata[metakey] as InitiativeMetadata
-					if (pmd.playerid === p.id){
-						delete character.metadata[metakey]
-					}
-				  }
-				}
-			  );
-				} catch (error) {
-					console.error("Failed to remove metadata from character:", error);
-				}
+	renderDeck() {
+		this.renderDraw(this.svgcontainer)
+		this.renderDiscardPile(this.svgcontainer)
+		this.renderCardPool(this.svgcontainer)
+		this.renderPlayers(this.svgcontainer)
+		this.setCurrentPlayer(this.players[0]?.id) //fixme	
+		if (this.jokerDrawn() && !this.jokerNotified) {
+			this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
+			this.jokerNotified=true
 		}
+		this.updateOBR()
+	}
 
-	render() {
-			this.renderDeck(this.svgcontainer)
-			this.renderPlayers(this.svgcontainer)
-			this.setCurrentPlayer(this.players[0]?.id) //fixme
-		}
+	renderDraw(container: HTMLDivElement) {
+		const doc = container.ownerDocument
+		let deckcarddiv = doc.getElementById('drawdeckcards') as HTMLDivElement
+		if (!deckcarddiv) {
+			const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const deckleg = doc.createElement('legend') as HTMLLegendElement
+			deckfieldset.appendChild(deckleg)
+			deckfieldset.classList.add('flex-container')
+			deckfieldset.id = "Draw"
+			const deckdiv = doc.createElement('div') as HTMLDivElement
+			deckdiv.classList.add('flex-item-3')
+			deckdiv.classList.add(Card.relcard[0])
+			deckcarddiv = doc.createElement('div') as HTMLDivElement
+			deckcarddiv.classList.add('flex-item-2')
+			deckcarddiv.classList.add(...Card.relcard)
+			deckcarddiv.id = "drawdeckcards"
+			deckfieldset.appendChild(deckdiv)
+			deckfieldset.appendChild(deckcarddiv)
+			container.appendChild(deckfieldset)
 
-	async getCharacterItems() {
-			let r: any[] = []
-			try {
-				const characters = await OBR.scene.items.getItems((item) => {
-					return item.layer === "CHARACTER" && isImage(item);
-				});
-				return characters
-			} catch (error) {
-				console.error("Failed to get character items:", error);
-			}
-			return r
-		}
-
-		updateGameOBState(items: any[]) {
-			let flgrender = false
-			const initiativeItems: InitiativeItem[] = [];
-			for (const item of items) {
-				if (item.layer === "CHARACTER" && isImage(item)) {
-					const metadata: InitiativeMetadata = item.metadata[`${Util.ID}/metadata`] as InitiativeMetadata
-					if (metadata) {
-						let inititem = this.rehydratePlayer(metadata)
-						initiativeItems.push(inititem);
-						flgrender = true
-					}
-				}
-			}
-
-			const result = this.players.filter(p => !initiativeItems.find(item => p.id === item.playerid));
-			for (const p of result) {
-				p.removeRender()
-				this.removePlayer(p)
-				flgrender = true
-			}
-
-			if (flgrender) {
-				this.render()
-			}
-		}
-
-		rehydratePlayer(metadata: InitiativeMetadata): InitiativeItem {
-			let p = this.getPlayer(metadata.playerid)
-			if (!p) {
-				// if not, create them, give name and unique id from metadata
-				p = this.addPlayer(metadata.playername)
-				p.id = metadata.playerid
-			}
-			const c = p.bestCard()
-			let cn = "No cards"
-			let seq = 0
-			if (c) {
-				cn = Card.byId(c).toString()
-				seq = c
-			}
-			return {
-				playerid: p.id,
-				playername: p.name,
-				cardname: cn,
-				sequence: seq,
-			}
-		}
-
-		renderDeck(container: HTMLDivElement) {
-			//this.renderJoker(container)
-			this.renderDraw(container)
-			this.renderDiscardPile(container)
-			this.renderCardPool(container)
-			if (this.jokerDrawn()) {
-				this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
-			}
-
-		}
-
-		renderJoker(container: HTMLDivElement) {
-			const doc = container.ownerDocument
-			let jokediv = doc.getElementById('JokerMsg');
-			if (!jokediv) {
-				jokediv = doc.createElement('div')
-				jokediv.id = 'JokerMsg'
-				jokediv.classList.add('alert-danger')
-				const joke = doc.createElement('label')
-				joke.textContent = 'Joker Drawn Reshuffle and issue Bennies.'
-				jokediv.appendChild(joke)
-				container.appendChild(jokediv);
-			}
-			if (this.jokerDrawn()) {
-				jokediv.style.display = "block"
-			} else {
-				jokediv.style.display = "none"
-			}
-		}
-
-		renderDraw(container: HTMLDivElement) {
-			const doc = container.ownerDocument
-			let deckcarddiv = doc.getElementById('drawdeckcards') as HTMLDivElement
-			if (!deckcarddiv) {
-				const deckfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-				const deckleg = doc.createElement('legend') as HTMLLegendElement
-				deckfieldset.appendChild(deckleg)
-				deckfieldset.classList.add('flex-container')
-				deckfieldset.id = "Draw"
-				const deckdiv = doc.createElement('div') as HTMLDivElement
-				deckdiv.classList.add('flex-item-3')
-				deckdiv.classList.add(Card.relcard[0])
-				deckcarddiv = doc.createElement('div') as HTMLDivElement
-				deckcarddiv.classList.add('flex-item-2')
-				deckcarddiv.classList.add(...Card.relcard)
-				deckcarddiv.id = "drawdeckcards"
-				deckfieldset.appendChild(deckdiv)
-				deckfieldset.appendChild(deckcarddiv)
-				container.appendChild(deckfieldset)
-
-				const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
-				di.addEventListener('click', () => {
-					this.drawInitiative()
-					this.render()
-				})
-				deckdiv.appendChild(di)
-
-				const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
-				dint.addEventListener('click', () => {
-					this.drawInterlude()
-					this.render()
-				})
-				deckdiv.appendChild(dint)
-
-				const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
-				shf.addEventListener('click', () => {
-					this.newGame()
-					this.render()
-				})
-				deckdiv.appendChild(shf)
-
-				const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
-				if (this.use4jokers) joke.classList.add("btn-success")
-				joke.addEventListener('click', function (event) {
-					Deck.getInstance().toggleJokers()
-					ButtonFactory.toggle(event)
-					Deck.getInstance().render()
-				})
-				deckdiv.appendChild(joke)
-			}
-
-			let deckleg = deckcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
-			deckleg.textContent = `Draw Deck [${this.drawdeck.length}]`
-
-			while (deckcarddiv.firstChild) {
-				deckcarddiv.removeChild(deckcarddiv.firstChild);
-			}
-
-			let x = 0
-			for (const c of this.drawdeck) {
-				let card = Card.byId(c)
-				card.render(deckcarddiv, x, 0)
-				x = x + Util.rem2px(Card.cardStackedDown())
-			}
-		}
-
-		renderDiscardPile(container: HTMLDivElement) {
-			const doc = container.ownerDocument
-			let discardcarddiv = doc.getElementById("discardpilecards") as HTMLDivElement
-			if (!discardcarddiv) {
-				const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-				const discardleg = doc.createElement('legend') as HTMLLegendElement
-				discardfieldset.appendChild(discardleg)
-				discardfieldset.classList.add("flex-container")
-				discardfieldset.id = "Discard"
-				discardfieldset.title = "Discard Pile"
-				const discarddiv = doc.createElement('div') as HTMLDivElement
-				discarddiv.classList.add("flex-item-3")
-				discarddiv.classList.add(Card.relcard[0])
-				discardcarddiv = doc.createElement('div') as HTMLDivElement
-				discardcarddiv.id = "discardpilecards"
-				discardcarddiv.classList.add("flex-item-2")
-				discardcarddiv.classList.add(...Card.relcard)
-				discardfieldset.appendChild(discarddiv)
-				discardfieldset.appendChild(discardcarddiv)
-				container.appendChild(discardfieldset)
-
-				const dp = ButtonFactory.getButton("dp", "Discard All Hands", "card-burn", "")
-				dp.addEventListener('click', () => {
-					Deck.getInstance().discardAllHands()
-					Deck.getInstance().render()
-				})
-				discarddiv.appendChild(dp)
-			}
-
-			let discardleg = discardcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
-			discardleg.textContent = `Discard Pile [${this.discardpile.length}]`
-
-			while (discardcarddiv.firstChild) {
-				discardcarddiv.removeChild(discardcarddiv.firstChild);
-			}
-
-			let x = 0
-			for (const c of this.discardpile) {
-				let card = Card.byId(c)
-				card.render(discardcarddiv, x, 0)
-				x = x + Util.rem2px(Card.cardStacked())
-			}
-
-		}
-
-		renderCardPool(container: HTMLDivElement) {
-			const doc = container.ownerDocument
-			let specialcarddiv = doc.getElementById("cardpoolcards") as HTMLDivElement
-			if (!specialcarddiv) {
-				const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
-				const specialleg = doc.createElement('legend') as HTMLLegendElement
-				specialfieldset.appendChild(specialleg)
-				specialfieldset.classList.add("flex-container")
-				specialfieldset.id = "Pool"
-				specialfieldset.title = "Card Pool"
-				const specialdiv = doc.createElement('div') as HTMLDivElement
-				specialdiv.classList.add("flex-item-3")
-				specialdiv.classList.add(...Card.relcard)
-				specialcarddiv = doc.createElement('div') as HTMLDivElement
-				specialcarddiv.id = "cardpoolcards"
-				specialcarddiv.classList.add("flex-item-2")
-				specialcarddiv.classList.add(...Card.relcard)
-				specialfieldset.appendChild(specialdiv)
-				specialfieldset.appendChild(specialcarddiv)
-				container.appendChild(specialfieldset)
-				const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
-				cp.addEventListener('click', () => {
-					this.moveToSpecialPool(this.drawdeck, 1)
-					this.render()
-				})
-				specialdiv.appendChild(cp)
-
-				const discardpool = ButtonFactory.getButton("discardpool", "Discard Card Pool", "card-burn", "")
-				discardpool.addEventListener('click', () => {
-					this.moveToDiscardPool(this.cardpool, 0)
-					Deck.getInstance().render()
-				})
-				specialdiv.appendChild(discardpool)
-			}
-
-			let specialleg = specialcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
-			specialleg.textContent = `Card Pool [${this.cardpool.length}]`
-
-			while (specialcarddiv.firstChild) {
-				specialcarddiv.removeChild(specialcarddiv.firstChild);
-			}
-
-			let x = 0
-			for (const c of this.cardpool) {
-				let card = Card.byId(c)
-				card.render(specialcarddiv, x, 0)
-				x = x + Util.rem2px(Card.cardStacked())
-			}
-		}
-
-		renderPlayers(div: HTMLDivElement) {
-			let y = 0
-			let x = 0
-			this.players.sort((a, b) => {
-				const aa = (a.bestCard() === undefined) ? 0 : a.bestCard() ?? 0
-				const bb = (b.bestCard() === undefined) ? 0 : b.bestCard() ?? 0
-				return bb - aa
+			const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
+			di.addEventListener('click', () => {
+				this.drawInitiative()
+				this.updateOBR()
+				this.renderDeck()
 			})
-			for (const p of this.players) {
-				p.removeRender()
-				p.render(div, x, y)
-			}
+			deckdiv.appendChild(di)
+
+			const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
+			dint.addEventListener('click', () => {
+				this.drawInterlude()
+				this.updateOBR()
+				this.renderDeck()
+			})
+			deckdiv.appendChild(dint)
+
+			const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
+			shf.addEventListener('click', () => {
+				this.newGame()
+				this.updateOBR()
+				this.renderDeck()
+			})
+			deckdiv.appendChild(shf)
+
+			const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
+			if (this.use4jokers) joke.classList.add("btn-success")
+			joke.addEventListener('click', function (event) {
+				const deck=Deck.getInstance()
+				deck.toggleJokers()
+				ButtonFactory.toggle(event)
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+			deckdiv.appendChild(joke)
 		}
 
-		setCurrentPlayer(pid: string) {
-			this.currentPlayer = 0 //pid
-			for (let fs of document.querySelectorAll('fieldset[data-pid]')) {
-				if (fs.getAttribute('data-pid') === pid) {
-					fs.classList.add("nextplayer")
-				} else {
-					fs.classList.remove("nextplayer")
-				}
+		let deckleg = deckcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
+		deckleg.textContent = `Draw Deck [${this.drawdeck.length}]`
+
+		while (deckcarddiv.firstChild) {
+			deckcarddiv.removeChild(deckcarddiv.firstChild);
+		}
+
+		let x = 0
+		for (const c of this.drawdeck) {
+			let card = Card.byId(c)
+			card.render(deckcarddiv, x, 0,Facing.Down)
+			x = x + Util.rem2px(Card.cardStackedDown())
+		}
+	}
+
+	renderDiscardPile(container: HTMLDivElement) {
+		const doc = container.ownerDocument
+		let discardcarddiv = doc.getElementById("discardpilecards") as HTMLDivElement
+		if (!discardcarddiv) {
+			const discardfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const discardleg = doc.createElement('legend') as HTMLLegendElement
+			discardfieldset.appendChild(discardleg)
+			discardfieldset.classList.add("flex-container")
+			discardfieldset.id = "Discard"
+			discardfieldset.title = "Discard Pile"
+			const discarddiv = doc.createElement('div') as HTMLDivElement
+			discarddiv.classList.add("flex-item-3")
+			discarddiv.classList.add(Card.relcard[0])
+			discardcarddiv = doc.createElement('div') as HTMLDivElement
+			discardcarddiv.id = "discardpilecards"
+			discardcarddiv.classList.add("flex-item-2")
+			discardcarddiv.classList.add(...Card.relcard)
+			discardfieldset.appendChild(discarddiv)
+			discardfieldset.appendChild(discardcarddiv)
+			container.appendChild(discardfieldset)
+
+			const dp = ButtonFactory.getButton("dp", "Discard All Hands", "card-burn", "")
+			dp.addEventListener('click', () => {
+				this.discardAllHands()
+				this.updateOBR()
+				this.renderDeck()
+			})
+			discarddiv.appendChild(dp)
+		}
+
+		let discardleg = discardcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
+		discardleg.textContent = `Discard Pile [${this.discardpile.length}]`
+
+		while (discardcarddiv.firstChild) {
+			discardcarddiv.removeChild(discardcarddiv.firstChild);
+		}
+
+		let x = 0
+		for (const c of this.discardpile) {
+			let card = Card.byId(c)
+			card.render(discardcarddiv, x, 0,Facing.Up)
+			x = x + Util.rem2px(Card.cardStacked())
+		}
+
+	}
+
+	renderCardPool(container: HTMLDivElement) {
+		const doc = container.ownerDocument
+		let specialcarddiv = doc.getElementById("cardpoolcards") as HTMLDivElement
+		if (!specialcarddiv) {
+			const specialfieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const specialleg = doc.createElement('legend') as HTMLLegendElement
+			specialfieldset.appendChild(specialleg)
+			specialfieldset.classList.add("flex-container")
+			specialfieldset.id = "Pool"
+			specialfieldset.title = "Card Pool"
+			const specialdiv = doc.createElement('div') as HTMLDivElement
+			specialdiv.classList.add("flex-item-3")
+			specialdiv.classList.add(...Card.relcard)
+			specialcarddiv = doc.createElement('div') as HTMLDivElement
+			specialcarddiv.id = "cardpoolcards"
+			specialcarddiv.classList.add("flex-item-2")
+			specialcarddiv.classList.add(...Card.relcard)
+			specialfieldset.appendChild(specialdiv)
+			specialfieldset.appendChild(specialcarddiv)
+			container.appendChild(specialfieldset)
+			const cp = ButtonFactory.getButton("cp", "Draw a Card", "card-pickup", "")
+			cp.addEventListener('click', () => {
+				this.moveToSpecialPool(this.drawdeck, 1)
+				this.updateOBR()
+				this.renderDeck()
+			})
+			specialdiv.appendChild(cp)
+
+			const discardpool = ButtonFactory.getButton("discardpool", "Discard Card Pool", "card-burn", "")
+			discardpool.addEventListener('click', () => {
+				this.moveToDiscardPool(this.cardpool, 0)
+				this.updateOBR()
+				this.renderDeck()
+			})
+			specialdiv.appendChild(discardpool)
+		}
+
+		let specialleg = specialcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
+		specialleg.textContent = `Card Pool [${this.cardpool.length}]`
+
+		while (specialcarddiv.firstChild) {
+			specialcarddiv.removeChild(specialcarddiv.firstChild);
+		}
+
+		let x = 0
+		for (const c of this.cardpool) {
+			let card = Card.byId(c)
+			card.render(specialcarddiv, x, 0,Facing.Up)
+			x = x + Util.rem2px(Card.cardStacked())
+		}
+	}
+
+	renderPlayers(div: HTMLDivElement) {
+		let y = 0
+		let x = 0
+		this.players.sort((a, b) => {
+			const aa = (a.bestCard() === undefined) ? 0 : a.bestCard() ?? 0
+			const bb = (b.bestCard() === undefined) ? 0 : b.bestCard() ?? 0
+			return bb - aa
+		})
+		for (const p of this.players) {
+			p.removeRender()
+			p.render(div, x, y)
+		}
+	}
+
+	setCurrentPlayer(pid: string) {
+		this.currentPlayer = 0 //pid
+		for (let fs of document.querySelectorAll('fieldset[data-pid]')) {
+			if (fs.getAttribute('data-pid') === pid) {
+				fs.classList.add("nextplayer")
+			} else {
+				fs.classList.remove("nextplayer")
 			}
 		}
+	}
 
 	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
-			try {
-				await OBR.notification.show(message, level)
-			} catch (error) {
-				console.error('Failed to show notification:', error)
-			}
+		try {
+			await OBR.notification.show(message, level)
+		} catch (error) {
+			console.error('Failed to show notification:', error)
 		}
 	}
+
+	async updateState() {
+		await OBR.room.getMetadata().then(roomMetadata => {
+			const dmd = roomMetadata[Util.DeckMkey] as DeckMeta
+			if (dmd) {
+				//console.log("Room metadata for this extension:", dmd);
+				this.setMeta = dmd
+			} else {
+				console.log("No metadata found for this extension in the room.");
+				this.newGame()
+				this.updateOBR()
+			}
+		})
+	}
+
+	async updateOBR() {
+		const dmd = this.getMeta
+		await OBR.room.setMetadata({
+			[Util.DeckMkey]: dmd
+		});
+	}
+}

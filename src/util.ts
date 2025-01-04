@@ -1,5 +1,7 @@
 export class Util {
 	static ID = "com.wescrump.initiative-tracker"
+	static PlayerMkey = `${Util.ID}/player`
+	static DeckMkey = `${Util.ID}/deck`
 	
 	static rem2px(remstr: string): number {
 		const rem = parseFloat(remstr)

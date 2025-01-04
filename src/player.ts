@@ -1,3 +1,4 @@
+import OBR, { isImage } from "@owlbear-rodeo/sdk"
 import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Deck } from "./deck"
@@ -37,7 +38,8 @@ export class Player {
 	}
 
 	//hand: Card[] //fixme
-	get hand(): number[] {return this.meta.hand}
+	get hand(): number[] { return this.meta.hand }
+	set hand(newhand: number[]) { this.meta.hand = newhand }
 	get id(): string { return this.meta.id }
 	set id(newId: string) { this.meta.id = newId }
 	get name(): string { return this.meta.name }
@@ -64,17 +66,18 @@ export class Player {
 	set hesitant(newhesitant: boolean) { this.meta.hesitant = newhesitant }
 
 	get getMeta(): PlayerMeta { return this.meta }
-	set setMeta(newMeta: PlayerMeta) { this.meta  = newMeta }
+	set setMeta(newMeta: PlayerMeta) { this.meta = newMeta }
 
 	constructor(name: string) {
-		this.meta.name=name
-		this.meta.id=Util.shortUUID()
-		console.log(`name:${this.name}  id:[${this.id}]`)
+		this.meta.name = name
+		this.meta.hand = []
+		this.meta.id = Util.shortUUID()
+		//console.log(`name:${this.name}  id:[${this.id}]`)
 	}
 
-	addCard(card: number) {
-		this.hand.push(card);
-	}
+	// addCard(card: number) {
+	// 	this.hand.push(card);
+	// }
 
 	bestCard(): number {
 		if (this.hesitant) {
@@ -149,7 +152,7 @@ export class Player {
 	}
 
 	hasJoker(): boolean {
-		return this.hand.some(c => c>52);
+		return this.hand.some(c => c > 52);
 	}
 
 	static getPlayer(but: HTMLButtonElement): Player {
@@ -193,7 +196,10 @@ export class Player {
 		drawcard.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawCard()
-			Deck.getInstance().render()
+			p.updateOBR()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(drawcard)
 
@@ -201,7 +207,10 @@ export class Player {
 		drawhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.drawInitiative()
-			Deck.getInstance().render()
+			p.updateOBR()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(drawhand)
 
@@ -211,14 +220,18 @@ export class Player {
 			let p = Player.getPlayer(this)
 			p.chooseCard = !p.chooseCard
 			ButtonFactory.toggle(event)
+			p.updateOBR()
 		})
 		playerdiv.appendChild(choose)
 
 		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
 		discardhand.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
-			Deck.getInstance().moveToDiscardPool(p.hand, 0)
-			Deck.getInstance().render()
+			const deck = Deck.getInstance()
+			deck.moveToDiscardPool(p.hand, 0)
+			p.updateOBR()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(discardhand)
 
@@ -227,8 +240,10 @@ export class Player {
 		outcombat.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
 			p.outOfCombat = !p.outOfCombat
+			p.updateOBR()
 			if (p.outOfCombat) {
 				p.discardHand()
+				Deck.getInstance().updateOBR()
 			}
 			ButtonFactory.toggle(event)
 		})
@@ -240,6 +255,7 @@ export class Player {
 			let p = Player.getPlayer(this)
 			p.onHold = !p.onHold
 			ButtonFactory.toggle(event)
+			p.updateOBR()
 		})
 		playerdiv.appendChild(onhold)
 
@@ -249,6 +265,7 @@ export class Player {
 			let p = Player.getPlayer(this)
 			p.hesitant = !p.hesitant
 			ButtonFactory.toggle(event)
+			p.updateOBR()
 		})
 		playerdiv.appendChild(hesitant)
 
@@ -258,6 +275,7 @@ export class Player {
 			let p = Player.getPlayer(this)
 			p.quick = !p.quick
 			ButtonFactory.toggle(event)
+			p.updateOBR()
 		})
 		playerdiv.appendChild(quick)
 
@@ -295,7 +313,8 @@ export class Player {
 				p.levelHeaded = true
 				p.impLevelHeaded = false
 			}
-			Deck.getInstance().render()
+			p.updateOBR()
+			Deck.getInstance().renderDeck()
 		})
 		playerdiv.appendChild(levelhead)
 
@@ -304,17 +323,70 @@ export class Player {
 		rp.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
 			p.removeRender()
+			p.removeOBR()
 			Deck.getInstance().removePlayer(p)
-			Deck.getInstance().removePlayerMetadata(p)
-			Deck.getInstance().render()
+			Deck.getInstance().renderDeck()
 		})
 		playerdiv.appendChild(rp)
 
 		for (const c of this.hand) {
 			let card = Card.byId(c)
-			card.render(carddiv, x, y)
+			card.render(carddiv, x, y, Facing.Up)
 			x = x + Util.rem2px(Card.cardSpread())
 		}
 	}
 
+	async updateOBR() {
+		try {
+			await OBR.scene.items.updateItems(
+				(item) =>
+					item.layer === "CHARACTER" &&
+					isImage(item) &&
+					item.metadata[Util.PlayerMkey] != undefined,
+				(characters) => {
+					for (let character of characters) {
+						let pmd = character.metadata[Util.PlayerMkey] as PlayerMeta
+						if (pmd.id === this.id) {
+							character.metadata[Util.PlayerMkey] = this.getMeta
+						}
+					}
+				}
+			);
+		} catch (error) {
+			console.error("Failed to remove metadata from character:", error);
+		}
+	}
+
+	async removeOBR() {
+		try {
+			// Update the item with the given characterId
+			await OBR.scene.items.updateItems(
+				(item) =>
+					item.layer === "CHARACTER" &&
+					isImage(item) &&
+					item.metadata[Util.PlayerMkey] != undefined,
+				(characters) => {
+					for (let character of characters) {
+						let pmd = character.metadata[Util.PlayerMkey] as PlayerMeta
+						if (pmd.id === this.id) {
+							delete character.metadata[Util.PlayerMkey]
+						}
+					}
+				}
+			);
+		} catch (error) {
+			console.error("Failed to remove metadata from character:", error);
+		}
+	}
+
+	// async updateState(){
+	// 	let chars = await Player.getOBRCharacterItems()
+	// 	await OBR.scene.items.updateItems(chars, (items) => {
+	// 		for (let item of items) {
+	// 			const player = Deck.getInstance().addPlayer(item.name)
+	// 			item.metadata[Util.PlayerMkey] = player.getMeta
+	// 		}
+	// 		Deck.getInstance().renderDeck()
+	// 	});
+	// }
 }

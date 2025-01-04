@@ -1,19 +1,7 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { Player } from "./player";
+import { Player, PlayerMeta } from "./player";
 import { Util } from "./util";
 import { Deck } from "./deck";
-
-export interface InitiativeMetadata {
-	playerid: string
-	playername: string
-  }
-  
-  export interface InitiativeItem {
-	playerid: string
-	playername: string
-	cardname: string
-	sequence: number
-  }
 
 export function setupContextMenu() {
 	OBR.contextMenu.create({
@@ -25,7 +13,7 @@ export function setupContextMenu() {
 				filter: {
 					every: [
 						{ key: "layer", value: "CHARACTER" },
-						{ key: ["metadata", `${Util.ID}/metadata`], value: undefined },
+						{ key: ["metadata", Util.PlayerMkey], value: undefined },
 					],
 				},
 			},
@@ -39,45 +27,34 @@ export function setupContextMenu() {
 		],
 		onClick(context) {
 			const addToInitiative = context.items.every(
-				(item) => item.metadata[`${Util.ID}/metadata`] === undefined
+				(item) => item.metadata[Util.PlayerMkey] === undefined
 			);
 			if (addToInitiative) {
 				OBR.scene.items.updateItems(context.items, (items) => {
 					for (let item of items) {
 						const player = Deck.getInstance().addPlayer(item.name)
-						item.metadata[`${Util.ID}/metadata`] = {
-							playerid: player.id,
-							playername: player.name,
-						};
+						item.metadata[Util.PlayerMkey] = player.getMeta
 					}
-					Deck.getInstance().render()
+					Deck.getInstance().renderDeck()
 				});
 			} else {
 				OBR.scene.items.updateItems(context.items, (items) => {
 					let flgrender = false
 					for (let item of items) {
-						let md = item.metadata[`${Util.ID}/metadata`] as InitiativeMetadata | undefined
+						let md = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined
 						if (md) {
-							let p = Deck.getInstance().getPlayer(md.playerid) as Player
+							let p = Deck.getInstance().getPlayer(md.id) as Player
 							if (p) {
 								p.removeRender()
 								Deck.getInstance().removePlayer(p)
 							}
 							flgrender = true
 						}
-						delete item.metadata[`${Util.ID}/metadata`]
+						delete item.metadata[Util.PlayerMkey]
 					}
-					if (flgrender) Deck.getInstance().render()
+					if (flgrender) Deck.getInstance().renderDeck()
 				});
 			}
 		},
 	});
 }
-
-
-export async function setupInitiativeList(): Promise<void> {
-	function renderList(items: any[]): void {
-	  Deck.getInstance().updateGameOBState(items)
-	}
-	OBR.scene.items.onChange(renderList)
-  }

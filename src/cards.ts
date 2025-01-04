@@ -1,3 +1,5 @@
+import { Deck } from "./deck"
+
 // Enum for card suits
 export enum Suit {
 	Hearts = "Hearts",
@@ -39,6 +41,7 @@ export class Card {
 		return (c>53)
 	}
 	static _cards: Card[] = []
+	static backindex: number = 0
 	static backs: SVGSVGElement[] = []
 	static abscard: string[] = ["position-absolute", "small-card"]
 	static relcard: string[] = ["position-relative", "small-card"]
@@ -47,7 +50,6 @@ export class Card {
 	suit: Suit
 	rank: Rank
 	face: SVGElement
-	backidx: number = 0
 	color: Color
 
 	static get cards(): Card[] {
@@ -63,7 +65,7 @@ export class Card {
 		return Card.cards.find(c => c.sequence === s)!
 	}
 	 
-	constructor(sequence: number, curBack: number = 0) {
+	constructor(sequence: number) {
 		this.sequence = sequence
 		this.dir = Facing.Down
 		const obj = document.getElementById("cards-svg") as HTMLObjectElement
@@ -75,7 +77,6 @@ export class Card {
 			}
 		}
 		this.face = svg?.querySelector(`[sequence="${sequence}"]`) as SVGElement
-		this.setBack(curBack)
 		this.rank = Number(this.face.getAttribute("rank")) as Rank
 		this.suit = this.face.getAttribute("suit") as Suit
 		this.color = (this.suit === Suit.Spades || this.suit === Suit.Clubs || this.suit === Suit.BlackJoker) ? Color.Black : Color.Red
@@ -99,22 +100,14 @@ export class Card {
 	isJoker(): boolean {
 		return (this.rank === 15)
 	}
+	// static get back(): number { return Card.backindex }
+	// static set back( back: number) {
+	// 	Card.backindex = Math.max(0, Math.min(back, Card.backs.length - 1))
+	// }
 
-	setBack(back: number) {
-		this.backidx = Math.max(0, Math.min(back, Card.backs.length - 1))
-	}
 
-	back(): SVGElement {
-		return Card.backs[this.backidx]
-	}
 
-	getImageSvg(): string {
-		let img = this.face.innerHTML
-		if (this.dir != Facing.Up) {
-			img = this.back().innerHTML
-		}
-		return img
-	}
+
 
 	toString(): string {
 		if (this.dir === Facing.Up)
@@ -123,11 +116,12 @@ export class Card {
 			return 'card'
 	}
 
-	render(container: HTMLDivElement, x: number, y: number) {
+	render(container: HTMLDivElement, x: number, y: number, override:Facing=Facing.None) {
 		const doc = container.ownerDocument
 		const div = doc.createElement('div') as HTMLDivElement
 		const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
-		svg.innerHTML = this.getImageSvg()
+		if (override!=Facing.None) this.dir=override
+		svg.innerHTML = Deck.getInstance().getImageSvg(this)
 		div.appendChild(svg)
 		container.appendChild(div)
 		div.title = this.toString()
