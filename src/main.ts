@@ -1,5 +1,5 @@
 import './style.css'
-import OBR, { isImage } from "@owlbear-rodeo/sdk"
+import OBR, { isImage, Image } from "@owlbear-rodeo/sdk"
 
 import cardsImage from '/cards.svg'
 import buttonsImage from '/buttons.svg'
@@ -17,69 +17,99 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <object id="cards-svg" width="0" height="0" data="${cardsImage}" type="image/svg+xml"></object>
   <object id="buttons-svg" width="0" height="0" data="${buttonsImage}" type="image/svg+xml"></object>   
 `
-window.addEventListener("load", () => {
+// window.addEventListener("load", () => {
+//   const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
+//   const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
+
+//   if (svgCards.contentDocument && svgButtons.contentDocument) {
+//     //const deck = Deck.getInstance()
+//     //deck.back = (Math.floor(Math.random() * (Card.backs.length + 1.0)))
+//     //deck.newGame()
+//     //deck.renderDeck()
+//   } else {
+//     console.error("Failed to load SVG document")
+//   }
+// })
+
+let unsubscribe = []
+OBR.onReady(async () => {
   const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
   const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
-
   if (svgCards.contentDocument && svgButtons.contentDocument) {
-    //const deck = Deck.getInstance()
-    //deck.back = (Math.floor(Math.random() * (Card.backs.length + 1.0)))
-    //deck.newGame()
-    //deck.renderDeck()
+    console.log("button and card images loaded")
   } else {
-    console.error("Failed to load SVG document")
+    console.error("button and card images NOT loaded")
   }
-})
-let unsubscribe=[]
-OBR.onReady(async () => {
   setupContextMenu()
   setupGameState()
-  //updatePlayerState(await Player.getOBRCharacterItems())
-  unsubscribe.push(OBR.room.onMetadataChange((metadata) => {
-    const dmd = metadata[Util.DeckMkey] as DeckMeta
-    if (dmd) {
-      //("Room metadata changed:", dmd)
-      Deck.getInstance().updateState()
-    }
-  }))
-  await Deck.getInstance().updateState()
 })
 
 async function setupGameState(): Promise<void> {
+  let deck = Deck.getInstance()
+  try {
+    deck.isGM = await OBR.player.getRole().then(role => role === "GM")
+  } catch {
+    console.error("get gm role failed")
+  }
+  //setup callback for room data
+  function renderRoom(metadata: any) {
+    const dmd = metadata[Util.DeckMkey] as DeckMeta
+    if (dmd) {
+      console.log("Room metadata changed:", dmd)
+      Deck.getInstance().updateState(dmd)
+    }
+  }
+  unsubscribe.push(OBR.room.onMetadataChange(renderRoom))
+
+  // get room data
+  try {
+    let metadata = await OBR.room.getMetadata()
+    let dmd = metadata[Util.DeckMkey] as DeckMeta
+    let found = true
+    try {
+      dmd.cardpool.length
+    } catch {
+      found = false
+    }
+    if (found && dmd) {
+      deck.updateState(dmd)
+    } else {
+      deck.updateOBR()
+    }
+  } catch (e) {
+    console.error(`getting room meta failed ${e}`)
+  }
+
   function renderList(items: any[]): void {
     updatePlayerState(items)
   }
-  OBR.scene.items.onChange(renderList)
-  let chars = await getOBRCharacterItems()
-  updatePlayerState(chars)
+  unsubscribe.push(OBR.scene.items.onChange(renderList))
+  updatePlayerStateAll()
 }
 
-async function getOBRCharacterItems() {
-  let r: any[] = []
-  try {
-    const characters = await OBR.scene.items.getItems((item) => {
-      return item.layer === "CHARACTER" && isImage(item)
-    })
-    return characters
-  } catch (error) {
-    console.error("Failed to get character items:", error)
+async function updatePlayerStateAll() {
+    try {
+      updatePlayerState(await OBR.scene.items.getItems(
+        (item): item is Image => item.layer === "CHARACTER" && isImage(item)
+      ))
+    } catch (e) {
+      console.log(`getitems missing. ${e}`)
+      Deck.getInstance().renderDeck()
+    }
   }
-  return r
-}
 
 async function updatePlayerState(items: any[]) {
   const deck = Deck.getInstance()
   let flgrender = false
   //players
-  const found: Player[] = [];
+  const found: Player[] = []
+
   for (const item of items) {
-    if (item.layer === "CHARACTER" && isImage(item)) {
-      const pmd: PlayerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta
-      if (pmd) {
-        let p = rehydratePlayer(pmd)
-        found.push(p);
-        flgrender = true
-      }
+    const pmd: PlayerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta
+    if (pmd) {
+      let p = rehydratePlayer(pmd)
+      found.push(p);
+      flgrender = true
     }
   }
 
@@ -101,11 +131,10 @@ function rehydratePlayer(pmd: PlayerMeta): Player {
   if (!p) {
     // if not found, create them, give name and unique id from metadata
     p = Deck.getInstance().addPlayer(pmd.name)
- 
+
     // see if they have any cards in other pools and remove
     Deck.getInstance().extractPlayerCards(p)
   }
-     //console.log(`pmd extensible:${Object.isExtensible(pmd.hand)} sealed:${Object.isSealed(pmd.hand)} frozen:${Object.isFrozen(pmd.hand)}}`)
-    p.setMeta = pmd
+  p.setMeta = pmd
   return p
 }

@@ -203,37 +203,60 @@ export class Player {
 		})
 		playerdiv.appendChild(drawcard)
 
-		const drawhand = ButtonFactory.getButton("drawhand", "Draw Hand", "poker-hand", "") //this.id)
-		drawhand.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			p.drawInitiative()
-			p.updateOBR()
-			const deck = Deck.getInstance()
-			deck.updateOBR()
-			deck.renderDeck()
-		})
-		playerdiv.appendChild(drawhand)
+		if (Deck.getInstance().isGM) {
+			const drawhand = ButtonFactory.getButton("drawhand", "Draw Hand", "poker-hand", "") //this.id)
+			drawhand.addEventListener('click', function () {
+				let p = Player.getPlayer(this)
+				p.drawInitiative()
+				p.updateOBR()
+				const deck = Deck.getInstance()
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+			playerdiv.appendChild(drawhand)
+		}
 
-		const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
-		if (this.chooseCard) choose.classList.add("btn-success")
-		choose.addEventListener('click', function (event) {
-			let p = Player.getPlayer(this)
-			p.chooseCard = !p.chooseCard
-			ButtonFactory.toggle(event)
-			p.updateOBR()
-		})
-		playerdiv.appendChild(choose)
+		if (Deck.getInstance().isGM) {
+			const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
+			if (this.chooseCard) choose.classList.add("btn-success")
+			choose.addEventListener('click', function (event) {
+				let p = Player.getPlayer(this)
+				p.chooseCard = !p.chooseCard
+				ButtonFactory.toggle(event)
+				p.updateOBR()
+				const deck = Deck.getInstance()
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+			playerdiv.appendChild(choose)
+		}
 
-		const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
-		discardhand.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			const deck = Deck.getInstance()
-			deck.moveToDiscardPool(p.hand, 0)
-			p.updateOBR()
-			deck.updateOBR()
-			deck.renderDeck()
-		})
-		playerdiv.appendChild(discardhand)
+		if (Deck.getInstance().isGM) {
+			const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
+			discardhand.addEventListener('click', function () {
+				let p = Player.getPlayer(this)
+				const deck = Deck.getInstance()
+				deck.moveToDiscardPool(p.hand, 0)
+				p.updateOBR()
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+			playerdiv.appendChild(discardhand)
+		}
+
+		if (Deck.getInstance().isGM) {
+			const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
+			rp.classList.add("btn-danger")
+			rp.addEventListener('click', function () {
+				let p = Player.getPlayer(this)
+				p.removeRender()
+				Deck.getInstance().removePlayer(p)
+				const deck = Deck.getInstance()
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+			playerdiv.appendChild(rp)
+		}
 
 		const outcombat = ButtonFactory.getButton("outcombat", "Out of Combat", "truce", "") //this.id)
 		if (this.outOfCombat) outcombat.classList.add("btn-success")
@@ -246,6 +269,9 @@ export class Player {
 				Deck.getInstance().updateOBR()
 			}
 			ButtonFactory.toggle(event)
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(outcombat)
 
@@ -256,6 +282,9 @@ export class Player {
 			p.onHold = !p.onHold
 			ButtonFactory.toggle(event)
 			p.updateOBR()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(onhold)
 
@@ -266,6 +295,9 @@ export class Player {
 			p.hesitant = !p.hesitant
 			ButtonFactory.toggle(event)
 			p.updateOBR()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(hesitant)
 
@@ -276,6 +308,9 @@ export class Player {
 			p.quick = !p.quick
 			ButtonFactory.toggle(event)
 			p.updateOBR()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(quick)
 
@@ -314,20 +349,11 @@ export class Player {
 				p.impLevelHeaded = false
 			}
 			p.updateOBR()
-			Deck.getInstance().renderDeck()
+			const deck = Deck.getInstance()
+			deck.updateOBR()
+			deck.renderDeck()
 		})
 		playerdiv.appendChild(levelhead)
-
-		const rp = ButtonFactory.getButton("rp", "Remove Player", "trash-can", this.id)
-		rp.classList.add("btn-danger")
-		rp.addEventListener('click', function () {
-			let p = Player.getPlayer(this)
-			p.removeRender()
-			p.removeOBR()
-			Deck.getInstance().removePlayer(p)
-			Deck.getInstance().renderDeck()
-		})
-		playerdiv.appendChild(rp)
 
 		for (const c of this.hand) {
 			let card = Card.byId(c)

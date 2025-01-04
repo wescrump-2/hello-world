@@ -17,6 +17,7 @@ export interface DeckMeta {
 
 export class Deck {
 	private static instance: Deck
+	isGM: boolean = false
 	private constructor() { }
 	// graphic assets
 	svgbuttons!: HTMLObjectElement
@@ -119,10 +120,10 @@ export class Deck {
 
 	initializeDeck() {
 		const size = (this.use4jokers) ? 56 : 54
-		this.jokerNotified=false
-		this.drawdeck=[]
-		this.discardpile=[]
-		this.cardpool=[]
+		this.jokerNotified = false
+		this.drawdeck = []
+		this.discardpile = []
+		this.cardpool = []
 		for (let i = 1; i <= size; i++) {
 			this.drawdeck.push(i);  //new Card(i)
 		}
@@ -139,7 +140,6 @@ export class Deck {
 	}
 
 	shuffle() {
-
 		this.initializeDeck()
 		for (let i = this.drawdeck.length - 1; i > 0; i--) {
 			const j = Math.floor(Math.random() * (i + 1));
@@ -171,24 +171,27 @@ export class Deck {
 
 	moveToPool(to: number[], from: number[], numCards: number = 0, top: boolean, dir: Facing) {
 		const limit = numCards < 1 ? from.length : Math.min(numCards, from.length)
-		for (let i = 0; i < limit; i++) {
-			let cid = 0
-			if (top) {
-				cid = from.shift()!
-			} else {
-				cid = from.pop()!
+		if (limit > 0) {
+			for (let i = 0; i < limit; i++) {
+				let cid = 0
+				if (top) {
+					cid = from.shift()!
+				} else {
+					cid = from.pop()!
+				}
+				let card = Card.byId(cid)
+				if (dir != Facing.None) {
+					card.dir = dir
+				}
+				if (cid != 0 && !to.includes(cid)) {
+					to.push(cid)
+				} else {
+					console.log(`found duplicate card [${cid}]${card.toString}`)
+				}
 			}
-			let card = Card.byId(cid)
-			if (dir != Facing.None) {
-				card.dir = dir
-			}
-			if (cid != 0 && !to.includes(cid)) {
-				//console.log(`to array extensible:${Object.isExtensible(to)}  sealed:${Object.isSealed(to)} frozen:${Object.isFrozen(to)}`)
-				to.push(cid)
-			} else {
-				console.log(`found duplicate card [${cid}]`)
-			}
-		}
+		 } else {
+		 	console.log(`from array is empty, no move.`)
+		 }
 	}
 
 	extractPlayerCards(p: Player) {
@@ -214,21 +217,23 @@ export class Deck {
 			const p = this.players[index]
 			this.moveToDiscardPool(p.hand)
 			this.players.splice(index, 1)
-			player.removeOBR()
+			p.removeOBR()
 		}
 	}
 
 	renderDeck() {
 		this.renderDraw(this.svgcontainer)
-		this.renderDiscardPile(this.svgcontainer)
-		this.renderCardPool(this.svgcontainer)
+		if (this.isGM) {
+			this.renderDiscardPile(this.svgcontainer)
+			this.renderCardPool(this.svgcontainer)
+		}
 		this.renderPlayers(this.svgcontainer)
 		this.setCurrentPlayer(this.players[0]?.id) //fixme	
 		if (this.jokerDrawn() && !this.jokerNotified) {
 			this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
-			this.jokerNotified=true
+			this.jokerNotified = true
 		}
-		this.updateOBR()
+		//this.updateOBR()
 	}
 
 	renderDraw(container: HTMLDivElement) {
@@ -251,40 +256,43 @@ export class Deck {
 			deckfieldset.appendChild(deckcarddiv)
 			container.appendChild(deckfieldset)
 
-			const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
-			di.addEventListener('click', () => {
-				this.drawInitiative()
-				this.updateOBR()
-				this.renderDeck()
-			})
-			deckdiv.appendChild(di)
+			if (this.isGM) {
+				const di = ButtonFactory.getButton("di", "Deal Initiative", "card-draw", "")
+				di.addEventListener('click', () => {
+					this.drawInitiative()
+					this.updateOBR()
+					this.renderDeck()
+				})
+				deckdiv.appendChild(di)
 
-			const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
-			dint.addEventListener('click', () => {
-				this.drawInterlude()
-				this.updateOBR()
-				this.renderDeck()
-			})
-			deckdiv.appendChild(dint)
+				const dint = ButtonFactory.getButton("dint", "Deal Interlude", "suits", "")
+				dint.addEventListener('click', () => {
+					this.drawInterlude()
+					this.updateOBR()
+					this.renderDeck()
+				})
+				deckdiv.appendChild(dint)
 
-			const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
-			shf.addEventListener('click', () => {
-				this.newGame()
-				this.updateOBR()
-				this.renderDeck()
-			})
-			deckdiv.appendChild(shf)
+				const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
+				if (this.use4jokers) joke.classList.add("btn-success")
+				joke.addEventListener('click', function (event) {
+					const deck = Deck.getInstance()
+					deck.toggleJokers()
+					ButtonFactory.toggle(event)
+					deck.updateOBR()
+					deck.renderDeck()
+				})
+				deckdiv.appendChild(joke)
 
-			const joke = ButtonFactory.getButton("joke", "Use Four Jokers", "joker", "")
-			if (this.use4jokers) joke.classList.add("btn-success")
-			joke.addEventListener('click', function (event) {
-				const deck=Deck.getInstance()
-				deck.toggleJokers()
-				ButtonFactory.toggle(event)
-				deck.updateOBR()
-				deck.renderDeck()
-			})
-			deckdiv.appendChild(joke)
+				const sb = ButtonFactory.getButton("sb", "Change Backs", "card-exchange", "")
+				sb.addEventListener('click',  () =>{
+					const deck = Deck.getInstance()
+					deck.changeBack()
+					deck.updateOBR()
+					deck.renderDeck()
+				})
+				deckdiv.appendChild(sb)
+			}
 		}
 
 		let deckleg = deckcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
@@ -297,9 +305,12 @@ export class Deck {
 		let x = 0
 		for (const c of this.drawdeck) {
 			let card = Card.byId(c)
-			card.render(deckcarddiv, x, 0,Facing.Down)
+			card.render(deckcarddiv, x, 0, Facing.Down)
 			x = x + Util.rem2px(Card.cardStackedDown())
 		}
+	}
+	changeBack() {
+		this.back= (++this.back>=Card.backs.length)?0:this.back
 	}
 
 	renderDiscardPile(container: HTMLDivElement) {
@@ -330,6 +341,13 @@ export class Deck {
 				this.renderDeck()
 			})
 			discarddiv.appendChild(dp)
+			const shf = ButtonFactory.getButton("shf", "Shuffle", "stack", "")
+			shf.addEventListener('click', () => {
+				this.newGame()
+				this.updateOBR()
+				this.renderDeck()
+			})
+			discarddiv.appendChild(shf)
 		}
 
 		let discardleg = discardcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
@@ -342,10 +360,9 @@ export class Deck {
 		let x = 0
 		for (const c of this.discardpile) {
 			let card = Card.byId(c)
-			card.render(discardcarddiv, x, 0,Facing.Up)
+			card.render(discardcarddiv, x, 0, Facing.Up)
 			x = x + Util.rem2px(Card.cardStacked())
 		}
-
 	}
 
 	renderCardPool(container: HTMLDivElement) {
@@ -376,13 +393,13 @@ export class Deck {
 			})
 			specialdiv.appendChild(cp)
 
-			const discardpool = ButtonFactory.getButton("discardpool", "Discard Card Pool", "card-burn", "")
-			discardpool.addEventListener('click', () => {
+			const dcp = ButtonFactory.getButton("dcp", "Discard Card Pool", "card-burn", "")
+			dcp.addEventListener('click', () => {
 				this.moveToDiscardPool(this.cardpool, 0)
 				this.updateOBR()
 				this.renderDeck()
 			})
-			specialdiv.appendChild(discardpool)
+			specialdiv.appendChild(dcp)
 		}
 
 		let specialleg = specialcarddiv.parentElement?.querySelector('legend') as HTMLLegendElement
@@ -395,7 +412,7 @@ export class Deck {
 		let x = 0
 		for (const c of this.cardpool) {
 			let card = Card.byId(c)
-			card.render(specialcarddiv, x, 0,Facing.Up)
+			card.render(specialcarddiv, x, 0, Facing.Up)
 			x = x + Util.rem2px(Card.cardStacked())
 		}
 	}
@@ -425,32 +442,31 @@ export class Deck {
 		}
 	}
 
-	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
+	showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
 		try {
-			await OBR.notification.show(message, level)
+			OBR.notification.show(message, level)
 		} catch (error) {
 			console.error('Failed to show notification:', error)
 		}
 	}
 
-	async updateState() {
-		await OBR.room.getMetadata().then(roomMetadata => {
-			const dmd = roomMetadata[Util.DeckMkey] as DeckMeta
-			if (dmd) {
-				//console.log("Room metadata for this extension:", dmd);
-				this.setMeta = dmd
-			} else {
-				console.log("No metadata found for this extension in the room.");
-				this.newGame()
-				this.updateOBR()
-			}
-		})
+	async updateState(dmd: DeckMeta) {
+		if (dmd) {
+			this.setMeta = dmd
+		} else {
+			console.log("No metadata found for this extension in the room.");
+			this.newGame()
+			this.updateOBR()
+		}
 	}
 
-	async updateOBR() {
+	updateOBR() {
 		const dmd = this.getMeta
-		await OBR.room.setMetadata({
+		OBR.room.setMetadata({
 			[Util.DeckMkey]: dmd
-		});
+		})
+		for (let p of this.players) {
+			p.updateOBR()
+		}
 	}
 }
