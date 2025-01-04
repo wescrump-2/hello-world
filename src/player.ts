@@ -155,6 +155,10 @@ export class Player {
 		return this.hand.some(c => c > 52);
 	}
 
+	countJoker():number {
+		return this.hand.filter(c => c > 52).length
+	}
+
 	static getPlayer(but: HTMLButtonElement): Player {
 		let element = but as HTMLElement
 		let pid = element.getAttribute('data-pid')

@@ -22,7 +22,7 @@ export class Deck {
 	// graphic assets
 	svgbuttons!: HTMLObjectElement
 	svgcontainer!: HTMLDivElement
-	jokerNotified: boolean = false
+	jokerNotified: number = 0
 	players: Player[] = []
 
 	//game state
@@ -120,7 +120,7 @@ export class Deck {
 
 	initializeDeck() {
 		const size = (this.use4jokers) ? 56 : 54
-		this.jokerNotified = false
+		this.jokerNotified = 0
 		this.drawdeck = []
 		this.discardpile = []
 		this.cardpool = []
@@ -201,8 +201,8 @@ export class Deck {
 		this.cardpool = this.cardpool.filter(item => !removeSet.has(item))
 	}
 
-	jokerDrawn(): boolean {
-		return this.players.some(p => p.hasJoker()) || this.discardpile.some(c => Card.isJoker(c)) || this.cardpool.some(c => Card.isJoker(c))
+	jokersDrawn(): number {
+		return this.players.filter(p => p.hasJoker()).length + this.discardpile.filter(c => Card.isJoker(c)).length + this.cardpool.filter(c => Card.isJoker(c)).length
 	}
 
 	addPlayer(name: string): Player {
@@ -228,10 +228,11 @@ export class Deck {
 			this.renderCardPool(this.svgcontainer)
 		}
 		this.renderPlayers(this.svgcontainer)
-		this.setCurrentPlayer(this.players[0]?.id) //fixme	
-		if (this.jokerDrawn() && !this.jokerNotified) {
+		this.setCurrentPlayer(this.players[0]?.id) //fixme
+		const drawn = this.jokersDrawn()	
+		if (drawn>this.jokerNotified ) {
 			this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
-			this.jokerNotified = true
+			this.jokerNotified = drawn
 		}
 		//this.updateOBR()
 	}
