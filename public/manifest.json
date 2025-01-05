@@ -1,14 +1,14 @@
 {
-	"name": "Savage Worlds Initiative",
-	"version": "1.0.10",
-	"manifest_version": 1,
-	"author": "Wes Crump",
-	"description": "Savage Worlds card based initiative tracker",
-	"action": {
-	  "title": "Savage Worlds Combat Tracker",
-	  "icon": "/icon.svg",
-	  "popover": "/",
-	  "height": 600,
-	  "width": 400
-	}
+  "name": "Savage Worlds Initiative",
+  "version": "1.0.34236",
+  "manifest_version": 1,
+  "author": "Wes Crump",
+  "description": "Savage Worlds card based initiative tracker",
+  "action": {
+    "title": "Savage Worlds Combat Tracker",
+    "icon": "/icon.svg",
+    "popover": "/",
+    "height": 600,
+    "width": 400
   }
+}

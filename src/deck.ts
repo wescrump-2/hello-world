@@ -304,10 +304,11 @@ export class Deck {
 		}
 
 		let x = 0
+		let inc = Util.rem2px(Card.cardStackedDown())
 		for (const c of this.drawdeck) {
 			let card = Card.byId(c)
 			card.render(deckcarddiv, x, 0, Facing.Down)
-			x = x + Util.rem2px(Card.cardStackedDown())
+			x = x + inc
 		}
 	}
 	changeBack() {
@@ -359,10 +360,11 @@ export class Deck {
 		}
 
 		let x = 0
+		let inc = Util.rem2px(Card.cardStacked())
 		for (const c of this.discardpile) {
 			let card = Card.byId(c)
 			card.render(discardcarddiv, x, 0, Facing.Up)
-			x = x + Util.rem2px(Card.cardStacked())
+			x = x + inc
 		}
 	}
 
@@ -411,10 +413,11 @@ export class Deck {
 		}
 
 		let x = 0
+		let inc =Util.rem2px(Card.cardStacked())
 		for (const c of this.cardpool) {
 			let card = Card.byId(c)
 			card.render(specialcarddiv, x, 0, Facing.Up)
-			x = x + Util.rem2px(Card.cardStacked())
+			x = x + inc
 		}
 	}
 

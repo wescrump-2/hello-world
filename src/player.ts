@@ -3,7 +3,11 @@ import { ButtonFactory } from "./button"
 import { Card, Facing } from "./cards"
 import { Deck } from "./deck"
 import { Util } from "./util"
-
+export enum LevelHeaded {
+	None = 0,
+	LevelHeaded = 1,
+	ImpLevelHeaded = 2
+}
 export interface PlayerMeta {
 	hand: number[]
 	id: string
@@ -16,8 +20,9 @@ export interface PlayerMeta {
 	tactician: boolean
 	mastertactician: boolean
 	quick: boolean
-	chooseCard: boolean
+	canchoose: boolean
 	hesitant: boolean
+	choosencard: number
 }
 
 export class Player {
@@ -33,8 +38,9 @@ export class Player {
 		tactician: false,
 		mastertactician: false,
 		quick: false,
-		chooseCard: false,
-		hesitant: false
+		canchoose: false,
+		hesitant: false,
+		choosencard: -1,
 	}
 
 	//hand: Card[] //fixme
@@ -52,7 +58,7 @@ export class Player {
 	set outOfCombat(newoutOfCombat: boolean) { this.meta.outOfCombat = newoutOfCombat }
 	get levelHeaded(): boolean { return this.meta.levelHeaded }
 	set levelHeaded(newlevelHeaded: boolean) { this.meta.levelHeaded = newlevelHeaded }
-	get impLevelHeaded(): boolean { return this.meta.levelHeaded }
+	get impLevelHeaded(): boolean { return this.meta.impLevelHeaded }
 	set impLevelHeaded(newimpLevelHeaded: boolean) { this.meta.impLevelHeaded = newimpLevelHeaded }
 	get tactician(): boolean { return this.meta.tactician }
 	set tactician(newtactician: boolean) { this.meta.tactician = newtactician }
@@ -60,8 +66,8 @@ export class Player {
 	set mastertactician(newmastertactician: boolean) { this.meta.mastertactician = newmastertactician }
 	get quick(): boolean { return this.meta.quick }
 	set quick(newquick: boolean) { this.meta.quick = newquick }
-	get chooseCard(): boolean { return this.meta.chooseCard }
-	set chooseCard(newchooseCard: boolean) { this.meta.chooseCard = newchooseCard }
+	get canchoose(): boolean { return this.meta.canchoose }
+	set canchoose(newcanchoose: boolean) { this.meta.canchoose = newcanchoose }
 	get hesitant(): boolean { return this.meta.hesitant }
 	set hesitant(newhesitant: boolean) { this.meta.hesitant = newhesitant }
 
@@ -75,9 +81,56 @@ export class Player {
 		//console.log(`name:${this.name}  id:[${this.id}]`)
 	}
 
-	// addCard(card: number) {
-	// 	this.hand.push(card);
-	// }
+	toggleLevelHeaded() {
+		if (!this.levelHeaded && this.impLevelHeaded) {
+			this.levelHeaded = false
+			this.impLevelHeaded = false
+		} else if (!this.levelHeaded && !this.impLevelHeaded) {
+			this.levelHeaded = true
+			this.impLevelHeaded = false
+			this.hesitant = false
+		} else if (this.levelHeaded && !this.impLevelHeaded) {
+			this.levelHeaded = false
+			this.impLevelHeaded = true
+			this.hesitant = false
+		} else if (this.levelHeaded && this.impLevelHeaded) {
+			this.levelHeaded = false
+			this.impLevelHeaded = false
+		}
+	}
+
+	toggleTactician() {
+		if (!this.tactician && this.mastertactician) {
+			this.tactician = false
+			this.mastertactician = false
+		} else if (!this.tactician && !this.mastertactician) {
+			this.tactician = true
+			this.mastertactician = false
+		} else if (this.tactician && !this.mastertactician) {
+			this.tactician = false
+			this.impLevelHeaded = true
+		} else if (this.tactician && this.mastertactician) {
+			this.tactician = false
+			this.mastertactician = false
+		}
+	}
+
+
+	toggleQuick() {
+		this.quick = !this.quick
+		if (this.quick) {
+			this.hesitant = false
+		}
+	}
+
+	toggleHesitant() {
+		this.hesitant = !this.hesitant
+		if (this.hesitant) {
+			this.quick = false
+			this.levelHeaded = false
+			this.impLevelHeaded = false
+		}
+	}
 
 	bestCard(): number {
 		if (this.hesitant) {
@@ -155,7 +208,7 @@ export class Player {
 		return this.hand.some(c => c > 52);
 	}
 
-	countJoker():number {
+	countJoker(): number {
 		return this.hand.filter(c => c > 52).length
 	}
 
@@ -222,10 +275,10 @@ export class Player {
 
 		if (Deck.getInstance().isGM) {
 			const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
-			if (this.chooseCard) choose.classList.add("btn-success")
+			if (this.canchoose) choose.classList.add("btn-success")
 			choose.addEventListener('click', function (event) {
 				let p = Player.getPlayer(this)
-				p.chooseCard = !p.chooseCard
+				p.canchoose = !p.canchoose
 				ButtonFactory.toggle(event)
 				p.updateOBR()
 				const deck = Deck.getInstance()
@@ -296,7 +349,7 @@ export class Player {
 		if (this.hesitant) hesitant.classList.add("btn-success")
 		hesitant.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
-			p.hesitant = !p.hesitant
+			p.toggleHesitant()
 			ButtonFactory.toggle(event)
 			p.updateOBR()
 			const deck = Deck.getInstance()
@@ -309,7 +362,7 @@ export class Player {
 		if (this.quick) quick.classList.add("btn-success")
 		quick.addEventListener('click', function (event) {
 			let p = Player.getPlayer(this)
-			p.quick = !p.quick
+			p.toggleQuick()
 			ButtonFactory.toggle(event)
 			p.updateOBR()
 			const deck = Deck.getInstance()
@@ -319,39 +372,24 @@ export class Player {
 		playerdiv.appendChild(quick)
 
 		// const tacttype = (this.mastertactician) ? "aces" : "ace"
-		// const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, "") //this.id)
+		// const tactician = ButtonFactory.getButton("tactician", "Tactician", tacttype, "")  
 		// if (this.tactician || this.mastertactician) tactician.classList.add("btn-success")
 		// tactician.addEventListener('click', function () {
 		// 	let p = Player.getPlayer(this)
-		// 	if (p.mastertactician) {
-		// 		p.mastertactician = false
-		// 		p.tactician = false
-		// 	} else if (p.tactician && !p.mastertactician) {
-		// 		p.mastertactician = true
-		// 		p.tactician = true
-		// 	} else {
-		// 		p.tactician = true
-		// 		p.mastertactician = false
-		// 	}
-		// 	Game.instance.render()
+		// 	p.toggleTactician()
+		// 	p.updateOBR()
+		// 	const deck = Deck.getInstance()
+		// 	deck.updateOBR()
+		// 	deck.renderDeck()
 		// })
 		// playerdiv.appendChild(tactician)
 
 		const lvlheadtype = (this.impLevelHeaded) ? "scales-exclaim" : "scales"
-		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, "") //this.id)
+		const levelhead = ButtonFactory.getButton("levelhead", "Level Headed Edge", lvlheadtype, "")
 		if (this.levelHeaded || this.impLevelHeaded) levelhead.classList.add("btn-success")
 		levelhead.addEventListener('click', function () {
 			let p = Player.getPlayer(this)
-			if (p.impLevelHeaded) {
-				p.impLevelHeaded = false
-				p.levelHeaded = false
-			} else if (p.levelHeaded && !p.impLevelHeaded) {
-				p.impLevelHeaded = true
-				p.levelHeaded = true
-			} else {
-				p.levelHeaded = true
-				p.impLevelHeaded = false
-			}
+			p.toggleLevelHeaded()
 			p.updateOBR()
 			const deck = Deck.getInstance()
 			deck.updateOBR()
@@ -359,10 +397,16 @@ export class Player {
 		})
 		playerdiv.appendChild(levelhead)
 
+		let inc =Util.rem2px(Card.cardSpread())
+		if (this.hand.length>12){
+			inc=Math.trunc(inc/4)
+		} else if (this.hand.length>6) {
+			inc=Math.trunc(inc/2)
+		}
 		for (const c of this.hand) {
 			let card = Card.byId(c)
 			card.render(carddiv, x, y, Facing.Up)
-			x = x + Util.rem2px(Card.cardSpread())
+			x = x + inc
 		}
 	}
 
