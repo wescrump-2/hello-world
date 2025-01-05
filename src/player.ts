@@ -134,9 +134,12 @@ export class Player {
 	}
 
 	bestCard(): number {
+		if (this.hand.length===0) return -1
 		const high = this.highCard()
-		if (this.hand.includes(this.choosencard) && (this.hesitant && high!=this.choosencard)){
-			return this.choosencard
+		if (this.hand.includes(this.choosencard)){
+			if (!this.hesitant || this.choosencard!=high){
+			  return this.choosencard				
+			}
 		}
 		if (this.hesitant) {
 			return this.lowCard()
@@ -192,7 +195,7 @@ export class Player {
 		if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
 			deck.dealFromTop(p.hand, 1, Facing.Up)
 		if (p.quick)
-			while (p.hand.every(c => Card.byId(c).rank <= 5)) {
+			while (deck.drawdeck.length>0 && p.hand.every(c => Card.byId(c).rank <= 5)) {
 				deck.dealFromTop(p.hand, 1, Facing.Up)
 			}
 	}

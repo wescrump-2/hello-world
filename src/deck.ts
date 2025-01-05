@@ -56,6 +56,7 @@ export class Deck {
 	set scale(s: number) { this.meta.scale = s }
 	get use4jokers(): boolean { return this.meta.use4jokers }
 	set use4jokers(uj: boolean) { this.meta.use4jokers = uj }
+	get deckcount(): number { return (this.use4jokers) ? 56 : 54 }
 	get backsvg(): SVGElement {
 		return Card.backs[this.back]
 	}
@@ -119,7 +120,7 @@ export class Deck {
 	}
 
 	initializeDeck() {
-		const size = (this.use4jokers) ? 56 : 54
+		const size = this.deckcount
 		this.jokerNotified = 0
 		this.drawdeck = []
 		this.discardpile = []
@@ -129,14 +130,13 @@ export class Deck {
 		}
 	}
 
-	drawnCards(): number[] {
-		let ret: number[] = []
-		ret = ret.concat(this.discardpile)
-		ret = ret.concat(this.cardpool)
+	get drawnCards(): number[] {
+		let ph: number[] = []
 		for (const p of this.players) {
-			ret = ret.concat(p.hand)
+			ph = ph.concat(p.hand.slice(0))
 		}
-		return ret
+		ph = ph.concat( this.discardpile.slice(0),  this.cardpool.slice(0))
+		return ph
 	}
 
 	shuffle() {
@@ -170,25 +170,27 @@ export class Deck {
 	}
 
 	moveToPool(to: number[], from: number[], numCards: number = 0, top: boolean, dir: Facing) {
-		if (from.length === 0) return
-		const limit = numCards < 1 ? from.length : Math.min(numCards, from.length)
+		let limit = numCards < 1 ? from.length:numCards
+		limit= Math.min(limit, from.length)
 		if (limit > 0) {
 			try {
 				for (let i = 0; i < limit; i++) {
 					let cid = 0
-					if (top) {
-						cid = from.shift()!
-					} else {
-						cid = from.pop()!
-					}
-					let card = Card.byId(cid)
-					if (dir != Facing.None) {
-						card.dir = dir
-					}
-					if (cid != 0 && !to.includes(cid)) {
-						to.push(cid)
-					} else {
-						console.log(`found duplicate card [${cid}]${card.toString}`)
+					if (from.length > 0) {
+						if (top) {
+							cid = from.shift()!
+						} else {
+							cid = from.pop()!
+						}
+						let card = Card.byId(cid)
+						if (dir != Facing.None) {
+							card.dir = dir
+						}
+						if (cid != 0 && !to.includes(cid)) {
+							to.push(cid)
+						} else {
+							console.log(`found duplicate card [${cid}]${card.toString}`)
+						}
 					}
 				}
 			} catch (e) {
@@ -197,6 +199,17 @@ export class Deck {
 		} else {
 			console.log(`from array is empty, no move.`)
 		}
+	}
+
+	checkfororphans(): number[] {
+		const cip: number[] = this.drawdeck.slice(0).concat(this.drawnCards)
+		let missing: number[] = []
+		for (let c = 1; c <= this.deckcount; c++) {
+			if (!cip.includes(c)) {
+				missing.push(c)
+			}
+		}
+		return missing
 	}
 
 	extractPlayerCards(p: Player) {
@@ -470,6 +483,13 @@ export class Deck {
 	}
 
 	updateOBR() {
+		//this should never happen, but with moving state back and forth from obr, just to be safe
+		let missing=this.checkfororphans()
+		if (missing.length>0) {
+			//send any missing cards to the discard pool
+			console.log(`Missing cards: ${missing.toString}`)
+			this.moveToDiscardPool(missing,0)
+		}			
 		const dmd = this.getMeta
 		OBR.room.setMetadata({
 			[Util.DeckMkey]: dmd
