@@ -134,11 +134,11 @@ export class Player {
 	}
 
 	bestCard(): number {
-		if (this.hand.length===0) return -1
+		if (this.hand.length === 0) return -1
 		const high = this.highCard()
-		if (this.hand.includes(this.choosencard)){
-			if (!this.hesitant || this.choosencard!=high){
-			  return this.choosencard				
+		if (this.hand.includes(this.choosencard)) {
+			if (!this.hesitant || this.choosencard != high) {
+				return this.choosencard
 			}
 		}
 		if (this.hesitant) {
@@ -178,7 +178,7 @@ export class Player {
 	drawInitiative() {
 		let deck = Deck.getInstance()
 		let p = this
-		p.choosencard=-1
+		p.choosencard = -1
 		if (p.hesitant) {
 			p.quick = false
 			p.levelHeaded = false
@@ -195,7 +195,7 @@ export class Player {
 		if (p.levelHeaded || p.impLevelHeaded || p.hesitant)
 			deck.dealFromTop(p.hand, 1, Facing.Up)
 		if (p.quick)
-			while (deck.drawdeck.length>0 && p.hand.every(c => Card.byId(c).rank <= 5)) {
+			while (deck.drawdeck.length > 0 && p.hand.every(c => Card.byId(c).rank <= 5)) {
 				deck.dealFromTop(p.hand, 1, Facing.Up)
 			}
 	}
@@ -203,7 +203,7 @@ export class Player {
 	drawInterlude() {
 		let deck = Deck.getInstance()
 		let p = this
-		p.choosencard=-1
+		p.choosencard = -1
 		deck.moveToDiscardPool(p.hand)
 		deck.dealFromTop(p.hand, 1, Facing.Up)
 	}
@@ -421,16 +421,20 @@ export class Player {
 			const picked = (card.sequence === this.choosencard)
 			if (picked) {
 				csvg.classList.add("choosen")
-			} else {
-				csvg.addEventListener('click', () => {
-					const deck = Deck.getInstance()
-					const p = this
-					p.choosencard = card.sequence
-					p.updateOBR()
-					deck.updateOBR()
-					deck.renderDeck()
-				})
 			}
+			csvg.addEventListener('click', () => {
+				const deck = Deck.getInstance()
+				const p = this
+				if (card.sequence === p.choosencard) {
+					p.choosencard = -1
+				} else {
+					p.choosencard = card.sequence
+				}
+				p.updateOBR()
+				deck.updateOBR()
+				deck.renderDeck()
+			})
+
 			x = x + inc
 		}
 	}

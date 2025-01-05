@@ -86,7 +86,7 @@ h1 {
 }
 
 .choosen {
-  border: 2px solid #e21eab;
+  border: 2px solid #00ff00;
   z-index: 100;
 }
 
@@ -298,10 +298,6 @@ body .btn:disabled:hover {
   height: calc(.4em + var(--card-height));
   margin: 0px;
   padding: 0px;
-}
-
-.selected-card {
-  border: solid 3px #007bff
 }
 
 .flex-container {
