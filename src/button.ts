@@ -38,11 +38,13 @@ export class ButtonFactory {
             const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
             const path = svgDocument.querySelector(`.${imageKey}`) as SVGElement;
             if (path) {
-                const size = ButtonFactory.buttonSize();
-                svg.style.height = svg.style.width = size;
-                const {width, height} = svgDocument;
-                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                svg.innerHTML = path.outerHTML;
+                svg.style.height = ButtonFactory.buttonSize()
+                svg.style.width = ButtonFactory.buttonSize()
+                const root = svgDocument.getRootNode().firstChild as SVGElement
+                const h = root.style.height.replace("px", "")
+                const w = root.style.width.replace("px", "")
+                svg.setAttribute('viewBox', `0 0 ${h} ${w}`)
+                svg.innerHTML = path.outerHTML
             }
         }
     }
