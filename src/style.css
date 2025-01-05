@@ -12,7 +12,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --container-width: 380px; 
+  --container-width: 380px;
   --background-color: #000;
   --theme-color: #C6C4AF;
   --alt-theme-color: #ecd69b;
@@ -24,7 +24,7 @@
   --card-spread-inc: 2.8em;
   --card-stacked-inc: .42em;
   --card-stacked-down-inc: .3em;
-  --card-height:3.7rem;
+  --card-height: 3.7rem;
   --button-size: 1.3em;
 }
 
@@ -54,7 +54,7 @@ h1 {
 
 #app {
   max-width: 1280px;
-  min-width:  var(--container-width);
+  min-width: var(--container-width);
   margin: 0 auto;
   padding: 0 auto;
   text-align: center;
@@ -82,7 +82,12 @@ h1 {
 }
 
 .card {
-  padding: .01em;
+  padding: 0px;
+}
+
+.choosen {
+  border: 2px solid #e21eab;
+  z-index: 100;
 }
 
 legend {
@@ -94,14 +99,14 @@ legend {
 }
 
 fieldset {
-  margin:0px;
-  padding:0px;
-  border-width:thick;
+  margin: 0px;
+  padding: 0px;
+  border-width: thick;
   border-radius: var(--border-radius);
 }
 
-fieldset.nextplayer{
-  border-color:cornflowerblue;
+fieldset.nextplayer {
+  border-color: cornflowerblue;
 }
 
 .read-the-docs {
@@ -128,6 +133,7 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
 body .btn {
   margin: .2rem
 }
@@ -170,7 +176,7 @@ body .btn.btn-xs svg {
 }
 
 body .btn {
-  border: solid 1px rgba(0,0,0,0);
+  border: solid 1px rgba(0, 0, 0, 0);
   font-size: 1rem;
   padding: .025rem .05rem;
   margin: .1rem .1rem;
@@ -266,6 +272,7 @@ body .btn:disabled:hover {
   background-color: #333;
   color: #666
 }
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -287,18 +294,27 @@ body .btn:disabled:hover {
   padding: 0px;
 }
 
+.small-card-div {
+  height: calc(.4em + var(--card-height));
+  margin: 0px;
+  padding: 0px;
+}
+
 .selected-card {
   border: solid 3px #007bff
 }
+
 .flex-container {
   display: flex;
   justify-content: space-between;
 }
+
 .flex-item-1 {
   width: 12rem;
   border: none;
   box-sizing: border-box;
 }
+
 .flex-item-2 {
   width: 90%;
   border: none;
@@ -310,6 +326,7 @@ body .btn:disabled:hover {
   border: none;
   box-sizing: border-box;
 }
+
 .position-absolute {
   position: absolute !important;
 }

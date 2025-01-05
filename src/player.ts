@@ -70,7 +70,8 @@ export class Player {
 	set canchoose(newcanchoose: boolean) { this.meta.canchoose = newcanchoose }
 	get hesitant(): boolean { return this.meta.hesitant }
 	set hesitant(newhesitant: boolean) { this.meta.hesitant = newhesitant }
-
+	get choosencard(): number { return this.meta.choosencard }
+	set choosencard(newchoosencard: number) { this.meta.choosencard = newchoosencard }
 	get getMeta(): PlayerMeta { return this.meta }
 	set setMeta(newMeta: PlayerMeta) { this.meta = newMeta }
 
@@ -133,10 +134,14 @@ export class Player {
 	}
 
 	bestCard(): number {
+		const high = this.highCard()
+		if (this.hand.includes(this.choosencard) && (this.hesitant && high!=this.choosencard)){
+			return this.choosencard
+		}
 		if (this.hesitant) {
 			return this.lowCard()
 		} else {
-			return this.highCard()
+			return high
 		}
 	}
 
@@ -170,6 +175,7 @@ export class Player {
 	drawInitiative() {
 		let deck = Deck.getInstance()
 		let p = this
+		p.choosencard=-1
 		if (p.hesitant) {
 			p.quick = false
 			p.levelHeaded = false
@@ -194,6 +200,7 @@ export class Player {
 	drawInterlude() {
 		let deck = Deck.getInstance()
 		let p = this
+		p.choosencard=-1
 		deck.moveToDiscardPool(p.hand)
 		deck.dealFromTop(p.hand, 1, Facing.Up)
 	}
@@ -242,9 +249,10 @@ export class Player {
 
 		const playerdiv = doc.createElement('div') as HTMLDivElement
 		playerdiv.classList.add("flex-item-1")
+		playerdiv.classList.add(Card.relcard[0])
 		const carddiv = doc.createElement('div') as HTMLDivElement
 		carddiv.classList.add("flex-item-2")
-		carddiv.classList.add(...Card.relcard)
+		carddiv.classList.add(...Card.concard)
 		fieldset.appendChild(playerdiv)
 		fieldset.appendChild(carddiv)
 		container.appendChild(fieldset)
@@ -273,20 +281,20 @@ export class Player {
 			playerdiv.appendChild(drawhand)
 		}
 
-		if (Deck.getInstance().isGM) {
-			const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
-			if (this.canchoose) choose.classList.add("btn-success")
-			choose.addEventListener('click', function (event) {
-				let p = Player.getPlayer(this)
-				p.canchoose = !p.canchoose
-				ButtonFactory.toggle(event)
-				p.updateOBR()
-				const deck = Deck.getInstance()
-				deck.updateOBR()
-				deck.renderDeck()
-			})
-			playerdiv.appendChild(choose)
-		}
+		// if (Deck.getInstance().isGM) {
+		// 	const choose = ButtonFactory.getButton("choose", "Choose Card", "card-pick", "") //this.id)
+		// 	if (this.canchoose) choose.classList.add("btn-success")
+		// 	choose.addEventListener('click', function (event) {
+		// 		let p = Player.getPlayer(this)
+		// 		p.canchoose = !p.canchoose
+		// 		ButtonFactory.toggle(event)
+		// 		p.updateOBR()
+		// 		const deck = Deck.getInstance()
+		// 		deck.updateOBR()
+		// 		deck.renderDeck()
+		// 	})
+		// 	playerdiv.appendChild(choose)
+		// }
 
 		if (Deck.getInstance().isGM) {
 			const discardhand = ButtonFactory.getButton("discardhand", "Discard Hand", "hand-discard", "") //this.id)
@@ -397,15 +405,29 @@ export class Player {
 		})
 		playerdiv.appendChild(levelhead)
 
-		let inc =Util.rem2px(Card.cardSpread())
-		if (this.hand.length>12){
-			inc=Math.trunc(inc/4)
-		} else if (this.hand.length>6) {
-			inc=Math.trunc(inc/2)
+		let inc = Util.rem2px(Card.cardSpread())
+		if (this.hand.length > 12) {
+			inc = Math.trunc(inc / 4)
+		} else if (this.hand.length > 6) {
+			inc = Math.trunc(inc / 2)
 		}
+
 		for (const c of this.hand) {
-			let card = Card.byId(c)
-			card.render(carddiv, x, y, Facing.Up)
+			const card = Card.byId(c)
+			const csvg = card.render(carddiv, x, y, Facing.Up)
+			const picked = (card.sequence === this.choosencard)
+			if (picked) {
+				csvg.classList.add("choosen")
+			} else {
+				csvg.addEventListener('click', () => {
+					const deck = Deck.getInstance()
+					const p = this
+					p.choosencard = card.sequence
+					p.updateOBR()
+					deck.updateOBR()
+					deck.renderDeck()
+				})
+			}
 			x = x + inc
 		}
 	}
@@ -452,15 +474,4 @@ export class Player {
 			console.error("Failed to remove metadata from character:", error);
 		}
 	}
-
-	// async updateState(){
-	// 	let chars = await Player.getOBRCharacterItems()
-	// 	await OBR.scene.items.updateItems(chars, (items) => {
-	// 		for (let item of items) {
-	// 			const player = Deck.getInstance().addPlayer(item.name)
-	// 			item.metadata[Util.PlayerMkey] = player.getMeta
-	// 		}
-	// 		Deck.getInstance().renderDeck()
-	// 	});
-	// }
 }

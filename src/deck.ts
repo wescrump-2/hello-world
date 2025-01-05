@@ -170,28 +170,33 @@ export class Deck {
 	}
 
 	moveToPool(to: number[], from: number[], numCards: number = 0, top: boolean, dir: Facing) {
+		if (from.length === 0) return
 		const limit = numCards < 1 ? from.length : Math.min(numCards, from.length)
 		if (limit > 0) {
-			for (let i = 0; i < limit; i++) {
-				let cid = 0
-				if (top) {
-					cid = from.shift()!
-				} else {
-					cid = from.pop()!
+			try {
+				for (let i = 0; i < limit; i++) {
+					let cid = 0
+					if (top) {
+						cid = from.shift()!
+					} else {
+						cid = from.pop()!
+					}
+					let card = Card.byId(cid)
+					if (dir != Facing.None) {
+						card.dir = dir
+					}
+					if (cid != 0 && !to.includes(cid)) {
+						to.push(cid)
+					} else {
+						console.log(`found duplicate card [${cid}]${card.toString}`)
+					}
 				}
-				let card = Card.byId(cid)
-				if (dir != Facing.None) {
-					card.dir = dir
-				}
-				if (cid != 0 && !to.includes(cid)) {
-					to.push(cid)
-				} else {
-					console.log(`found duplicate card [${cid}]${card.toString}`)
-				}
+			} catch (e) {
+				console.log(`error moving cards`)
 			}
-		 } else {
-		 	console.log(`from array is empty, no move.`)
-		 }
+		} else {
+			console.log(`from array is empty, no move.`)
+		}
 	}
 
 	extractPlayerCards(p: Player) {
@@ -229,8 +234,8 @@ export class Deck {
 		}
 		this.renderPlayers(this.svgcontainer)
 		this.setCurrentPlayer(this.players[0]?.id) //fixme
-		const drawn = this.jokersDrawn()	
-		if (drawn>this.jokerNotified ) {
+		const drawn = this.jokersDrawn()
+		if (drawn > this.jokerNotified) {
 			this.showNotification('Joker Drawn Reshuffle and issue Bennies.', "WARNING")
 			this.jokerNotified = drawn
 		}
@@ -251,7 +256,7 @@ export class Deck {
 			deckdiv.classList.add(Card.relcard[0])
 			deckcarddiv = doc.createElement('div') as HTMLDivElement
 			deckcarddiv.classList.add('flex-item-2')
-			deckcarddiv.classList.add(...Card.relcard)
+			deckcarddiv.classList.add(...Card.concard)
 			deckcarddiv.id = "drawdeckcards"
 			deckfieldset.appendChild(deckdiv)
 			deckfieldset.appendChild(deckcarddiv)
@@ -286,7 +291,7 @@ export class Deck {
 				deckdiv.appendChild(joke)
 
 				const sb = ButtonFactory.getButton("sb", "Change Backs", "card-exchange", "")
-				sb.addEventListener('click',  () =>{
+				sb.addEventListener('click', () => {
 					const deck = Deck.getInstance()
 					deck.changeBack()
 					deck.updateOBR()
@@ -312,7 +317,7 @@ export class Deck {
 		}
 	}
 	changeBack() {
-		this.back= (++this.back>=Card.backs.length)?0:this.back
+		this.back = (++this.back >= Card.backs.length) ? 0 : this.back
 	}
 
 	renderDiscardPile(container: HTMLDivElement) {
@@ -331,7 +336,7 @@ export class Deck {
 			discardcarddiv = doc.createElement('div') as HTMLDivElement
 			discardcarddiv.id = "discardpilecards"
 			discardcarddiv.classList.add("flex-item-2")
-			discardcarddiv.classList.add(...Card.relcard)
+			discardcarddiv.classList.add(...Card.concard)
 			discardfieldset.appendChild(discarddiv)
 			discardfieldset.appendChild(discardcarddiv)
 			container.appendChild(discardfieldset)
@@ -380,11 +385,11 @@ export class Deck {
 			specialfieldset.title = "Card Pool"
 			const specialdiv = doc.createElement('div') as HTMLDivElement
 			specialdiv.classList.add("flex-item-3")
-			specialdiv.classList.add(...Card.relcard)
+			specialdiv.classList.add(Card.relcard[0])
 			specialcarddiv = doc.createElement('div') as HTMLDivElement
 			specialcarddiv.id = "cardpoolcards"
 			specialcarddiv.classList.add("flex-item-2")
-			specialcarddiv.classList.add(...Card.relcard)
+			specialcarddiv.classList.add(...Card.concard)
 			specialfieldset.appendChild(specialdiv)
 			specialfieldset.appendChild(specialcarddiv)
 			container.appendChild(specialfieldset)
@@ -413,7 +418,7 @@ export class Deck {
 		}
 
 		let x = 0
-		let inc =Util.rem2px(Card.cardStacked())
+		let inc = Util.rem2px(Card.cardStacked())
 		for (const c of this.cardpool) {
 			let card = Card.byId(c)
 			card.render(specialcarddiv, x, 0, Facing.Up)

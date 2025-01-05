@@ -45,6 +45,7 @@ export class Card {
 	static backs: SVGSVGElement[] = []
 	static abscard: string[] = ["position-absolute", "small-card"]
 	static relcard: string[] = ["position-relative", "small-card"]
+	static concard: string[] = ["position-relative", "small-card-div"]
 	sequence: number
 	dir: Facing = Facing.Down
 	suit: Suit
@@ -116,7 +117,7 @@ export class Card {
 			return 'card'
 	}
 
-	render(container: HTMLDivElement, x: number, y: number, override:Facing=Facing.None) {
+	render(container: HTMLDivElement, x: number, y: number, override:Facing=Facing.None): SVGSVGElement {
 		const doc = container.ownerDocument
 		const div = doc.createElement('div') as HTMLDivElement
 		const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement
@@ -131,5 +132,6 @@ export class Card {
 			svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 		svg.style.top = `${y}px`
 		svg.style.left = `${x}px`
+		return svg
 	}
 }
