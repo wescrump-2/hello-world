@@ -1,4 +1,4 @@
-import OBR from "@owlbear-rodeo/sdk";
+import OBR, { Image } from "@owlbear-rodeo/sdk";
 import { PlayerMeta } from "./player";
 import { Util } from "./util";
 import { Deck } from "./deck";
@@ -32,7 +32,9 @@ export function setupContextMenu() {
 			if (addToInitiative) {
 				await OBR.scene.items.updateItems(context.items, (items) => {
 					items.forEach(item => {
-						const player = deck.addPlayer(item.name);
+						let img = item as Image
+						let name = (img.text.plainText.length>0)?img.text.plainText:img.name
+						const player = deck.addPlayer(name);
 						if (player) {
 							item.metadata[Util.PlayerMkey] = player.getMeta;
 						}
