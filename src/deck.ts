@@ -140,6 +140,9 @@ export class Deck {
 	}
 
 	dealFromTop(hand: number[], numCards: number, dir: Facing) {
+		if (numCards>this.drawdeck.length) {
+			this.showNotification('Deck depleted, shuffle all cards and redeal.', "ERROR");
+		}
 		this.moveToPool(hand, this.drawdeck, numCards, true, dir);
 	}
 
@@ -220,7 +223,7 @@ export class Deck {
 		this.setCurrentPlayer(this.players[0]?.id || "");
 		const drawnJokers = this.jokersDrawn();
 		if (drawnJokers > this.jokerNotified) {
-			this.showNotification('Joker Drawn: Reshuffle and issue Bennies.', "WARNING");
+			this.showNotification('Joker drawn, shuffle and issue Bennies.',"INFO");
 			this.jokerNotified = drawnJokers;
 		}
 	}

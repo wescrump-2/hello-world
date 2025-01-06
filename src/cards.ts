@@ -117,7 +117,7 @@ export class Card {
             return 'card';
         }
     }
-
+  
     public render(container: HTMLDivElement, x: number, y: number, override: Facing = Facing.None): SVGSVGElement {
         if (override !== Facing.None) this.dir = override;
 

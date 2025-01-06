@@ -278,8 +278,21 @@ export class Player {
 			p.toggleLevelHeaded();
 		}, this.levelHeaded || this.impLevelHeaded);
 
+		const button = ButtonFactory.getButton("info", "Interludes", "suits", "")
+		button.addEventListener('click', function () {
+			const p = Player.getPlayer(this);
+			const suit = Card.byId(p.bestCard()).suit.toString().replace("Red", "").replace("Black", "")
+			OBR.popover.open({
+				id: `${Util.ID}/interlude`,
+				url: `/interludes.html#${suit}`,
+				height: 400,
+				width: 600,
+			})
+		})
+		playerdiv.appendChild(button)
+
 		// Render cards
-		let inc = Util.rem2px(Card.cardSpread());
+		let inc = Util.rem2px(Card.cardSpread())
 		if (this.hand.length > 12) inc = Math.trunc(inc / 4);
 		else if (this.hand.length > 6) inc = Math.trunc(inc / 2);
 
