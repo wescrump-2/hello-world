@@ -16,24 +16,28 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
   <object id="cards-svg" width="0" height="0" data="${cardsImage}" type="image/svg+xml"></object>
   <object id="buttons-svg" width="0" height="0" data="${buttonsImage}" type="image/svg+xml"></object>   
-`;
-
-let unsubscribe: (() => void)[] = [];
-
-OBR.onReady(async () => {
-  const svgCards = document.getElementById('cards-svg') as HTMLObjectElement;
-  const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
+`
+function setupCards() {
+  const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
+  const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     console.log("Button and card images loaded");
   } else {
-    console.error("Button and card images NOT loaded");
+    console.error("Failed to load SVG document")
   }
+}
+window.addEventListener("load", () => {
+  setupCards()
+})
 
-  setupContextMenu();
-  await setupGameState();
-});
+OBR.onReady(async () => {
+    setupContextMenu();
+    await setupGameState();
+  });
 
+
+let unsubscribe: (() => void)[] = [];
 async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
   try {
