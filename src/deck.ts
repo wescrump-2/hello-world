@@ -199,7 +199,7 @@ export class Deck {
 	}
 
 	addPlayer(name: string, id: string): Player {
-		const p = new Player(name,id);
+		const p = new Player(name, id);
 		this.players.push(p);
 		return p;
 	}
@@ -239,7 +239,7 @@ export class Deck {
 				this.addGMButtons(deckCardDiv.parentElement as HTMLFieldSetElement, [
 					{ id: "di", label: "Deal Initiative", icon: "card-draw", action: () => this.drawInitiative() },
 					{ id: "dint", label: "Deal Interlude", icon: "suits", action: () => this.drawInterlude() },
-					{ id: "joke", label: "Use Four Jokers", icon: "joker", toggle: true, action: () => this.toggleJokers() },
+					{ id: "joke", label: "Use Four Jokers", icon: "joker", setting: false, toggle: true, action: () => this.toggleJokers() },
 					{ id: "sb", label: "Change Backs", icon: "card-exchange", action: () => this.changeBack() }
 				]);
 			}
@@ -271,11 +271,13 @@ export class Deck {
 	}
 
 	// Helper function to add GM buttons
-	private addGMButtons(container: HTMLFieldSetElement, buttons: { id: string; label: string; icon: string; toggle?: boolean; action: () => void }[]) {
+	private addGMButtons(container: HTMLFieldSetElement, buttons: { id: string; label: string; icon: string; setting?: boolean; toggle?: boolean; action: () => void }[]) {
 		const div = container.querySelector('div') as HTMLDivElement;
-		buttons.forEach(({ id, label, icon, toggle, action }) => {
+		buttons.forEach(({ id, label, icon, setting, toggle, action }) => {
 			const button = ButtonFactory.getButton(id, label, icon, "");
-			if (toggle) button.classList.add("btn-success");
+			if (toggle) {
+				if (setting) button.classList.add("btn-success");
+			}
 			button.addEventListener('click', (event) => {
 				action();
 				this.updateOBR();
@@ -357,7 +359,7 @@ export class Deck {
 		// 	if (cards.length > 39) inc /= ff
 		// }
 		// inc=Math.max(8,Math.ceil(inc))
-		let inc=Util.offset(cardIncrement,cards.length)
+		let inc = Util.offset(cardIncrement, cards.length)
 		for (const c of cards) {
 			Card.byId(c).render(container, x, 0, facing);
 			x += inc;
@@ -399,6 +401,7 @@ export class Deck {
 	async updateState(dmd: DeckMeta) {
 		if (dmd) {
 			this.setMeta = dmd;
+			this.renderDeck();
 		} else {
 			console.log("No metadata found for this extension in the room.");
 			this.newGame();
