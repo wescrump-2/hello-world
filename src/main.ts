@@ -118,7 +118,7 @@ async function updatePlayerState(items: Item[]) {
 function rehydratePlayer(pmd: PlayerMeta): Player {
   let player = Deck.getInstance().getPlayer(pmd.id);
   if (!player) {
-    player = Deck.getInstance().addPlayer(pmd.name);
+    player = Deck.getInstance().addPlayer(pmd.name,pmd.id);
     Deck.getInstance().extractPlayerCards(player);
   }
   player.setMeta = pmd;

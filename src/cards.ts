@@ -98,16 +98,8 @@ export class Card {
         return this.rank === Rank.Joker;
     }
 
-    public static cardStackedDown(): string {
-        return getComputedStyle(document.documentElement).getPropertyValue('--card-stacked-down-inc').trim();
-    }
-
-    public static cardStacked(): string {
-        return getComputedStyle(document.documentElement).getPropertyValue('--card-stacked-inc').trim();
-    }
-
-    public static cardSpread(): string {
-        return getComputedStyle(document.documentElement).getPropertyValue('--card-spread-inc').trim();
+    public static cardSpread(type:string): string {
+        return getComputedStyle(document.documentElement).getPropertyValue(type).trim();
     }
 
     public toString(): string {

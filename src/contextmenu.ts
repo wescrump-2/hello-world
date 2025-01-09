@@ -33,8 +33,8 @@ export function setupContextMenu() {
 				await OBR.scene.items.updateItems(context.items, (items) => {
 					items.forEach(item => {
 						let img = item as Image
-						let name = (img.text.plainText.length>0)?img.text.plainText:img.name
-						const player = deck.addPlayer(name);
+						let name = (img.text.plainText.length > 0) ? img.text.plainText : img.name
+						const player = deck.addPlayer(name, item.id);
 						if (player) {
 							item.metadata[Util.PlayerMkey] = player.getMeta;
 						}

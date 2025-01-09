@@ -1,3 +1,5 @@
+import { Card } from "./cards";
+
 export class Util {
     static ID = "com.wescrump.initiative-tracker";
     static PlayerMkey = `${Util.ID}/player`;
@@ -9,9 +11,22 @@ export class Util {
      * @returns The pixel equivalent of the REM value.
      */
     static rem2px(remstr: string): number {
-        const rem = parseFloat(remstr);
+        let rem = parseFloat(remstr);
+        if (Number.isNaN(rem)) rem=1.0
         const fontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
         return rem * fontSize;
+    }
+
+    static offset(cardIncrement: string, len: number): number {
+        let ff = 2
+        let inc = Util.rem2px(Card.cardSpread(cardIncrement))
+        if ( '--card-spread-inc' === cardIncrement) {
+            if (len > 7) inc /= ff
+            if (len > 15) inc /= ff
+            if (len > 26) inc /= ff
+            if (len > 51) inc /= ff
+        }
+        return Math.max(5,Math.ceil(inc))
     }
 
     /**

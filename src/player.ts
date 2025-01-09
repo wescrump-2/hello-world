@@ -30,10 +30,10 @@ export interface PlayerMeta {
 export class Player {
 	private meta: PlayerMeta;
 
-	constructor(name: string) {
+	constructor(name: string, id: string) {
 		this.meta = {
 			hand: [],
-			id: Util.shortUUID(),
+			id: id,
 			name: name,
 			owner: "",
 			onHold: false,
@@ -277,10 +277,15 @@ export class Player {
 		playerdiv.appendChild(button)
 
 		// Render cards
-		let inc = Util.rem2px(Card.cardSpread())
-		if (this.hand.length > 12) inc = Math.trunc(inc / 4);
-		else if (this.hand.length > 6) inc = Math.trunc(inc / 2);
+		// let inc = Util.rem2px(Card.cardSpread('--card-spread-inc'))
+		// if (this.hand.length > 26) inc = Math.trunc(inc / 8);
+		// else if (this.hand.length > 13) inc = Math.trunc(inc / 4);
+		// else if (this.hand.length > 6) inc = Math.trunc(inc / 2);
+		// inc=Math.max(8,Math.ceil(inc))
 
+
+		// let x = 0
+		let inc = Util.offset('--card-spread-inc', this.hand.length)
 		this.hand.forEach(cardSeq => {
 			const card = Card.byId(cardSeq);
 			const csvg = card.render(carddiv, x, y, Facing.Up);

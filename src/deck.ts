@@ -140,7 +140,7 @@ export class Deck {
 	}
 
 	dealFromTop(hand: number[], numCards: number, dir: Facing) {
-		if (numCards>this.drawdeck.length) {
+		if (numCards > this.drawdeck.length) {
 			this.showNotification('Deck depleted, shuffle all cards and redeal.', "ERROR");
 		}
 		this.moveToPool(hand, this.drawdeck, numCards, true, dir);
@@ -172,8 +172,8 @@ export class Deck {
 						console.log(`Duplicate card found: [${cid}] ${card.toString()}`);
 					}
 				}
-			} catch (e) {
-				console.error('Error moving cards:', e);
+			} catch (error) {
+				console.error('Error moving cards:', error);
 			}
 		} else {
 			console.log('From array is empty, no move.');
@@ -198,8 +198,8 @@ export class Deck {
 			+ this.cardpool.filter(Card.isJoker).length;
 	}
 
-	addPlayer(name: string): Player {
-		const p = new Player(name);
+	addPlayer(name: string, id: string): Player {
+		const p = new Player(name,id);
 		this.players.push(p);
 		return p;
 	}
@@ -223,7 +223,7 @@ export class Deck {
 		this.setCurrentPlayer(this.players[0]?.id || "");
 		const drawnJokers = this.jokersDrawn();
 		if (drawnJokers > this.jokerNotified) {
-			this.showNotification('Joker drawn, shuffle and issue Bennies.',"INFO");
+			this.showNotification('Joker drawn, shuffle and issue Bennies.', "INFO");
 			this.jokerNotified = drawnJokers;
 		}
 	}
@@ -248,7 +248,7 @@ export class Deck {
 		const legend = deckCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
 		legend.textContent = `Draw Deck [${this.drawdeck.length}]`;
 
-		this.clearAndRenderCards(deckCardDiv, this.drawdeck, Facing.Down, Card.cardStackedDown());
+		this.clearAndRenderCards(deckCardDiv, this.drawdeck, Facing.Down, '--card-stacked-down-inc');
 	}
 
 	// Helper function to create deck container
@@ -308,7 +308,7 @@ export class Deck {
 		const legend = discardCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
 		legend.textContent = `Discard Pile [${this.discardpile.length}]`;
 
-		this.clearAndRenderCards(discardCardDiv, this.discardpile, Facing.Up, Card.cardStacked());
+		this.clearAndRenderCards(discardCardDiv, this.discardpile, Facing.Up, '--card-spread-inc');
 	}
 
 	// Render the card pool
@@ -321,7 +321,7 @@ export class Deck {
 			this.addGMButtons(specialCardDiv.parentElement as HTMLFieldSetElement, [
 				{
 					id: "cp", label: "Draw a Card", icon: "card-pickup", action: () => {
-						this.moveToSpecialPool(this.drawdeck, 1);
+						this.dealFromTop(this.cardpool, 1, Facing.Up);
 						this.updateOBR();
 						this.renderDeck();
 					}
@@ -339,7 +339,7 @@ export class Deck {
 		const legend = specialCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
 		legend.textContent = `Card Pool [${this.cardpool.length}]`;
 
-		this.clearAndRenderCards(specialCardDiv, this.cardpool, Facing.Up, Card.cardStacked());
+		this.clearAndRenderCards(specialCardDiv, this.cardpool, Facing.Up, '--card-spread-inc');
 	}
 
 	// Helper function to clear and render cards
@@ -347,8 +347,17 @@ export class Deck {
 		while (container.firstChild) {
 			container.removeChild(container.firstChild);
 		}
-		let x = 0;
-		const inc = Util.rem2px(cardIncrement);
+		let x = 0
+		// let ff = 2
+		// let inc = Util.rem2px(Card.cardSpread(cardIncrement))
+		// if ( '--card-spread-inc' === cardIncrement) {
+		// 	if (cards.length > 7) inc /= ff
+		// 	if (cards.length > 13) inc /= ff
+		// 	if (cards.length > 26) inc /= ff
+		// 	if (cards.length > 39) inc /= ff
+		// }
+		// inc=Math.max(8,Math.ceil(inc))
+		let inc=Util.offset(cardIncrement,cards.length)
 		for (const c of cards) {
 			Card.byId(c).render(container, x, 0, facing);
 			x += inc;

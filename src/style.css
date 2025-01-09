@@ -21,9 +21,8 @@
   --spacing: 6px;
   --border: 1px solid var(--theme-color);
   --border-radius: 6px;
-  --card-spread-inc: 2.8em;
-  --card-stacked-inc: .42em;
-  --card-stacked-down-inc: .3em;
+  --card-spread-inc: 2.8rem;
+  --card-stacked-down-inc: .1rem;
   --card-height: 3.7rem;
   --button-size: 1.3em;
 }
