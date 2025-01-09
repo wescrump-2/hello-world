@@ -1,7 +1,7 @@
 export class ButtonFactory {
-    private static readonly BUTTON_CLASS = 'btn';
-    private static readonly SUCCESS_CLASS = 'btn-success';
-    private static readonly SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+    static readonly BUTTON_CLASS = 'btn';
+    static readonly SUCCESS_CLASS = 'btn-success';
+    static readonly SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
     /**
      * Creates a button with specified properties.

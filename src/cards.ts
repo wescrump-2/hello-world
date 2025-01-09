@@ -1,3 +1,4 @@
+import { ButtonFactory } from "./button";
 import { Deck } from "./deck";
 
 export enum Suit {
@@ -115,7 +116,7 @@ export class Card {
 
         const doc = container.ownerDocument;
         const div = doc.createElement('div') as HTMLDivElement;
-        const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
+        const svg = doc.createElementNS(ButtonFactory.SVG_NAMESPACE, "svg") as SVGSVGElement;
 
         svg.innerHTML = Deck.getInstance().getImageSvg(this);
         div.appendChild(svg);

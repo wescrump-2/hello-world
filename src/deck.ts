@@ -239,7 +239,7 @@ export class Deck {
 				this.addGMButtons(deckCardDiv.parentElement as HTMLFieldSetElement, [
 					{ id: "di", label: "Deal Initiative", icon: "card-draw", action: () => this.drawInitiative() },
 					{ id: "dint", label: "Deal Interlude", icon: "suits", action: () => this.drawInterlude() },
-					{ id: "joke", label: "Use Four Jokers", icon: "joker", setting: false, toggle: true, action: () => this.toggleJokers() },
+					{ id: "joke", label: "Use Four Jokers", icon: "joker", setting: this.use4jokers, toggle: true, action: () => this.toggleJokers() },
 					{ id: "sb", label: "Change Backs", icon: "card-exchange", action: () => this.changeBack() }
 				]);
 			}
@@ -276,7 +276,10 @@ export class Deck {
 		buttons.forEach(({ id, label, icon, setting, toggle, action }) => {
 			const button = ButtonFactory.getButton(id, label, icon, "");
 			if (toggle) {
-				if (setting) button.classList.add("btn-success");
+				if (setting) 
+					button.classList.add(ButtonFactory.SUCCESS_CLASS);
+				else
+				    button.classList.remove(ButtonFactory.SUCCESS_CLASS)
 			}
 			button.addEventListener('click', (event) => {
 				action();
