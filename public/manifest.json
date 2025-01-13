@@ -3,7 +3,7 @@
   "version": "1.0.103023",
   "manifest_version": 1,
   "author": "Wes Crump",
-  "icon": "/logo.png",
+  "icon": "/icon.png",
   "description": "Savage Worlds card based initiative tracker for Owlbear Rodeo.",
   "action": {
     "title": "Savage Worlds Initiative",
