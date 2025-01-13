@@ -40,7 +40,7 @@ export function setupContextMenu() {
 						}
 					});
 					deck.renderDeck();
-				});
+				}).then(() => {console.log(`added player ${this.id}`)});;
 			} else {
 				await OBR.scene.items.updateItems(context.items, (items) => {
 					let shouldRender = false;
@@ -57,7 +57,7 @@ export function setupContextMenu() {
 						}
 					});
 					if (shouldRender) deck.renderDeck();
-				});
+				}).then(() => {console.log(`deleted player ${this.id}`)});;
 			}
 		},
 	});

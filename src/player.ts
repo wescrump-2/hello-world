@@ -232,13 +232,13 @@ export class Player {
 				if (p.outOfCombat) p.discardHand();
 				ButtonFactory.toggle(event!, "");
 			}, this.outOfCombat);
-			const removePlayer = this.createButton(playerdiv, "rp", "Remove Player", "trash-can", (p) => {
+			this.createButtonrp(playerdiv, "rp", "Remove Player", "trash-can", (p) => {
 				p.removeRender();
 				deck.removePlayer(p);
-				deck.updateOBR()
-				deck.renderDeck()
+				deck.updateOBR();
+				deck.renderDeck();
 			});
-			removePlayer.classList.add("btn-danger");
+			//removePlayer.classList.add("btn-danger");
 		}
 
 		// Player state toggles
@@ -303,6 +303,24 @@ export class Player {
 	}
 
 	// Helper function for button creation, used inside the render method
+	createButtonrp(div: HTMLDivElement, id: string, title: string, imageKey: string, onClick: (p: Player, event?: Event) => void, toggle?: boolean) {
+		const button = ButtonFactory.getButton(id, title, imageKey, "");
+		if (toggle) button.classList.add("btn-success");
+		button.addEventListener('click', function (event) {
+			const p = Player.getPlayer(this);
+			onClick(p, event);
+			// p.updateOBR();
+			// const deck = Deck.getInstance();
+			// deck.updateOBR();
+			// deck.renderDeck();
+		});
+		div.appendChild(button);
+		return button;
+	}
+
+
+
+	// Helper function for button creation, used inside the render method
 	createButton(div: HTMLDivElement, id: string, title: string, imageKey: string, onClick: (p: Player, event?: Event) => void, toggle?: boolean) {
 		const button = ButtonFactory.getButton(id, title, imageKey, "");
 		if (toggle) button.classList.add("btn-success");
@@ -327,7 +345,7 @@ export class Player {
 						char.metadata[Util.PlayerMkey] = this.getMeta;
 					}
 				})
-			);
+			).then(() => { console.log(`updated player ${this.id}`) });
 		} catch (error) {
 			console.error("Failed to update metadata in OBR:", error);
 		}
@@ -342,7 +360,7 @@ export class Player {
 						delete char.metadata[Util.PlayerMkey];
 					}
 				})
-			);
+			).then(() => { console.log(`deleted player ${this.id}`) });
 		} catch (error) {
 			console.error("Failed to remove metadata from character:", error);
 		}
