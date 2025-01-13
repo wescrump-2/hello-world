@@ -24,7 +24,7 @@
   --card-spread-inc: 2.8rem;
   --card-stacked-down-inc: .1rem;
   --card-height: 3.7rem;
-  --button-size: 1.6rem;
+  --button-size: 26px;
 }
 
 a {
@@ -138,6 +138,9 @@ button:focus-visible {
   margin: 0px;
   padding: 0px;
   vertical-align: middle;
+  border:0px;
+  background-color: transparent;
+  color:white;
 }
 
 .toggle-image path {
@@ -150,7 +153,7 @@ button:focus-visible {
 }
 
 .toggle-image path {
-  fill: #A9A9A9;
+  fill: #dfdfdf;
   /* Default color */
 }
 

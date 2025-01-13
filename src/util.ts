@@ -206,7 +206,7 @@ export class Util {
         let inc = Util.rem2px(Card.cardSpread(cardIncrement))
         if ('--card-spread-inc' === cardIncrement) {
             if (len > 7) inc /= ff
-            if (len > 15) inc /= ff
+            if (len > 14) inc /= ff
             if (len > 26) inc /= ff
             if (len > 51) inc /= ff
         }
