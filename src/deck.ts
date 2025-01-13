@@ -237,8 +237,8 @@ export class Deck {
 			deckCardDiv = this.createDeckContainer(doc, 'Draw', 'drawdeckcards', 'Draw Deck');
 			if (this.isGM) {
 				this.addGMButtons(deckCardDiv.parentElement as HTMLFieldSetElement, [
-					{ id: "di", label: "Deal Initiative", icon: "card-draw", action: () => this.drawInitiative() },
-					{ id: "dint", label: "Deal Interlude", icon: "suits", action: () => this.drawInterlude() },
+					{ id: "di", label: "Deal Action cards", icon: "card-draw", action: () => this.drawInitiative() },
+					{ id: "dint", label: "Deal Interlude cards", icon: "suits", action: () => this.drawInterlude() },
 					{ id: "joke", label: "Use Four Jokers", icon: "joker", setting: this.use4jokers, toggle: true, action: () => this.toggleJokers() },
 					{ id: "sb", label: "Change Backs", icon: "card-exchange", action: () => this.changeBack() }
 				]);
@@ -353,15 +353,6 @@ export class Deck {
 			container.removeChild(container.firstChild);
 		}
 		let x = 0
-		// let ff = 2
-		// let inc = Util.rem2px(Card.cardSpread(cardIncrement))
-		// if ( '--card-spread-inc' === cardIncrement) {
-		// 	if (cards.length > 7) inc /= ff
-		// 	if (cards.length > 13) inc /= ff
-		// 	if (cards.length > 26) inc /= ff
-		// 	if (cards.length > 39) inc /= ff
-		// }
-		// inc=Math.max(8,Math.ceil(inc))
 		let inc = Util.offset(cardIncrement, cards.length)
 		for (const c of cards) {
 			Card.byId(c).render(container, x, 0, facing);

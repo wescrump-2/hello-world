@@ -1,16 +1,8 @@
 export class ButtonFactory {
-    static readonly BUTTON_CLASS = 'btn';
+    static readonly BUTTON_CLASS = 'toggle-image';
     static readonly SUCCESS_CLASS = 'btn-success';
     static readonly SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-    /**
-     * Creates a button with specified properties.
-     * @param id - The id for the button.
-     * @param title - The title/tooltip for the button.
-     * @param imageKey - The key to find the appropriate SVG icon.
-     * @param uuid - A unique identifier for the button.
-     * @returns A newly created HTMLButtonElement.
-     */
     static getButton(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
         const button = document.createElement('button') as HTMLButtonElement;
         button.id = id;

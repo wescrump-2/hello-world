@@ -24,7 +24,7 @@
   --card-spread-inc: 2.8rem;
   --card-stacked-down-inc: .1rem;
   --card-height: 3.7rem;
-  --button-size: 1.3em;
+  --button-size: 1.6rem;
 }
 
 a {
@@ -52,7 +52,7 @@ h1 {
 }
 
 #app {
-  max-width: 1280px;
+  max-width: 400px;
   min-width: var(--container-width);
   margin: 0 auto;
   padding: 0 auto;
@@ -90,7 +90,7 @@ h1 {
 }
 
 legend {
-  font-family: Anton, "Trebuchet MS", "Lucida Sans", "Lucida Grande", Verdana, Geneva, Tahoma, sans-serif;
+  font-family: Impact,  "Trebuchet MS", "Lucida Sans", "Lucida Grande", Verdana, Geneva, Tahoma, Anton, sans-serif;
   font-size: medium;
   font-weight: bolder;
   text-align: left;
@@ -112,7 +112,7 @@ fieldset.nextplayer {
   color: #888;
 }
 
-button {
+/* button {
   border-radius: var(--border-radius);
   border: 1px solid transparent;
   padding: .1rem .1rem;
@@ -122,18 +122,45 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-}
+} */
 
-button:hover {
+/* button:hover {
   border-color: #646cff;
 }
 
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+} */
+
+.toggle-image {
+  cursor: pointer;
+  margin: 0px;
+  padding: 0px;
+  vertical-align: middle;
 }
 
-body .btn {
+.toggle-image path {
+  transition: fill 0.3s ease;
+}
+
+.toggle-image.btn-success path {
+  fill: #007BFF;
+  /* Active color */
+}
+
+.toggle-image path {
+  fill: #A9A9A9;
+  /* Default color */
+}
+
+.toggle-image:hover path {
+  fill: #0056b3;
+  /* A darker shade for hover */
+}
+
+
+/* body .btn {
   margin: .2rem
 }
 
@@ -184,9 +211,9 @@ body .btn {
   color: #fff;
   background-color: #270dd5;
   border-color: #198754
-}
+} */
 
-body .btn:hover {
+/* body .btn:hover {
   color: #fff;
   background-color: #157347;
   border-color: #146c43
@@ -270,7 +297,7 @@ body .btn:disabled {
 body .btn:disabled:hover {
   background-color: #333;
   color: #666
-}
+} */
 
 @media (prefers-color-scheme: light) {
   :root {

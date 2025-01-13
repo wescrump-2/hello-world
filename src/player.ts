@@ -225,7 +225,7 @@ export class Player {
 		// GM-only actions
 		const deck = Deck.getInstance();
 		if (deck.isGM) {
-			this.createButton(playerdiv, "drawhand", "Draw Hand", "poker-hand", (p) => p.drawInitiative());
+			this.createButton(playerdiv, "drawhand", "Draw Action cards", "poker-hand", (p) => p.drawInitiative());
 			this.createButton(playerdiv, "discardhand", "Discard Hand", "hand-discard", (p) => deck.moveToDiscardPool(p.hand, 0));
 			this.createButton(playerdiv, "outcombat", "Out of Combat", "truce", (p: Player, event: Event | undefined) => {
 				p.outOfCombat = !p.outOfCombat;
