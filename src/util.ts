@@ -1,9 +1,13 @@
 import { Card } from "./cards";
 
 export class Util {
+    static readonly BUTTON_CLASS = 'toggle-image';
+    static readonly SUCCESS_CLASS = 'btn-success';
+    static readonly SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     static ID = "com.wescrump.initiative-tracker";
     static PlayerMkey = `${Util.ID}/player`;
     static DeckMkey = `${Util.ID}/deck`;
+
     static hexToRgb(hex: string): { r: number; g: number; b: number } {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -145,22 +149,30 @@ export class Util {
         return colors;
     }
 
-    static readonly BUTTON_CLASS = 'btn';
-    static readonly SUCCESS_CLASS = 'btn-success';
-    static readonly SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+    static setImage(imageKey: string, button: HTMLButtonElement) {
+        let svg = button.querySelector('svg') as SVGSVGElement;
+        if (!svg) {
+            svg = document.createElementNS(Util.SVG_NAMESPACE, 'svg') as SVGSVGElement;
+            button.appendChild(svg);
+        }
 
-    static getButton(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
-        const button = document.createElement('button') as HTMLButtonElement;
-        button.id = id;
-        button.title = title;
-        button.classList.add(Util.BUTTON_CLASS);
-        button.dataset.pid = uuid; // Use dataset for custom attributes
-        const svg = button.querySelector(`svg`) as SVGElement;
-        Util.setImage(imageKey, svg, '--button-size');
-        return button;
+        const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
+        if (svgButtons.contentDocument) {
+            const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
+            const path = svgDocument.querySelector(`.${imageKey}`) as SVGElement;
+            if (path) {
+                svg.style.height = Util.buttonSize()
+                svg.style.width = Util.buttonSize()
+                const root = svgDocument.getRootNode().firstChild as SVGElement
+                const h = root.style.height.replace("px", "")
+                const w = root.style.width.replace("px", "")
+                svg.setAttribute('viewBox', `0 0 ${h} ${w}`)
+                svg.innerHTML = path.outerHTML
+            }
+        }
     }
 
-    static setImage(imageKey: string, svg: SVGElement, css: string) {
+    static setImagex(imageKey: string, svg: SVGElement, css: string) {
         const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
         if (svgButtons.contentDocument) {
             const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
@@ -177,6 +189,116 @@ export class Util {
             }
         }
     }
+
+    private static buttonSize(): string {
+        return getComputedStyle(document.documentElement).getPropertyValue('--button-size').trim();
+    }
+
+    static toggleButton(event: Event, imageKey: string = '') {
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
+
+        const button = event.currentTarget;
+        button.classList.toggle(Util.SUCCESS_CLASS);
+
+        if (imageKey) {
+            let svg = button.querySelector(`svg .${imageKey}`) as SVGSVGElement;
+            if (!svg) {
+                Util.setImage(imageKey, button);
+            }
+        }
+    }
+    // static toggle(event: Event, imageKey: string = '') {
+    //     if (!(event.currentTarget instanceof HTMLButtonElement)) return;
+
+    //     const button = event.currentTarget;
+    //     button.classList.toggle(Util.SUCCESS_CLASS);
+
+    //     if (imageKey) {
+    //         let svg = button.querySelector(`svg .${imageKey}`) as SVGSVGElement;
+    //         if (!svg) {
+    //             Util.setImage(imageKey, button);
+    //         }
+    //     }
+    // }
+
+    static getState(event: Event): boolean {
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return false;
+        const button = event.currentTarget;
+        return button.classList.contains(Util.SUCCESS_CLASS);
+    }
+    static getState3way(event: Event, s2imagekey:string): {s1:boolean, s2:boolean} {
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return {s1:false,s2:false};
+        const button = event.currentTarget;
+        let svg = button.querySelector(`svg .${s2imagekey}`) as SVGSVGElement;
+        return {s1:button.classList.contains(Util.SUCCESS_CLASS),s2:!(!svg)}
+    }
+    static setState(event: Event, state1:boolean){
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
+
+        const button = event.currentTarget;
+        if (state1){
+        button.classList.add(Util.SUCCESS_CLASS);
+        } else {
+            button.classList.remove(Util.SUCCESS_CLASS);
+        }
+
+        // if (imageKey1) {
+        //     let svg = button.querySelector(`svg .${imageKey1}`) as SVGSVGElement;
+        //     if (!svg) {
+        //         Util.setImage(imageKey1, button);
+        //     }
+        // }
+    }
+    static setState3way(event: Event, state1:boolean, imageKey1: string, state2:boolean , imageKey2:string){
+        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
+        const button = event.currentTarget;
+        if (state1 || state2) {
+            button.classList.add(Util.SUCCESS_CLASS);
+        } else {
+            button.classList.remove(Util.SUCCESS_CLASS);
+        }
+        if (state2) {
+            if (imageKey2) {
+                let svg = button.querySelector(`svg .${imageKey2}`) as SVGSVGElement;
+                if (!svg) {
+                    Util.setImage(imageKey2, button);
+                }
+            } else {
+                if (imageKey1) {
+                    let svg = button.querySelector(`svg .${imageKey1}`) as SVGSVGElement;
+                    if (!svg) {
+                        Util.setImage(imageKey1, button);
+                    }
+                } 
+            }
+        }
+        
+    }
+
+    static getButtonx(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
+        const button = document.createElement('button') as HTMLButtonElement;
+        button.id = id;
+        button.title = title;
+        button.classList.add(Util.BUTTON_CLASS);
+        button.dataset.pid = uuid; // Use dataset for custom attributes
+        const svg = button.querySelector(`svg`) as SVGElement;
+        Util.setImagex(imageKey, svg, '--button-size');
+        return button;
+    }
+    static getButton(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
+        let button = document.getElementById('xxx') as HTMLButtonElement
+        if (!button){
+            button = document.createElement('button') as HTMLButtonElement;
+      button.id = id;
+            button.title = title;
+            button.classList.add(Util.BUTTON_CLASS);
+            button.dataset.pid = uuid; // Use dataset for custom attributes
+        }
+        Util.setImage(imageKey, button);
+        return button;
+    }
+
+    
 
     private static sizePixels(css: string): string {
         return Util.convertToPixels(getComputedStyle(document.documentElement).getPropertyValue(css).trim())
@@ -235,3 +357,37 @@ export class Util {
         return `${hexUUID.slice(0, 8)}-${hexUUID.slice(8, 12)}-${hexUUID.slice(12, 16)}-${hexUUID.slice(16, 20)}-${hexUUID.slice(20)}`;
     }
 }
+// import OBR from "@owlbear-rodeo/sdk";
+
+// async function checkCharacterOwnership(itemId:string) {
+//   try {
+//     const items = await OBR.scene.items.getItems((item) => item.id === itemId && item.layer === "CHARACTER");
+
+//     if (items.length === 0) {
+//       console.log("Character not found or not on the CHARACTER layer.");
+//       return false;
+//     }
+
+//     const character = items[0];
+//     const currentPlayer = await OBR.player.getId();
+
+//     // Here's where you would check for ownership. Since OBR doesn't directly expose an 'owner' property,
+//     // we'll assume you might have custom metadata or use permissions:
+    
+//     // Example with custom metadata:
+//     if (character.metadata && character.metadata[`${Util.PlayerMkey}/ownerId`] === currentPlayer) {
+//       return true; // The character is owned by the active user
+//     }
+
+//     // If you're using the built-in 'Owner Only' permissions:
+//     // This is more hypothetical because we don't have direct API access to check this:
+//     // if(await OBR.scene.items.hasPermission(character.id, "ownerOnly", currentPlayer.id)) {
+//     //   return true;
+//     // }
+
+//     return false; // If no match is found or if ownership cannot be confirmed
+//   } catch (error) {
+//     console.error('Error checking character ownership:', error);
+//     return false;
+//   }
+// }

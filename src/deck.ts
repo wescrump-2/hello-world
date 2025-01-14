@@ -1,6 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { Player } from "./player";
-import { ButtonFactory } from "./button";
 import { Card, Facing } from "./cards";
 import { Util } from "./util";
 
@@ -198,8 +197,8 @@ export class Deck {
 			+ this.cardpool.filter(Card.isJoker).length;
 	}
 
-	addPlayer(name: string, id: string): Player {
-		const p = new Player(name, id);
+	addPlayer(name: string, id: string, playerId: string): Player {
+		const p = new Player(name, id, playerId);
 		this.players.push(p);
 		return p;
 	}
@@ -274,18 +273,19 @@ export class Deck {
 	private addGMButtons(container: HTMLFieldSetElement, buttons: { id: string; label: string; icon: string; setting?: boolean; toggle?: boolean; action: () => void }[]) {
 		const div = container.querySelector('div') as HTMLDivElement;
 		buttons.forEach(({ id, label, icon, setting, toggle, action }) => {
-			const button = ButtonFactory.getButton(id, label, icon, "");
+			const button = Util.getButton(id, label, icon, "");
 			if (toggle) {
-				if (setting) 
-					button.classList.add(ButtonFactory.SUCCESS_CLASS);
+				if (setting)
+					button.classList.add(Util.SUCCESS_CLASS);
 				else
-				    button.classList.remove(ButtonFactory.SUCCESS_CLASS)
+					button.classList.remove(Util.SUCCESS_CLASS)
 			}
 			button.addEventListener('click', (event) => {
 				action();
 				this.updateOBR();
-				this.renderDeck();
-				if (toggle) ButtonFactory.toggle(event);
+				//this.renderDeck();
+				//if (toggle) Util.toggle(event);
+				Util.setState(event,setting!)
 			});
 			div.appendChild(button);
 		});
@@ -304,7 +304,7 @@ export class Deck {
 					id: "shf", label: "Shuffle", icon: "stack", action: () => {
 						this.newGame();
 						this.updateOBR();
-						this.renderDeck();
+						//this.renderDeck();
 					}
 				}
 			]);
@@ -328,14 +328,14 @@ export class Deck {
 					id: "cp", label: "Draw a Card", icon: "card-pickup", action: () => {
 						this.dealFromTop(this.cardpool, 1, Facing.Up);
 						this.updateOBR();
-						this.renderDeck();
+						//this.renderDeck();
 					}
 				},
 				{
 					id: "dcp", label: "Discard Card Pool", icon: "card-burn", action: () => {
 						this.moveToDiscardPool(this.cardpool, 0);
 						this.updateOBR();
-						this.renderDeck();
+						//this.renderDeck();
 					}
 				}
 			]);
@@ -369,16 +369,23 @@ export class Deck {
 			return bBest - aBest;
 		});
 		this.players.forEach(p => {
-			p.removeRender();
 			p.render(div, x, y);
+		});
+		this.players.forEach(p => {
+			const pfs = div.querySelector(`fieldset[data-pid="${p.id}"]`) as HTMLFieldSetElement
+			if (div && pfs) {
+				div.removeChild(pfs);
+				div.appendChild(pfs);
+			}
 		});
 	}
 
 	// Set the current player
 	setCurrentPlayer(pid: string) {
-		this.currentPlayer = 0; // Placeholder for actual implementation
-		document.querySelectorAll('fieldset[data-pid]').forEach(fs => {
-			fs.classList.toggle("nextplayer", fs.getAttribute('data-pid') === pid);
+		this.currentPlayer = 0;
+		document.querySelectorAll('fieldset[data-pid]').forEach(s => {
+			const fs: HTMLFieldSetElement = s as HTMLFieldSetElement
+			fs.classList.toggle('nextplayer', fs.dataset.pid === pid)
 		});
 	}
 

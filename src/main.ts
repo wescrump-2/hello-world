@@ -105,7 +105,7 @@ async function updatePlayerState(items: Item[]) {
   // Remove players not found in the scene
   const playersToRemove = deck.players.filter(p => !foundPlayers.some(player => player.id === p.id));
   for (const player of playersToRemove) {
-    player.removeRender();
+    // player.removeRender();
     deck.removePlayer(player);
     shouldRender = true;
   }
@@ -116,10 +116,11 @@ async function updatePlayerState(items: Item[]) {
 }
 
 function rehydratePlayer(pmd: PlayerMeta): Player {
-  let player = Deck.getInstance().getPlayer(pmd.id);
+  const deck = Deck.getInstance()
+  let player = deck.getPlayer(pmd.id);
   if (!player) {
-    player = Deck.getInstance().addPlayer(pmd.name,pmd.id);
-    Deck.getInstance().extractPlayerCards(player);
+    player = deck.addPlayer(pmd.name,pmd.id,pmd.playerId);
+    deck.extractPlayerCards(player);
   }
   player.setMeta = pmd;
   return player;

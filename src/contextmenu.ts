@@ -28,13 +28,14 @@ export function setupContextMenu() {
 		async onClick(context) {
 			const deck = Deck.getInstance();
 			const addToInitiative = context.items.every(item => item.metadata[Util.PlayerMkey] === undefined);
-
+			const pid = await OBR.player.getId();
+			const pname = await OBR.player.getName();
 			if (addToInitiative) {
 				await OBR.scene.items.updateItems(context.items, (items) => {
 					items.forEach(item => {
 						let img = item as Image
-						let name = (img.text.plainText.length > 0) ? img.text.plainText : img.name
-						const player = deck.addPlayer(name, item.id);
+						let name = `${(img.text.plainText.length > 0) ? img.text.plainText : img.name}(${pname})`
+						const player = deck.addPlayer(name, item.id, pid)
 						if (player) {
 							item.metadata[Util.PlayerMkey] = player.getMeta;
 						}
@@ -49,7 +50,7 @@ export function setupContextMenu() {
 						if (playerMeta) {
 							const player = deck.getPlayer(playerMeta.id);
 							if (player) {
-								player.removeRender();
+								// player.removeRender();
 								deck.removePlayer(player);
 								shouldRender = true;
 							}
