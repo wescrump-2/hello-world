@@ -221,21 +221,14 @@ export class Util {
     //     }
     // }
 
-    static getState(event: Event): boolean {
-        if (!(event.currentTarget instanceof HTMLButtonElement)) return false;
-        const button = event.currentTarget;
+    static getState(button:HTMLButtonElement): boolean {
         return button.classList.contains(Util.SUCCESS_CLASS);
     }
-    static getState3way(event: Event, s2imagekey:string): {s1:boolean, s2:boolean} {
-        if (!(event.currentTarget instanceof HTMLButtonElement)) return {s1:false,s2:false};
-        const button = event.currentTarget;
+    static getState3way(button:HTMLButtonElement, s2imagekey:string): {s1:boolean, s2:boolean} {
         let svg = button.querySelector(`svg .${s2imagekey}`) as SVGSVGElement;
         return {s1:button.classList.contains(Util.SUCCESS_CLASS),s2:!(!svg)}
     }
-    static setState(event: Event, state1:boolean){
-        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
-
-        const button = event.currentTarget;
+    static setState(button:HTMLButtonElement, state1:boolean){
         if (state1){
         button.classList.add(Util.SUCCESS_CLASS);
         } else {
@@ -249,9 +242,7 @@ export class Util {
         //     }
         // }
     }
-    static setState3way(event: Event, state1:boolean, imageKey1: string, state2:boolean , imageKey2:string){
-        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
-        const button = event.currentTarget;
+    static setState3way(button:HTMLButtonElement, state1:boolean, imageKey1: string, state2:boolean , imageKey2:string){
         if (state1 || state2) {
             button.classList.add(Util.SUCCESS_CLASS);
         } else {
