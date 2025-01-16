@@ -6,7 +6,7 @@ import buttonsImage from '/buttons.svg';
 
 import { setupContextMenu } from "./contextmenu";
 import { Deck, DeckMeta } from './deck';
-import { Player, PlayerMeta } from './player';
+import { PlayerChar, PlayerMeta } from './player';
 import { Util } from './util';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -32,9 +32,9 @@ window.addEventListener("load", () => {
 })
 
 OBR.onReady(async () => {
-    setupContextMenu();
-    await setupGameState();
-  });
+  setupContextMenu();
+  await setupGameState();
+});
 
 
 let unsubscribe: (() => void)[] = [];
@@ -59,13 +59,14 @@ async function setupGameState(): Promise<void> {
       await deck.updateOBR();
     }
   } catch (error) {
-    console.error(`Failed to get room metadata: ${error}`);
+    console.error(`Failed to get room metadata:`, error);
   }
 
   // Setup callback for scene items change
-  unsubscribe.push(OBR.scene.items.onChange(renderList));
+  unsubscribe.push(OBR.scene.items.onChange(updatePlayerState));
 
-  await updatePlayerStateAll();
+  await updatePlayerStateAll()
+  console.log("update player state")
 }
 
 function renderRoom(metadata: any) {
@@ -78,54 +79,55 @@ function renderRoom(metadata: any) {
 
 async function updatePlayerStateAll() {
   try {
-    const items = await OBR.scene.items.getItems(
-      (item): item is Image => item.layer === "CHARACTER" && isImage(item)
-    );
-    await updatePlayerState(items);
+    if (await OBR.scene.isReady()) {
+      const items = await OBR.scene.items.getItems(
+        (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
+      )
+      if (items && items.length > 0) {
+        await updatePlayerState(items)
+      }
+    }
   } catch (error) {
-    console.error(`Failed to get scene items: ${error}`);
-    Deck.getInstance().renderDeck();
+    console.error(`Failed to get scene items:`, error)
   }
+  Deck.getInstance().renderDeck();
 }
 
 async function updatePlayerState(items: Item[]) {
   const deck = Deck.getInstance();
   let shouldRender = false;
-  const foundPlayers: Player[] = [];
 
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
     if (pmd) {
       const player = rehydratePlayer(pmd);
-      foundPlayers.push(player);
+      console.log(`Player:${player.playerId} retrieved from metadata`)
       shouldRender = true;
     }
   }
-
-  // Remove players not found in the scene
-  const playersToRemove = deck.players.filter(p => !foundPlayers.some(player => player.id === p.id));
-  for (const player of playersToRemove) {
-    // player.removeRender();
-    deck.removePlayer(player);
-    shouldRender = true;
-  }
+  // const party = await OBR.party.getPlayers()
+  // const curPid = await OBR.player.getId()
+  // // Remove players is the list of tracked not in scene
+  // for (const player of deck.players) {
+  //   //not curplayer and not in party of scene, remove
+  //   if (player.playerId != curPid && !party.some((mem) => mem.id === player.playerId)) {
+  //     deck.removePlayer(player);
+  //     shouldRender = true;
+  //   }
+  // }
 
   if (shouldRender) {
     deck.renderDeck();
   }
 }
 
-function rehydratePlayer(pmd: PlayerMeta): Player {
+function rehydratePlayer(pmd: PlayerMeta): PlayerChar {
   const deck = Deck.getInstance()
-  let player = deck.getPlayer(pmd.id);
+  let player = deck.getPlayerById(pmd.id);
   if (!player) {
-    player = deck.addPlayer(pmd.name,pmd.id,pmd.playerId);
+    player = deck.addPlayer(pmd.name, pmd.id, pmd.playerId);
     deck.extractPlayerCards(player);
   }
   player.setMeta = pmd;
   return player;
-}
-
-function renderList(items: Item[]): void {
-  updatePlayerState(items);
 }

@@ -8,6 +8,10 @@ export class Util {
     static PlayerMkey = `${Util.ID}/player`;
     static DeckMkey = `${Util.ID}/deck`;
 
+    static display(on:boolean):string {
+        if(on) return "initial"
+        return "none"
+    }
     static hexToRgb(hex: string): { r: number; g: number; b: number } {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -172,42 +176,29 @@ export class Util {
         }
     }
 
-    static setImagex(imageKey: string, svg: SVGElement, css: string) {
-        const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
-        if (svgButtons.contentDocument) {
-            const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
-            const path = svgDocument.querySelector(`#${imageKey}`) as SVGElement;
+    // static setImagex(imageKey: string, svg: SVGElement, css: string) {
+    //     const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
+    //     if (svgButtons.contentDocument) {
+    //         const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
+    //         const path = svgDocument.querySelector(`#${imageKey}`) as SVGElement;
 
-            if (path) {
-                let vbpath = path.getAttribute("viewbox")
-                if (!vbpath)
-                    vbpath = '0 0 512 512'
-                svg.setAttribute('viewBox', vbpath)
-                svg.innerHTML = path.outerHTML
-                svg.setAttribute('width', Util.sizePixels(css))
-                svg.setAttribute('height', Util.sizePixels(css))
-            }
-        }
-    }
+    //         if (path) {
+    //             let vbpath = path.getAttribute("viewbox")
+    //             if (!vbpath)
+    //                 vbpath = '0 0 512 512'
+    //             svg.setAttribute('viewBox', vbpath)
+    //             svg.innerHTML = path.outerHTML
+    //             svg.setAttribute('width', Util.sizePixels(css))
+    //             svg.setAttribute('height', Util.sizePixels(css))
+    //         }
+    //     }
+    // }
 
     private static buttonSize(): string {
         return getComputedStyle(document.documentElement).getPropertyValue('--button-size').trim();
     }
 
-    static toggleButton(event: Event, imageKey: string = '') {
-        if (!(event.currentTarget instanceof HTMLButtonElement)) return;
-
-        const button = event.currentTarget;
-        button.classList.toggle(Util.SUCCESS_CLASS);
-
-        if (imageKey) {
-            let svg = button.querySelector(`svg .${imageKey}`) as SVGSVGElement;
-            if (!svg) {
-                Util.setImage(imageKey, button);
-            }
-        }
-    }
-    // static toggle(event: Event, imageKey: string = '') {
+    // static toggleButton(event: Event, imageKey: string = '') {
     //     if (!(event.currentTarget instanceof HTMLButtonElement)) return;
 
     //     const button = event.currentTarget;
@@ -232,68 +223,55 @@ export class Util {
         if (state1){
         button.classList.add(Util.SUCCESS_CLASS);
         } else {
-            button.classList.remove(Util.SUCCESS_CLASS);
-        }
+            if (button) {
+                button.classList.remove(Util.SUCCESS_CLASS);
+            } else {
+                console.warn('button is null')
+            }
 
-        // if (imageKey1) {
-        //     let svg = button.querySelector(`svg .${imageKey1}`) as SVGSVGElement;
-        //     if (!svg) {
-        //         Util.setImage(imageKey1, button);
-        //     }
-        // }
+        }
     }
-    static setState3way(button:HTMLButtonElement, state1:boolean, imageKey1: string, state2:boolean , imageKey2:string){
+
+    static setState3way(button: HTMLButtonElement, state1: boolean, imageKey1: string, state2: boolean, imageKey2: string) {
         if (state1 || state2) {
             button.classList.add(Util.SUCCESS_CLASS);
         } else {
             button.classList.remove(Util.SUCCESS_CLASS);
         }
+
         if (state2) {
             if (imageKey2) {
                 let svg = button.querySelector(`svg .${imageKey2}`) as SVGSVGElement;
                 if (!svg) {
                     Util.setImage(imageKey2, button);
                 }
-            } else {
-                if (imageKey1) {
-                    let svg = button.querySelector(`svg .${imageKey1}`) as SVGSVGElement;
-                    if (!svg) {
-                        Util.setImage(imageKey1, button);
-                    }
-                } 
+            }
+        } else {
+            if (imageKey1) {
+                let svg = button.querySelector(`svg .${imageKey1}`) as SVGSVGElement;
+                if (!svg) {
+                    Util.setImage(imageKey1, button);
+                }
             }
         }
-        
     }
 
-    static getButtonx(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
-        const button = document.createElement('button') as HTMLButtonElement;
-        button.id = id;
-        button.title = title;
-        button.classList.add(Util.BUTTON_CLASS);
-        button.dataset.pid = uuid; // Use dataset for custom attributes
-        const svg = button.querySelector(`svg`) as SVGElement;
-        Util.setImagex(imageKey, svg, '--button-size');
-        return button;
-    }
-    static getButton(id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
-        let button = document.getElementById('xxx') as HTMLButtonElement
-        if (!button){
-            button = document.createElement('button') as HTMLButtonElement;
-      button.id = id;
-            button.title = title;
-            button.classList.add(Util.BUTTON_CLASS);
-            button.dataset.pid = uuid; // Use dataset for custom attributes
+    static getButton(container: HTMLDivElement, id: string, title: string, imageKey: string, uuid: string): HTMLButtonElement {
+        let button = container.querySelector(`#${id}`) as HTMLButtonElement
+        if (!button) {
+            button = document.createElement('button') as HTMLButtonElement
+            button.id = id;
+            button.title = title
+            button.classList.add(Util.BUTTON_CLASS)
+            if (uuid && uuid.length>0) button.dataset.pid = uuid; // Use dataset for custom attributes
         }
-        Util.setImage(imageKey, button);
-        return button;
+        Util.setImage(imageKey, button)
+        return button
     }
 
-    
-
-    private static sizePixels(css: string): string {
-        return Util.convertToPixels(getComputedStyle(document.documentElement).getPropertyValue(css).trim())
-    }
+    // private static sizePixels(css: string): string {
+    //     return Util.convertToPixels(getComputedStyle(document.documentElement).getPropertyValue(css).trim())
+    // }
 
     static convertToPixels(size: string): string {
         const div = document.createElement('div');
@@ -305,7 +283,6 @@ export class Util {
         document.body.removeChild(div)
         return computedWidth
     }
-
 
     static rem2px(remstr: string): number {
         let rem = parseFloat(remstr);
@@ -348,6 +325,7 @@ export class Util {
         return `${hexUUID.slice(0, 8)}-${hexUUID.slice(8, 12)}-${hexUUID.slice(12, 16)}-${hexUUID.slice(16, 20)}-${hexUUID.slice(20)}`;
     }
 }
+
 // import OBR from "@owlbear-rodeo/sdk";
 
 // async function checkCharacterOwnership(itemId:string) {

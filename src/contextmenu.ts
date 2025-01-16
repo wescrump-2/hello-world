@@ -28,38 +28,54 @@ export function setupContextMenu() {
 		async onClick(context) {
 			const deck = Deck.getInstance();
 			const addToInitiative = context.items.every(item => item.metadata[Util.PlayerMkey] === undefined);
-			const pid = await OBR.player.getId();
-			const pname = await OBR.player.getName();
+
 			if (addToInitiative) {
-				await OBR.scene.items.updateItems(context.items, (items) => {
-					items.forEach(item => {
-						let img = item as Image
-						let name = `${(img.text.plainText.length > 0) ? img.text.plainText : img.name}(${pname})`
-						const player = deck.addPlayer(name, item.id, pid)
-						if (player) {
-							item.metadata[Util.PlayerMkey] = player.getMeta;
+				try {
+					const pid = await OBR.player.getId();
+					try {
+						const pname = await OBR.player.getName();
+						try {
+							await OBR.scene.items.updateItems(context.items, (items) => {
+								items.forEach(item => {
+									let img = item as Image
+									let name = `${(img.text.plainText.length > 0) ? img.text.plainText : img.name}(${pname})`
+									const player = deck.addPlayer(name, item.id, pid)
+									if (player) {
+										item.metadata[Util.PlayerMkey] = player.getMeta;
+										console.log(`added player ${player.id}`)
+									}
+								});
+								deck.renderDeck();
+							})
+						} catch (error) {
+							console.warn(`getId:`, error)
 						}
-					});
-					deck.renderDeck();
-				}).then(() => {console.log(`added player ${this.id}`)});;
+					} catch (error) {
+						console.warn(`getName:`, error)
+					}
+				} catch (error) {
+					console.warn(`addToInitiative:`, error)
+				}
 			} else {
-				await OBR.scene.items.updateItems(context.items, (items) => {
-					let shouldRender = false;
-					items.forEach(item => {
-						const playerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
-						if (playerMeta) {
-							const player = deck.getPlayer(playerMeta.id);
-							if (player) {
-								// player.removeRender();
-								deck.removePlayer(player);
-								shouldRender = true;
+				try {
+					await OBR.scene.items.updateItems(context.items, (items) => {
+						items.forEach(item => {
+							const playerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
+							if (playerMeta) {
+								const player = deck.getPlayerById(playerMeta.id);
+								if (player) {
+									deck.removePlayer(player);
+									console.log(`deleted player ${player.id}`)
+								}
+								delete item.metadata[Util.PlayerMkey];
 							}
-							delete item.metadata[Util.PlayerMkey];
-						}
-					});
-					if (shouldRender) deck.renderDeck();
-				}).then(() => {console.log(`deleted player ${this.id}`)});;
+						})
+						deck.renderDeck();
+					})
+				} catch (error) {
+					console.warn(`removeInitiative:`, error)
+				}
 			}
-		},
-	});
+		}
+	})
 }

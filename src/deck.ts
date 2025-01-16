@@ -1,5 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { Player } from "./player";
+import { PlayerChar } from "./player";
 import { Card, Facing } from "./cards";
 import { Util } from "./util";
 
@@ -23,7 +23,7 @@ export class Deck {
 	svgbuttons!: HTMLObjectElement;
 	svgcontainer!: HTMLDivElement;
 	jokerNotified: number = 0;
-	players: Player[] = [];
+	players: PlayerChar[] = [];
 
 	// Game state
 	private meta: DeckMeta = {
@@ -80,7 +80,7 @@ export class Deck {
 
 	newGame() {
 		this.newRound();
-		this.moveToDiscardPool(this.cardpool);
+		this.returnCardsToDeck(this.cardpool);
 		this.returnCardsToDeck(this.discardpile);
 		this.shuffle();
 	}
@@ -97,8 +97,16 @@ export class Deck {
 		this.players.forEach(p => p.discardHand());
 	}
 
-	getPlayer(pid: string | null): Player | undefined {
-		return this.players.find(p => p.id === pid);
+	getPlayerByOwnerId(pid: string | null): PlayerChar | null {
+		const p = this.players.find(p => p.playerId === pid)
+		if (p) return p
+		else return null
+	}
+
+	getPlayerById(pid: string | null): PlayerChar | null {
+		const p = this.players.find(p => p.id === pid)
+		if (p) return p
+		else return null
 	}
 
 	newRound() {
@@ -125,12 +133,21 @@ export class Deck {
 			...this.cardpool
 		];
 	}
+	getTimeBasedRandomNumber(): number {
+		const now = new Date().getTime();
+		const seed = now % 1000;
+		const random = (seed / 1000);
+		const result = Math.floor(random * 8) + 2;
+		return result;
+	}
 
 	shuffle() {
 		this.initializeDeck();
-		for (let i = this.drawdeck.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[this.drawdeck[i], this.drawdeck[j]] = [this.drawdeck[j], this.drawdeck[i]];
+		for (let s = 0; s < this.getTimeBasedRandomNumber(); s++) {
+			for (let i = this.drawdeck.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[this.drawdeck[i], this.drawdeck[j]] = [this.drawdeck[j], this.drawdeck[i]];
+			}
 		}
 	}
 
@@ -157,8 +174,29 @@ export class Deck {
 		this.moveToPool(this.cardpool, from, numCards, true, Facing.Up);
 	}
 
+	moveCardToPool(to: number[], from: number[], card: number, dir: Facing = Facing.None) {
+		const indx = from.findIndex((c) => c === card)
+		if (indx != -1) {
+			try {
+				let cid = from[indx]
+				let card = Card.byId(cid);
+				if (dir !== Facing.None) card.dir = dir;
+				if (!to.includes(cid)) {
+					to.push(cid);
+					from.splice(indx, 1);
+				} else {
+					console.log(`Duplicate card found: [${cid}] ${card.toString()}`);
+				}
+			} catch (error) {
+				console.error('Error moving cards:', error);
+			}
+		} else {
+			console.log('From does not have card, no move.');
+		}
+	}
+
 	moveToPool(to: number[], from: number[], numCards: number = 0, top: boolean = true, dir: Facing = Facing.None) {
-		const limit = Math.min(numCards || from.length, from.length);
+		const limit = (numCards===0)?from.length:Math.min(numCards, from.length);
 		if (limit > 0) {
 			try {
 				for (let i = 0; i < limit; i++) {
@@ -174,8 +212,6 @@ export class Deck {
 			} catch (error) {
 				console.error('Error moving cards:', error);
 			}
-		} else {
-			console.log('From array is empty, no move.');
 		}
 	}
 
@@ -184,7 +220,7 @@ export class Deck {
 		return Array.from({ length: this.deckcount }, (_, i) => i + 1).filter(c => !allCards.includes(c));
 	}
 
-	extractPlayerCards(p: Player) {
+	extractPlayerCards(p: PlayerChar) {
 		const playerCardsSet = new Set(p.hand);
 		this.drawdeck = this.drawdeck.filter(c => !playerCardsSet.has(c));
 		this.discardpile = this.discardpile.filter(c => !playerCardsSet.has(c));
@@ -197,16 +233,21 @@ export class Deck {
 			+ this.cardpool.filter(Card.isJoker).length;
 	}
 
-	addPlayer(name: string, id: string, playerId: string): Player {
-		const p = new Player(name, id, playerId);
+	addPlayer(name: string, id: string, playerId: string): PlayerChar {
+		const p = new PlayerChar(name, id, playerId);
 		this.players.push(p);
 		return p;
 	}
 
-	removePlayer(player: Player) {
+	removePlayer(player: PlayerChar) {
 		const index = this.players.findIndex(p => p.id === player.id);
 		if (index !== -1) {
-			this.moveToDiscardPool(this.players[index].hand);
+			const p = this.players[index]
+			let pf = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid=${p.id}]`)
+			if (pf) {
+				pf.parentElement?.removeChild(pf)
+			}
+			this.moveToDiscardPool(p.hand);
 			this.players.splice(index, 1);
 			player.removeOBR();
 		}
@@ -214,10 +255,10 @@ export class Deck {
 
 	renderDeck() {
 		this.renderDraw(this.svgcontainer);
-		if (this.isGM) {
+		//if (this.isGM) {
 			this.renderDiscardPile(this.svgcontainer);
 			this.renderCardPool(this.svgcontainer);
-		}
+		//}
 		this.renderPlayers(this.svgcontainer);
 		this.setCurrentPlayer(this.players[0]?.id || "");
 		const drawnJokers = this.jokersDrawn();
@@ -225,126 +266,6 @@ export class Deck {
 			this.showNotification('Joker drawn, shuffle and issue Bennies.', "INFO");
 			this.jokerNotified = drawnJokers;
 		}
-	}
-
-	// Render the draw deck
-	renderDraw(container: HTMLDivElement) {
-		const doc = container.ownerDocument;
-		let deckCardDiv = doc.getElementById('drawdeckcards') as HTMLDivElement;
-
-		if (!deckCardDiv) {
-			deckCardDiv = this.createDeckContainer(doc, 'Draw', 'drawdeckcards', 'Draw Deck');
-			if (this.isGM) {
-				this.addGMButtons(deckCardDiv.parentElement as HTMLFieldSetElement, [
-					{ id: "di", label: "Deal Action cards", icon: "card-draw", action: () => this.drawInitiative() },
-					{ id: "dint", label: "Deal Interlude cards", icon: "suits", action: () => this.drawInterlude() },
-					{ id: "joke", label: "Use Four Jokers", icon: "joker", setting: this.use4jokers, toggle: true, action: () => this.toggleJokers() },
-					{ id: "sb", label: "Change Backs", icon: "card-exchange", action: () => this.changeBack() }
-				]);
-			}
-		}
-
-		const legend = deckCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
-		legend.textContent = `Draw Deck [${this.drawdeck.length}]`;
-
-		this.clearAndRenderCards(deckCardDiv, this.drawdeck, Facing.Down, '--card-stacked-down-inc');
-	}
-
-	// Helper function to create deck container
-	private createDeckContainer(doc: Document, id: string, cardDivId: string, title: string): HTMLDivElement {
-		const fieldset = doc.createElement('fieldset') as HTMLFieldSetElement;
-		const legend = doc.createElement('legend') as HTMLLegendElement;
-		legend.textContent = title;
-		fieldset.appendChild(legend);
-		fieldset.classList.add('flex-container');
-		fieldset.id = id;
-		const div = doc.createElement('div') as HTMLDivElement;
-		div.classList.add('flex-item-3', Card.relcard[0]);
-		const cardDiv = doc.createElement('div') as HTMLDivElement;
-		cardDiv.id = cardDivId;
-		cardDiv.classList.add('flex-item-2', ...Card.concard);
-		fieldset.appendChild(div);
-		fieldset.appendChild(cardDiv);
-		this.svgcontainer.appendChild(fieldset);
-		return cardDiv;
-	}
-
-	// Helper function to add GM buttons
-	private addGMButtons(container: HTMLFieldSetElement, buttons: { id: string; label: string; icon: string; setting?: boolean; toggle?: boolean; action: () => void }[]) {
-		const div = container.querySelector('div') as HTMLDivElement;
-		buttons.forEach(({ id, label, icon, setting, toggle, action }) => {
-			const button = Util.getButton(id, label, icon, "");
-			if (toggle) {
-				if (setting)
-					button.classList.add(Util.SUCCESS_CLASS);
-				else
-					button.classList.remove(Util.SUCCESS_CLASS)
-			}
-			button.addEventListener('click', (event) => {
-				action();
-				this.updateOBR();
-				//this.renderDeck();
-				//if (toggle) Util.toggle(event);
-				Util.setState(event,setting!)
-			});
-			div.appendChild(button);
-		});
-	}
-
-	// Render the discard pile
-	renderDiscardPile(container: HTMLDivElement) {
-		const doc = container.ownerDocument;
-		let discardCardDiv = doc.getElementById("discardpilecards") as HTMLDivElement;
-
-		if (!discardCardDiv) {
-			discardCardDiv = this.createDeckContainer(doc, 'Discard', 'discardpilecards', 'Discard Pile');
-			this.addGMButtons(discardCardDiv.parentElement as HTMLFieldSetElement, [
-				{ id: "dp", label: "Discard All Hands", icon: "card-burn", action: () => this.discardAllHands() },
-				{
-					id: "shf", label: "Shuffle", icon: "stack", action: () => {
-						this.newGame();
-						this.updateOBR();
-						//this.renderDeck();
-					}
-				}
-			]);
-		}
-
-		const legend = discardCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
-		legend.textContent = `Discard Pile [${this.discardpile.length}]`;
-
-		this.clearAndRenderCards(discardCardDiv, this.discardpile, Facing.Up, '--card-spread-inc');
-	}
-
-	// Render the card pool
-	renderCardPool(container: HTMLDivElement) {
-		const doc = container.ownerDocument;
-		let specialCardDiv = doc.getElementById("cardpoolcards") as HTMLDivElement;
-
-		if (!specialCardDiv) {
-			specialCardDiv = this.createDeckContainer(doc, 'Pool', 'cardpoolcards', 'Card Pool');
-			this.addGMButtons(specialCardDiv.parentElement as HTMLFieldSetElement, [
-				{
-					id: "cp", label: "Draw a Card", icon: "card-pickup", action: () => {
-						this.dealFromTop(this.cardpool, 1, Facing.Up);
-						this.updateOBR();
-						//this.renderDeck();
-					}
-				},
-				{
-					id: "dcp", label: "Discard Card Pool", icon: "card-burn", action: () => {
-						this.moveToDiscardPool(this.cardpool, 0);
-						this.updateOBR();
-						//this.renderDeck();
-					}
-				}
-			]);
-		}
-
-		const legend = specialCardDiv.parentElement?.querySelector('legend') as HTMLLegendElement;
-		legend.textContent = `Card Pool [${this.cardpool.length}]`;
-
-		this.clearAndRenderCards(specialCardDiv, this.cardpool, Facing.Up, '--card-spread-inc');
 	}
 
 	// Helper function to clear and render cards
@@ -360,6 +281,170 @@ export class Deck {
 		}
 	}
 
+	// Render the draw deck
+	renderDraw(container: HTMLDivElement) {
+		const doc = container.ownerDocument;
+		let id = 'Draw'
+		let title = 'Draw Deck'
+		let cardsid = 'drawdeckcards'
+		let legid = `leg${id}`
+		let fieldset = doc.getElementById(id) as HTMLFieldSetElement
+		if (!fieldset) {
+			fieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const legend = doc.createElement('legend')
+			legend.id = legid
+			fieldset.title = title
+			fieldset.appendChild(legend)
+
+			fieldset.classList.add("flex-container")
+			fieldset.id = id
+			const butdiv = doc.createElement('div') as HTMLDivElement
+			butdiv.classList.add('flex-item-3', Card.relcard[0])
+			const cardDiv = doc.createElement('div') as HTMLDivElement
+			cardDiv.id = cardsid
+			cardDiv.classList.add('flex-item-2', ...Card.concard)
+			fieldset.appendChild(butdiv)
+			fieldset.appendChild(cardDiv)
+			this.svgcontainer.appendChild(fieldset)
+
+			//buttons
+			const di = Util.getButton(butdiv, 'di', 'Deal Action Cards', 'card-draw', '')
+			di.addEventListener('click', () => {
+				this.drawInitiative()
+				this.updateOBR()
+			})
+			butdiv.appendChild(di)
+
+			const dint = Util.getButton(butdiv, 'dibt', 'Deal Interlude cards', 'suits', '')
+			dint.addEventListener('click', () => {
+				this.drawInterlude()
+				this.updateOBR()
+			})
+			butdiv.appendChild(dint)
+
+			const joke = Util.getButton(butdiv, 'joke', 'Use Four Jokers', 'joker', '')
+			joke.addEventListener('click', () => {
+				this.toggleJokers()
+				this.updateOBR()
+			})
+			butdiv.appendChild(joke)
+
+			const cb = Util.getButton(butdiv, 'cb', 'Change back of deck', 'card-exchange', '')
+			cb.addEventListener('click', () => {
+				this.changeBack()
+				this.updateOBR()
+			})
+			butdiv.appendChild(cb)
+		}
+		const joke = doc.getElementById('joke') as HTMLButtonElement
+		Util.setState(joke, this.use4jokers)
+
+		const legend = fieldset.querySelector(`#${legid}`) as HTMLLegendElement;
+		legend.textContent = `Draw Deck [${this.drawdeck.length}]`;
+
+		let butdiv = fieldset.children[1] as HTMLDivElement
+		butdiv.style.display = Util.display(this.isGM)
+		let carddiv = fieldset.children[2] as HTMLDivElement
+		this.clearAndRenderCards(carddiv, this.drawdeck, Facing.Down, '--card-stacked-down-inc');
+	}
+
+	// Render the discard pile
+	renderDiscardPile(container: HTMLDivElement) {
+		const doc = container.ownerDocument;
+		let id = 'Discard'
+		let title = 'Discard Pile'
+		let cardsid = 'discardpilecards'
+		let legid = `leg${id}`
+		let fieldset = doc.getElementById(id) as HTMLFieldSetElement
+		if (!fieldset) {
+			fieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const legend = doc.createElement('legend')
+			legend.id = legid
+			fieldset.title = title
+			fieldset.appendChild(legend)
+
+			fieldset.classList.add("flex-container")
+			fieldset.id = id
+			const butdiv = doc.createElement('div') as HTMLDivElement
+			butdiv.classList.add('flex-item-3', Card.relcard[0])
+			const cardDiv = doc.createElement('div') as HTMLDivElement
+			cardDiv.id = cardsid
+			cardDiv.classList.add('flex-item-2', ...Card.concard)
+			fieldset.appendChild(butdiv)
+			fieldset.appendChild(cardDiv)
+			this.svgcontainer.appendChild(fieldset)
+
+			//buttons
+			const shf = Util.getButton(butdiv, 'shf', 'Shuffle', 'stack', '')
+			shf.addEventListener('click', () => {
+				this.newGame()
+				this.updateOBR()
+			})
+			butdiv.appendChild(shf)
+
+			const dah = Util.getButton(butdiv, 'dah', 'Discard All Hands', 'card-burn', '')
+			dah.addEventListener('click', () => {
+				this.discardAllHands()
+				this.updateOBR()
+			})
+			butdiv.appendChild(dah)
+		}
+		const legend = fieldset.querySelector(`#${legid}`) as HTMLLegendElement;
+		legend.textContent = `Discard Pile [${this.discardpile.length}]`;
+
+		let butdiv = fieldset.children[1] as HTMLDivElement
+		butdiv.style.display = Util.display(this.isGM)
+		let carddiv = fieldset.children[2] as HTMLDivElement
+		this.clearAndRenderCards(carddiv, this.discardpile, Facing.Up, '--card-spread-inc');
+	}
+
+	// Render the card pool
+	renderCardPool(container: HTMLDivElement) {
+		const doc = container.ownerDocument;
+		let id = 'Pool'
+		let title = 'Card Pool'
+		let cardsid = 'cardpoolcards'
+		let legid = `leg${id}`
+		let fieldset = doc.getElementById(id) as HTMLFieldSetElement
+		if (!fieldset) {
+			fieldset = doc.createElement('fieldset') as HTMLFieldSetElement
+			const legend = doc.createElement('legend')
+			legend.id = legid
+			fieldset.title = title
+			fieldset.appendChild(legend)
+			fieldset.classList.add("flex-container")
+			fieldset.id = id
+			const butdiv = doc.createElement('div') as HTMLDivElement
+			butdiv.classList.add('flex-item-3', Card.relcard[0])
+			const cardDiv = doc.createElement('div') as HTMLDivElement
+			cardDiv.id = cardsid
+			cardDiv.classList.add('flex-item-2', ...Card.concard)
+			fieldset.appendChild(butdiv)
+			fieldset.appendChild(cardDiv)
+			this.svgcontainer.appendChild(fieldset)
+
+			const cp = Util.getButton(butdiv, 'cp', 'Deal a card to pool', 'card-play', '')
+			cp.addEventListener('click', () => {
+				this.dealFromTop(this.cardpool, 1, Facing.Up);
+				this.updateOBR();
+			})
+			butdiv.appendChild(cp)
+
+			const dcp = Util.getButton(butdiv, 'dcp', 'Discard Card Pool', 'card-burn', '')
+			dcp.addEventListener('click', () => {
+				this.moveToDiscardPool(this.cardpool, 0);
+				this.updateOBR();
+			})
+			butdiv.appendChild(dcp)
+		}
+		const legend = fieldset.querySelector(`#${legid}`) as HTMLLegendElement;
+		legend.textContent = `Card Pool [${this.cardpool.length}]`;
+		let butdiv = fieldset.children[1] as HTMLDivElement
+		butdiv.style.display = Util.display(this.isGM)
+		let carddiv = fieldset.children[2] as HTMLDivElement
+		this.clearAndRenderCards(carddiv, this.cardpool, Facing.Up, '--card-spread-inc');
+	}
+
 	// Render the players
 	renderPlayers(div: HTMLDivElement) {
 		let y = 0, x = 0;
@@ -370,12 +455,10 @@ export class Deck {
 		});
 		this.players.forEach(p => {
 			p.render(div, x, y);
-		});
-		this.players.forEach(p => {
-			const pfs = div.querySelector(`fieldset[data-pid="${p.id}"]`) as HTMLFieldSetElement
-			if (div && pfs) {
-				div.removeChild(pfs);
-				div.appendChild(pfs);
+			const pfs = div.querySelector(`fieldset[data-pid="${p.id}"]`)
+			if (pfs) {
+				div.removeChild(pfs)
+				div.appendChild(pfs)
 			}
 		});
 	}
@@ -406,7 +489,7 @@ export class Deck {
 		} else {
 			console.log("No metadata found for this extension in the room.");
 			this.newGame();
-			await this.updateOBR(); // Await here for consistency
+			await this.updateOBR();
 		}
 	}
 

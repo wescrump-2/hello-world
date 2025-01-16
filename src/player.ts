@@ -27,7 +27,7 @@ export interface PlayerMeta {
 	choosencard: number;
 }
 
-export class Player {
+export class PlayerChar {
 	private meta: PlayerMeta;
 
 	constructor(name: string, id: string, pid: string) {
@@ -182,21 +182,38 @@ export class Player {
 		return this.hand.filter(c => c > 52).length;
 	}
 
-	static getPlayer(but: HTMLButtonElement): Player {
-		let element = but as HTMLElement;
+	passCard(pid: string, card: number) {
+		const deck = Deck.getInstance()
+		const p = deck.getPlayerById(pid)
+		if (p) {
+			deck.moveCardToPool(this.hand, p.hand, card)
+		}
+	}
+
+	static getPlayer(element: HTMLElement): PlayerChar | null {
+		//let element = but as HTMLElement;
 		while (element) {
 			const pid = element.dataset.pid;
 			if (pid) {
-				return Deck.getInstance().getPlayer(pid)!
+				let p = Deck.getInstance().getPlayerById(pid)
+				if (p) {
+					return p
+				}
 			}
 			element = element.parentElement as HTMLElement;
 		}
-		throw new Error('Player ID not found in element attributes');
+		console.error('Player ID not found in element attributes')
+		return null
+	}
+
+	static getPlayerById(pid: string): PlayerChar | null {
+		return Deck.getInstance().getPlayerById(pid)
 	}
 
 	async render(container: HTMLDivElement, x: number, y: number) {
-		const obrPlayerId = await OBR.player.getId().then(data => data);
+		const obrPlayerId = await OBR.player.getId()
 		const doc = container.ownerDocument;
+		const deck = Deck.getInstance();
 		let fieldset = doc.querySelector(`fieldset[data-pid="${this.id}"]`) as HTMLFieldSetElement
 		if (!fieldset) {
 			fieldset = doc.createElement('fieldset') as HTMLFieldSetElement
@@ -206,78 +223,80 @@ export class Player {
 			fieldset.classList.add("flex-container")
 			fieldset.title = this.name;
 			fieldset.dataset.pid = this.id;
-			const pdiv = doc.createElement('div') as HTMLDivElement
+			let pdiv = doc.createElement('div') as HTMLDivElement
 			pdiv.classList.add("flex-item-1", Card.relcard[0]);
 			pdiv.dataset.slot = "b"
 			fieldset.appendChild(pdiv)
-			const cdiv = doc.createElement('div') as HTMLDivElement;
+			let cdiv = doc.createElement('div') as HTMLDivElement;
 			cdiv.classList.add("flex-item-2", ...Card.concard);
 			cdiv.dataset.slot = "c"
 			fieldset.appendChild(cdiv)
 			container.appendChild(fieldset)
 		}
-		const playerdiv = fieldset.querySelector('div[data-slot="b"]') as HTMLDivElement
-		const carddiv = fieldset.querySelector('div[data-slot="c"]') as HTMLDivElement
-
-		const deck = Deck.getInstance();
+		let playerdiv = fieldset.children[1] as HTMLDivElement
+		let carddiv = fieldset.children[2] as HTMLDivElement
 		// GM-only actions
-		const isGM = deck.isGM;
-		const isPlayer = isGM || this.playerId === obrPlayerId
+		const isOwner = this.playerId === obrPlayerId
+		const isGMorOwner = deck.isGM || isOwner
 		// Draw Card Button
-		if (isPlayer) {
-			let drawcard = playerdiv.querySelector('#drawcard') as HTMLButtonElement
-			if (!drawcard) {
-				drawcard = Util.getButton("drawcard", "Draw a Card", "card-pickup", "") //this.id)
-				drawcard.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		let drawcard = playerdiv.querySelector('#drawcard') as HTMLButtonElement
+		if (!drawcard) {
+			drawcard = Util.getButton(playerdiv, "drawcard", "Draw a Card", "card-pickup", "") //this.id)
+			drawcard.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.drawCard()
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(drawcard)
-			}
+				}
+			})
+			playerdiv.appendChild(drawcard)
 		}
+		drawcard.style.display = Util.display(isGMorOwner)
 
-		if (isGM) {
-			let drawhand = playerdiv.querySelector('#drawhand') as HTMLButtonElement
-			if (!drawhand) {
-				drawhand = Util.getButton("drawhand", "Draw Hand", "poker-hand", "") //this.id)
-				drawhand.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		let drawhand = playerdiv.querySelector('#drawhand') as HTMLButtonElement
+		if (!drawhand) {
+			drawhand = Util.getButton(playerdiv, "drawhand", "Draw Hand", "poker-hand", "") //this.id)
+			drawhand.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.drawInitiative()
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(drawhand)
-			}
+				}
+			})
+			playerdiv.appendChild(drawhand)
 		}
+		drawhand.style.display = Util.display(deck.isGM)
 
-		if (isPlayer) {
-			let discardhand = playerdiv.querySelector('#discardhand') as HTMLButtonElement
-			if (!discardhand) {
-				const discardhand = Util.getButton("discardhand", "Discard Hand", "hand-discard", "")
-				discardhand.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					if (p.hand.length === 0)
+		let discardhand = playerdiv.querySelector('#discardhand') as HTMLButtonElement
+		if (!discardhand) {
+			discardhand = Util.getButton(playerdiv, "discardhand", "Discard Hand", "hand-discard", "")
+			discardhand.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
+					if (p.hand.length === 0) {
 						return
-					const deck = Deck.getInstance()
+					}
 					p.discardHand()
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(discardhand)
-			}
+				}
+			})
+			playerdiv.appendChild(discardhand)
 		}
+		discardhand.style.display = Util.display(isGMorOwner)
 
-		if (isPlayer) {
-			let outcombat = playerdiv.querySelector('#outcombat') as HTMLButtonElement
-			if (!outcombat) {
-				outcombat = Util.getButton("outcombat", "Out of Combat", "truce", "") //this.id)
-				outcombat.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		let outcombat = playerdiv.querySelector('#outcombat') as HTMLButtonElement
+		if (!outcombat) {
+			outcombat = Util.getButton(playerdiv, "outcombat", "Out of Combat", "truce", "") //this.id)
+			outcombat.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.outOfCombat = !p.outOfCombat
 					Util.setState(this, p.outOfCombat)
 					if (p.outOfCombat) {
@@ -285,51 +304,55 @@ export class Player {
 					}
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(outcombat)
-			}
-			if (this.outOfCombat) outcombat.classList.add(Util.SUCCESS_CLASS)
+				}
+			})
+			playerdiv.appendChild(outcombat)
 		}
+		Util.setState(outcombat, this.outOfCombat)
+		outcombat.style.display = Util.display(isGMorOwner)
 
-		if (isPlayer) {
-			let removeplayer = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
-			if (!removeplayer) {
-				removeplayer = Util.getButton("removeplayer", "Remove Player", "trash-can", this.id)
 
-				removeplayer.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		let removeplayer = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
+		if (!removeplayer) {
+			removeplayer = Util.getButton(playerdiv, "removeplayer", "Remove Player", "trash-can", this.id)
+			removeplayer.classList.add("btn-danger")
+			removeplayer.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					deck.removePlayer(p)
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(removeplayer)
-			}
-			removeplayer.classList.add("btn-danger")
+				}
+			})
+			playerdiv.appendChild(removeplayer)
 		}
-		if (isPlayer) {
-			let onhold = playerdiv.querySelector('#onhold') as HTMLButtonElement
-			if (!onhold) {
-				onhold = Util.getButton("onhold", "On Hold", "halt", "") //this.id)
+		removeplayer.style.display = Util.display(isGMorOwner)
 
-				onhold.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		let onhold = playerdiv.querySelector('#onhold') as HTMLButtonElement
+		if (!onhold) {
+			onhold = Util.getButton(playerdiv, "onhold", "On Hold", "halt", "") //this.id)
+			onhold.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.onHold = !p.onHold
 					Util.setState(this, p.onHold)
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(onhold)
-			}
-			if (this.onHold) onhold.classList.add(Util.SUCCESS_CLASS)
+				}
+			})
+			playerdiv.appendChild(onhold)
 		}
-		if (isPlayer) {
-			let hesitant = playerdiv.querySelector('#hesitant') as HTMLButtonElement
-			if (!hesitant) {
-				hesitant = Util.getButton("hesitant", "Hesitant Hindrance", "uncertainty", "") 
-				hesitant.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		Util.setState(onhold, this.onHold)
+		onhold.style.display = Util.display(isGMorOwner)
+
+		let hesitant = playerdiv.querySelector('#hesitant') as HTMLButtonElement
+		if (!hesitant) {
+			hesitant = Util.getButton(playerdiv, "hesitant", "Hesitant Hindrance", "uncertainty", "")
+			hesitant.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.toggleHesitant()
 					Util.setState(this, p.hesitant)
 					const hes = this.parentElement?.querySelector('#quick') as HTMLButtonElement
@@ -338,79 +361,79 @@ export class Player {
 					Util.setState3way(lh, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(hesitant)
-			}
-			if (this.hesitant) hesitant.classList.add(Util.SUCCESS_CLASS)
+				}
+			})
+			playerdiv.appendChild(hesitant)
 		}
-		if (isPlayer) {
-			let quick = playerdiv.querySelector('#quick') as HTMLButtonElement
-			if (!quick) {
-				quick = Util.getButton("quick", "Quick Edge", "sprint", "") //this.id)
-				quick.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		Util.setState(hesitant, this.hesitant)
+		hesitant.style.display = Util.display(isGMorOwner)
+
+		let quick = playerdiv.querySelector('#quick') as HTMLButtonElement
+		if (!quick) {
+			quick = Util.getButton(playerdiv, "quick", "Quick Edge", "sprint", "") //this.id)
+			quick.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.toggleQuick()
 					Util.setState(this, p.quick)
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(quick)
-			}
-			if (this.quick) quick.classList.add(Util.SUCCESS_CLASS)
+				}
+			})
+			playerdiv.appendChild(quick)
 		}
+		Util.setState(quick, this.quick)
+		quick.style.display = Util.display(isGMorOwner)
 
-		// if (isPlayer) {
-		// 	const tacttype = (this.mastertactician) ? "aces" : "ace"
-		// 	let tactician = playerdiv.querySelector('#tactician') as HTMLButtonElement
-		// 	if (!tactician) {
-		// 		tactician = Util.getButton("tactician", "Tactician", tacttype, "")
-		// 		tactician.addEventListener('click', function (event) {
-		// 			let p = Player.getPlayer(this)
+		// const tacttype = (this.mastertactician) ? "aces" : "ace"
+		// let tactician = playerdiv.querySelector('#tactician') as HTMLButtonElement
+		// if (!tactician) {
+		// 	tactician = Util.getButton(playerdiv, "tactician", "Tactician", tacttype, "")
+		// 	tactician.addEventListener('click', function () {
+		// 		let p = PlayerChar.getPlayer(this)
+		// 		if (p) {
 		// 			p.toggleTactician()
-		// 			Util.setState3way(event,p.levelHeaded,'ace',p.impLevelHeaded,'aces')
-
+		// 			Util.setState3way(tactician, p.levelHeaded, 'ace', p.impLevelHeaded, 'aces')
 		// 			p.updateOBR()
 		// 			const deck = Deck.getInstance()
 		// 			deck.updateOBR()
-		// 		})
-		// 		playerdiv.appendChild(tactician)
-		// 	}
-		// 	Util.setImage(tacttype, tactician)
-		// 	if (this.tactician || this.mastertactician) tactician.classList.add(Util.SUCCESS_CLASS)
+		// 		}
+		// 	})
+		// 	playerdiv.appendChild(tactician)
 		// }
+		// Util.setState3way(tactician, this.tactician, "ace", this.mastertactician, "aces")
+		// tactician.style.display = Util.display(isGMorOwner)
 
-		if (isPlayer) {
-			const lvlheadtype = (this.impLevelHeaded) ? "scales-exclaim" : "scales"
-			let levelhead = playerdiv.querySelector('#levelhead') as HTMLButtonElement
-			if (!levelhead) {
-				levelhead = Util.getButton("levelhead", "Level Headed Edge", lvlheadtype, "")
-				levelhead.addEventListener('click', function () {
-					let p = Player.getPlayer(this)
-					const deck = Deck.getInstance()
+		const lvlheadtype = (this.impLevelHeaded) ? "scales-exclaim" : "scales"
+		let levelhead = playerdiv.querySelector('#levelhead') as HTMLButtonElement
+		if (!levelhead) {
+			levelhead = Util.getButton(playerdiv, "levelhead", "Level Headed Edge", lvlheadtype, "")
+			levelhead.addEventListener('click', function () {
+				let p = PlayerChar.getPlayer(this)
+				const deck = Deck.getInstance()
+				if (p) {
 					p.toggleLevelHeaded()
 					Util.setState3way(this, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
 					p.updateOBR()
 					deck.updateOBR()
-				})
-				playerdiv.appendChild(levelhead)
-			}
-			Util.setImage(lvlheadtype, levelhead)
-			if (this.levelHeaded || this.impLevelHeaded) {
-				levelhead.classList.add(Util.SUCCESS_CLASS)
-			}
+				}
+			})
+			playerdiv.appendChild(levelhead)
 		}
+		Util.setState3way(levelhead, this.levelHeaded, "scales", this.impLevelHeaded, "scales-exclaim")
+		levelhead.style.display = Util.display(isGMorOwner)
 
-		if (isPlayer) {
-			let info = playerdiv.querySelector('#info') as HTMLButtonElement
-			if (!info) {
-				info = Util.getButton("info", "Interludes", "suits", "")
-				info.addEventListener('click', function (event) {
-					const p = Player.getPlayer(this);
+		let info = playerdiv.querySelector('#info') as HTMLButtonElement
+		if (!info) {
+			info = Util.getButton(playerdiv, "info", "Interludes", "suits", "")
+			info.addEventListener('click', function (event) {
+				const p = PlayerChar.getPlayer(this);
+				if (p) {
 					const suit = Card.byId(p.bestCard()).suit.toString().replace("Red", "").replace("Black", "")
 					OBR.popover.open({
 						id: `${Util.ID}/interlude`,
@@ -418,11 +441,37 @@ export class Player {
 						height: 400,
 						width: 600,
 					})
-					event.preventDefault()
-				})
-				playerdiv.appendChild(info)
-			}
+				}
+				event.preventDefault()
+			})
+			playerdiv.appendChild(info)
 		}
+		info.style.display = Util.display(isGMorOwner)
+
+
+		let pass = playerdiv.querySelector('#pass') as HTMLButtonElement
+		if (!pass) {
+			pass = Util.getButton(playerdiv, "pass", "Pass your selected card to here", "card-play", this.id)
+			pass.addEventListener('click', function (event) {
+				const deck = Deck.getInstance()
+				const from = deck.getPlayerByOwnerId(obrPlayerId)
+				if (from && from.hand.length > 0 && from.choosencard > -1) {
+					const but = event.currentTarget as HTMLButtonElement
+					const tochar = but.dataset.pid + ''
+					const to = deck.getPlayerById(tochar)
+					if (to != null && from != null) {
+						deck.moveCardToPool(to.hand, from.hand, from.choosencard)
+						to.updateOBR()
+						from.updateOBR()
+						deck.updateOBR()
+					}
+				}
+				event.preventDefault()
+			})
+			playerdiv.appendChild(pass)
+		}
+		pass.style.display = Util.display(!isOwner)
+
 		// remove cards
 		while (carddiv.firstChild) {
 			carddiv.removeChild(carddiv.firstChild)
@@ -432,12 +481,13 @@ export class Player {
 		this.hand.forEach(cardSeq => {
 			const card = Card.byId(cardSeq);
 			const csvg = card.render(carddiv, x, y, Facing.Up);
+			csvg.dataset.pidcard = `${this.id}|${cardSeq.toString()}`;
 			if (card.sequence === this.choosencard) csvg.classList.add("choosen");
-			if (isPlayer) {
+			if (isOwner) {
 				csvg.addEventListener('click', () => {
 					this.choosencard = this.choosencard === card.sequence ? -1 : card.sequence;
-					this.updateOBR();
-					deck.updateOBR();
+					this.updateOBR()
+					deck.updateOBR()
 				});
 			}
 			x += inc;
@@ -466,9 +516,10 @@ export class Player {
 				characters => characters.forEach(char => {
 					if ((char.metadata[Util.PlayerMkey] as PlayerMeta)?.id === this.id) {
 						delete char.metadata[Util.PlayerMkey];
+						console.log(`deleted character item ${this.id}`)
 					}
 				})
-			).then(() => { console.log(`deleted character item ${this.id}`) });
+			)
 		} catch (error) {
 			console.error("Failed to remove character item from scene:", error);
 		}
