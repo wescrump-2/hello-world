@@ -243,7 +243,7 @@ export class Deck {
 		const index = this.players.findIndex(p => p.id === player.id);
 		if (index !== -1) {
 			const p = this.players[index]
-			let pf = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid=${p.id}]`)
+			let pf = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid="${p.id}]"`)
 			if (pf) {
 				pf.parentElement?.removeChild(pf)
 			}
