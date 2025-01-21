@@ -63,6 +63,7 @@ export class PlayerCard {
 
 export class Deck {
 	private static instance: Deck;
+	private rendercount:number=0;
 	isGM: boolean = false;
 	private constructor() { }
 
@@ -325,11 +326,13 @@ export class Deck {
 	}
 
 	renderDeck() {
-		this.renderDraw(this.svgcontainer);
-		//if (this.isGM) {
-		this.renderDiscardPile(this.svgcontainer);
-		this.renderCardPool(this.svgcontainer);
-		//}
+		this.rendercount++
+		console.log(`renderdeck:${this.rendercount}`)
+		this.renderDraw(this.svgcontainer)
+		if (this.isGM) {
+		this.renderDiscardPile(this.svgcontainer)
+		this.renderCardPool(this.svgcontainer)
+		}
 		this.renderPlayers(this.svgcontainer);
 		this.setCurrentPlayer(this.players[0]?.id || "");
 		const drawnJokers = this.jokersDrawn();
@@ -361,18 +364,15 @@ export class Deck {
 			if (this.isGM) {
 				csvg.addEventListener('click', async () => {
 					const ownid = await OBR.player.getId();
-					//const player = this.getPlayerByOwnerId(pid)
 					PlayerCard.toggleChoice(ownid, card.sequence)
-					//pc.choosenCard = player.choosencard === card.sequence ? -1 : card.sequence;
-					//player.updateOBR()
 					this.updateOBR()
+					this.renderDeck()
 				});
 			}
 			x += inc;
 		}
 	}
 
-	// Render the draw deck
 	renderDraw(container: HTMLDivElement) {
 		const doc = container.ownerDocument;
 		let id = 'Draw'
@@ -583,7 +583,7 @@ export class Deck {
 	async updateState(dmd: DeckMeta) {
 		if (dmd) {
 			this.setMeta = dmd;
-			this.renderDeck();
+			//this.renderDeck();
 		} else {
 			console.log("No metadata found for this extension in the room.");
 			this.newGame();

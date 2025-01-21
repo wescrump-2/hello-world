@@ -48,7 +48,6 @@ export function setupContextMenu() {
 									}
 									
 								});
-								deck.renderDeck();
 							})
 						} catch (error) {
 							console.warn(`getId:`, error)
@@ -74,12 +73,13 @@ export function setupContextMenu() {
 										//console.log(`deleted player ${player.id}`)
 									}
 									delete item.metadata[Util.PlayerMkey];
+									deck.renderDeck()
 								}
 							})
 						} catch(error){
 							console.error(`removeInitiative:`, error)
 						}
-					}).then(()=>{deck.renderDeck()})
+					})
 				} catch (error) {
 					console.error(`removeInitiative:`, error)
 				}

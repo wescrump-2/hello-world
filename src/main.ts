@@ -56,6 +56,7 @@ async function setupGameState(): Promise<void> {
     const dmd = metadata[Util.DeckMkey] as DeckMeta;
     if (dmd && 'cardpool' in dmd && Array.isArray(dmd.cardpool)) {
       deck.updateState(dmd);
+      deck.renderDeck()
     } else {
       await deck.updateOBR();
     }
@@ -65,7 +66,6 @@ async function setupGameState(): Promise<void> {
 
   // Setup callback for scene items change
   unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
-
   await updatePlayerStateAll()
 }
 
@@ -77,37 +77,42 @@ function renderRoom(metadata: any) {
 }
 
 async function updatePlayerStateAll() {
+  let shouldRender = false
   try {
+
     if (await OBR.scene.isReady()) {
       const items = await OBR.scene.items.getItems(
         (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
       )
       if (items && items.length > 0) {
-        await updatePlayerState(items)
+        shouldRender = shouldRender || await updatePlayerState(items)
       }
     }
   } catch (error) {
     console.error(`Failed to get scene items:`, error)
   }
-  Deck.getInstance().renderDeck();
+  if (shouldRender) {
+    Deck.getInstance().renderDeck()
+  }
 }
 
-async function updatePlayerState(items: Item[]) {
-  const deck = Deck.getInstance();
+async function updatePlayerState(items: Item[]): Promise<boolean> {
+  // const deck = Deck.getInstance();
   let shouldRender = false;
 
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
     if (pmd) {
       const player = rehydratePlayer(pmd);
-      //console.log(`Player:${player.playerId} retrieved from metadata`)
+      console.log(`Player:${player.playerId} retrieved from metadata`)
       shouldRender = (player != null);
     }
   }
 
-  if (shouldRender) {
-    deck.renderDeck();
-  }
+  // if (shouldRender) {
+  //   deck.renderDeck();
+  // }
+  return shouldRender
 }
 
 function rehydratePlayer(pmd: PlayerMeta): PlayerChar {

@@ -256,7 +256,6 @@ export class PlayerChar {
 				const deck = Deck.getInstance()
 				if (p) {
 					p.drawCard()
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -272,7 +271,6 @@ export class PlayerChar {
 				const deck = Deck.getInstance()
 				if (p) {
 					p.drawInitiative()
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -291,7 +289,6 @@ export class PlayerChar {
 						return
 					}
 					p.discardHand()
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -311,7 +308,6 @@ export class PlayerChar {
 					if (p.outOfCombat) {
 						p.discardHand()
 					}
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -324,14 +320,14 @@ export class PlayerChar {
 		let rembut = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
 		if (!rembut) {
 			rembut = Util.getButton(playerdiv, "removeplayer", "Remove Player", "trash-can", this.id)
-			rembut.classList.add("toggle-danger")
 			rembut.addEventListener('click', function () {
 				let p = PlayerChar.getPlayer(this)
 				const deck = Deck.getInstance()
 				if (p) {
 					deck.removePlayer(p)
-					//p.updateOBR()
+					//p.removeOBR()
 					deck.updateOBR()
+					deck.renderDeck()
 				}
 			})
 			playerdiv.appendChild(rembut)
@@ -347,7 +343,6 @@ export class PlayerChar {
 				if (p) {
 					p.onHold = !p.onHold
 					Util.setState(this, p.onHold)
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -369,7 +364,6 @@ export class PlayerChar {
 					Util.setState(hes, p.quick)
 					const lh = this.parentElement?.querySelector('#levelhead') as HTMLButtonElement
 					Util.setState3way(lh, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -389,7 +383,6 @@ export class PlayerChar {
 					Util.setState(this, p.quick)
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -429,7 +422,6 @@ export class PlayerChar {
 					Util.setState3way(this, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
-					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -467,20 +459,11 @@ export class PlayerChar {
 				const but = event.currentTarget as HTMLButtonElement
 				const to = deck.getPlayerById(but.dataset.pid + '')
 				if (to != null) {
-					//const playerx = deck.getPlayerByOwnerId(obrPlayerId)
 					const choosen = PlayerCard.getChoices(obrPlayerId)
 					for (let pc of choosen) {
-						//const from = deck.getDeckwithCard(pc.choosenCard)
-						//if (from && from.includes(pc.choosenCard)) {
-						//const player = deck.getPlayerWithCard(pc.choosenCard)
 						to.passCardToPlayer(pc.choosenCard)
 						PlayerCard.removeChoice(pc.ownerId, pc.choosenCard)
-						//to.updateOBR()
-						// if (player) {
-						// 	player.updateOBR()
-						// }
 						deck.updateOBR()
-						//}
 					}
 				}
 				event.preventDefault()
@@ -503,10 +486,9 @@ export class PlayerChar {
 			if (isOwner) {
 				csvg.addEventListener('click', async () => {
 					const ownid = await OBR.player.getId();
-					//this.choosencard = this.choosencard === card.sequence ? -1 : card.sequence;
 					PlayerCard.toggleChoice(ownid, card.sequence)
-					//this.updateOBR()
 					deck.updateOBR()
+					deck.renderDeck()
 				});
 			}
 			x += inc;
