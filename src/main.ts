@@ -42,6 +42,7 @@ async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
+    deck.currentPlayer
   } catch (error) {
     console.error("Failed to get GM role:", error);
   }
@@ -63,16 +64,14 @@ async function setupGameState(): Promise<void> {
   }
 
   // Setup callback for scene items change
-  unsubscribe.push(OBR.scene.items.onChange(updatePlayerState));
+  unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
 
   await updatePlayerStateAll()
-  console.log("update player state")
 }
 
 function renderRoom(metadata: any) {
   const dmd = metadata[Util.DeckMkey] as DeckMeta;
   if (dmd) {
-    console.log("Room metadata changed:", dmd);
     Deck.getInstance().updateState(dmd);
   }
 }
@@ -101,20 +100,10 @@ async function updatePlayerState(items: Item[]) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
     if (pmd) {
       const player = rehydratePlayer(pmd);
-      console.log(`Player:${player.playerId} retrieved from metadata`)
-      shouldRender = true;
+      //console.log(`Player:${player.playerId} retrieved from metadata`)
+      shouldRender = (player != null);
     }
   }
-  // const party = await OBR.party.getPlayers()
-  // const curPid = await OBR.player.getId()
-  // // Remove players is the list of tracked not in scene
-  // for (const player of deck.players) {
-  //   //not curplayer and not in party of scene, remove
-  //   if (player.playerId != curPid && !party.some((mem) => mem.id === player.playerId)) {
-  //     deck.removePlayer(player);
-  //     shouldRender = true;
-  //   }
-  // }
 
   if (shouldRender) {
     deck.renderDeck();

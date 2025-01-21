@@ -226,7 +226,7 @@ export class Util {
             if (button) {
                 button.classList.remove(Util.SUCCESS_CLASS);
             } else {
-                console.warn('button is null')
+                console.error('button is null')
             }
 
         }

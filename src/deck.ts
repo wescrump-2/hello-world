@@ -7,11 +7,58 @@ export interface DeckMeta {
 	drawdeck: number[];
 	discardpile: number[];
 	cardpool: number[];
+
 	currentRound: number;
 	currentPlayer: number;
 	back: number;
 	use4jokers: boolean;
 	scale: number;
+}
+export class PlayerCard {
+	static choosenList: PlayerCard[] = []
+	static addChoice(oid: string, choice: number): PlayerCard {
+		const pc = new PlayerCard(oid, choice)
+		PlayerCard.choosenList.push(pc)
+		return pc
+	}
+	static removeChoice(oid: string, choice: number) {
+		let rem = null
+		const indexToRemove = PlayerCard.choosenList.findIndex(pc => pc.ownerId === oid && pc.choosenCard === choice)
+		if (indexToRemove !== -1) {
+			rem = PlayerCard.choosenList[indexToRemove]
+			PlayerCard.choosenList.splice(indexToRemove, 1);
+		}
+		return rem
+	}
+	static toggleChoice(ownid: string, card: number) {
+		if (PlayerCard.choosenList.findIndex(pc => pc.choosenCard === card) != -1) {
+			PlayerCard.removeChoice(ownid, card)
+		} else {
+			PlayerCard.addChoice(ownid, card)
+		}
+	}
+	static removeCards(cards: number[]) {
+		for (let card of cards) {
+			let indexToRemove = PlayerCard.choosenList.findIndex(pc => pc.choosenCard === card)
+			if (indexToRemove !== -1) {
+				PlayerCard.choosenList[indexToRemove]
+				PlayerCard.choosenList.splice(indexToRemove, 1);
+			}
+		}
+	}
+
+	static getChoices(oid: string): PlayerCard[] {
+		let pc = PlayerCard.choosenList.filter((o) => o.ownerId === oid)
+		return pc
+	}
+
+	ownerId: string
+	choosenCard: number
+	constructor(oid: string, choice: number) {
+		this.ownerId = oid
+		this.choosenCard = choice
+	}
+
 }
 
 export class Deck {
@@ -23,7 +70,7 @@ export class Deck {
 	svgbuttons!: HTMLObjectElement;
 	svgcontainer!: HTMLDivElement;
 	jokerNotified: number = 0;
-	players: PlayerChar[] = [];
+	playerList: PlayerChar[] =[];
 
 	// Game state
 	private meta: DeckMeta = {
@@ -59,7 +106,7 @@ export class Deck {
 	set use4jokers(uj: boolean) { this.meta.use4jokers = uj; }
 	get deckcount(): number { return this.use4jokers ? 56 : 54; }
 	get backsvg(): SVGElement { return Card.backs[this.back]; }
-
+	get players(): PlayerChar[] { return this.playerList; }
 	getImageSvg(c: Card): string {
 		return c.dir === Facing.Up ? c.face.innerHTML : this.backsvg.innerHTML;
 	}
@@ -97,8 +144,8 @@ export class Deck {
 		this.players.forEach(p => p.discardHand());
 	}
 
-	getPlayerByOwnerId(pid: string | null): PlayerChar | null {
-		const p = this.players.find(p => p.playerId === pid)
+	getPlayerByOwnerId(ownerId: string | null): PlayerChar | null {
+		const p = this.players.find(p => p.playerId === ownerId)
 		if (p) return p
 		else return null
 	}
@@ -155,6 +202,28 @@ export class Deck {
 		this.drawdeck = [...this.drawdeck.slice(index), ...this.drawdeck.slice(0, index)];
 	}
 
+	getDeckwithCard(card: number): number[] {
+		let result: number[] = []
+		if (this.discardpile.includes(card)) result = this.discardpile
+		if (this.cardpool.includes(card)) result = this.cardpool
+		if (this.drawdeck.includes(card)) result = this.drawdeck
+		for (let p of this.players) {
+			if (p.hand.includes(card)) {
+				result = p.hand
+			}
+		}
+		return result
+	}
+
+	getPlayerWithCard(card: number): PlayerChar | null {
+		for (let p of this.players) {
+			if (p.hand.includes(card)) {
+				return p
+			}
+		}
+		return null
+	}
+
 	dealFromTop(hand: number[], numCards: number, dir: Facing) {
 		if (numCards > this.drawdeck.length) {
 			this.showNotification('Deck depleted, shuffle all cards and redeal.', "ERROR");
@@ -178,25 +247,24 @@ export class Deck {
 		const indx = from.findIndex((c) => c === card)
 		if (indx != -1) {
 			try {
-				let cid = from[indx]
-				let card = Card.byId(cid);
+				let card = Card.byId(from[indx]);
 				if (dir !== Facing.None) card.dir = dir;
-				if (!to.includes(cid)) {
-					to.push(cid);
+				if (!to.includes(card.sequence)) {
 					from.splice(indx, 1);
+					to.push(card.sequence);
 				} else {
-					console.log(`Duplicate card found: [${cid}] ${card.toString()}`);
+					console.error(`Duplicate card found: [${card.sequence}] ${card.toString()}`);
 				}
 			} catch (error) {
 				console.error('Error moving cards:', error);
 			}
 		} else {
-			console.log('From does not have card, no move.');
+			//console.log('From does not have card, no move.');
 		}
 	}
 
 	moveToPool(to: number[], from: number[], numCards: number = 0, top: boolean = true, dir: Facing = Facing.None) {
-		const limit = (numCards===0)?from.length:Math.min(numCards, from.length);
+		const limit = (numCards === 0) ? from.length : Math.min(numCards, from.length);
 		if (limit > 0) {
 			try {
 				for (let i = 0; i < limit; i++) {
@@ -206,7 +274,7 @@ export class Deck {
 					if (!to.includes(cid)) {
 						to.push(cid);
 					} else {
-						console.log(`Duplicate card found: [${cid}] ${card.toString()}`);
+						console.error(`Duplicate card found: [${cid}] ${card.toString()}`);
 					}
 				}
 			} catch (error) {
@@ -242,22 +310,25 @@ export class Deck {
 	removePlayer(player: PlayerChar) {
 		const index = this.players.findIndex(p => p.id === player.id);
 		if (index !== -1) {
-			const p = this.players[index]
-			let pf = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid="${p.id}]"`)
-			if (pf) {
-				pf.parentElement?.removeChild(pf)
+			try {
+				const p = this.players[index]
+				let pf = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid="${p.id}]"`)
+				if (pf) {
+					pf.parentElement?.removeChild(pf)
+				}
+				this.moveToDiscardPool(p.hand);
+				this.players.splice(index, 1);
+			} finally {
+				player.removeOBR();
 			}
-			this.moveToDiscardPool(p.hand);
-			this.players.splice(index, 1);
-			player.removeOBR();
 		}
 	}
 
 	renderDeck() {
 		this.renderDraw(this.svgcontainer);
 		//if (this.isGM) {
-			this.renderDiscardPile(this.svgcontainer);
-			this.renderCardPool(this.svgcontainer);
+		this.renderDiscardPile(this.svgcontainer);
+		this.renderCardPool(this.svgcontainer);
 		//}
 		this.renderPlayers(this.svgcontainer);
 		this.setCurrentPlayer(this.players[0]?.id || "");
@@ -268,6 +339,13 @@ export class Deck {
 		}
 	}
 
+	isCardSelected(card: number): boolean {
+		for (let pc of PlayerCard.choosenList) {
+			if (card === pc.choosenCard) return true
+		}
+		return false
+	}
+
 	// Helper function to clear and render cards
 	private clearAndRenderCards(container: HTMLDivElement, cards: number[], facing: Facing, cardIncrement: string) {
 		while (container.firstChild) {
@@ -276,7 +354,20 @@ export class Deck {
 		let x = 0
 		let inc = Util.offset(cardIncrement, cards.length)
 		for (const c of cards) {
-			Card.byId(c).render(container, x, 0, facing);
+			const card = Card.byId(c)
+			const csvg = card.render(container, x, 0, facing);
+			if (this.isCardSelected(card.sequence)) csvg.classList.add("choosen");
+
+			if (this.isGM) {
+				csvg.addEventListener('click', async () => {
+					const ownid = await OBR.player.getId();
+					//const player = this.getPlayerByOwnerId(pid)
+					PlayerCard.toggleChoice(ownid, card.sequence)
+					//pc.choosenCard = player.choosencard === card.sequence ? -1 : card.sequence;
+					//player.updateOBR()
+					this.updateOBR()
+				});
+			}
 			x += inc;
 		}
 	}
@@ -461,6 +552,13 @@ export class Deck {
 				div.appendChild(pfs)
 			}
 		});
+		//remove elements for players that are removed.
+		for (let pdiv of div.querySelectorAll(`fieldset[data-pid]`)) {
+			const ppdiv = pdiv as HTMLFieldSetElement
+			if (!this.players.find(p=>p.id===ppdiv.dataset.pid)) {
+				div.removeChild(ppdiv)
+			}
+		}
 	}
 
 	// Set the current player
@@ -497,7 +595,7 @@ export class Deck {
 	async updateOBR() {
 		let missing = this.checkfororphans();
 		if (missing.length > 0) {
-			console.log(`Missing cards: ${missing.join(', ')}`);
+			console.error(`Missing cards: ${missing.join(', ')}`);
 			this.moveToDiscardPool(missing, 0);
 		}
 		const dmd = this.getMeta;

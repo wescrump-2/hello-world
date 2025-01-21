@@ -1,6 +1,6 @@
 import OBR, { isImage } from "@owlbear-rodeo/sdk";
 import { Card, Facing } from "./cards";
-import { Deck } from "./deck";
+import { Deck, PlayerCard } from "./deck";
 import { Util } from "./util";
 
 export enum LevelHeaded {
@@ -24,7 +24,6 @@ export interface PlayerMeta {
 	quick: boolean;
 	canchoose: boolean;
 	hesitant: boolean;
-	choosencard: number;
 }
 
 export class PlayerChar {
@@ -46,7 +45,6 @@ export class PlayerChar {
 			quick: false,
 			canchoose: false,
 			hesitant: false,
-			choosencard: -1,
 		};
 	}
 
@@ -77,8 +75,6 @@ export class PlayerChar {
 	set canchoose(newCanChoose: boolean) { this.meta.canchoose = newCanChoose; }
 	get hesitant(): boolean { return this.meta.hesitant; }
 	set hesitant(newHesitant: boolean) { this.meta.hesitant = newHesitant; }
-	get choosencard(): number { return this.meta.choosencard; }
-	set choosencard(newChooseCard: number) { this.meta.choosencard = newChooseCard; }
 	get getMeta(): PlayerMeta { return { ...this.meta }; }
 	set setMeta(newMeta: PlayerMeta) { this.meta = newMeta; }
 
@@ -122,11 +118,21 @@ export class PlayerChar {
 
 	bestCard(): number {
 		if (this.hand.length === 0) return -1;
-		const high = this.highCard();
-		if (this.hand.includes(this.choosencard) && (!this.hesitant || this.choosencard !== high)) {
-			return this.choosencard;
+		const high = this.highCard()
+		let best = this.hand[0]
+		let found = false
+		for (let pc of PlayerCard.choosenList) {
+			if (this.hand.includes(pc.choosenCard) && (!this.hesitant || pc.choosenCard !== high)) {
+				if (pc.choosenCard > best) {
+					best = pc.choosenCard
+					found = true
+				}
+			}
 		}
-		return this.hesitant ? this.lowCard() : high;
+		if (!found) {
+			best = this.hesitant ? this.lowCard() : high;
+		}
+		return best
 	}
 
 	highCard(): number {
@@ -144,11 +150,13 @@ export class PlayerChar {
 
 	drawInitiative() {
 		const deck = Deck.getInstance();
-		this.choosencard = -1;
+
 		if (this.hesitant) {
 			this.quick = this.levelHeaded = this.impLevelHeaded = false;
 		}
 		if (!this.onHold) {
+			//remove any selected cards
+			PlayerCard.removeCards(this.hand)
 			this.discardHand();
 			if (!this.outOfCombat) {
 				deck.dealFromTop(this.hand, 1, Facing.Up);
@@ -170,7 +178,8 @@ export class PlayerChar {
 	}
 
 	discardHand() {
-		this.choosencard = -1;
+		//this.choosencard = -1;
+		PlayerCard.removeCards(this.hand)
 		Deck.getInstance().moveToDiscardPool(this.hand, 0);
 	}
 
@@ -182,11 +191,11 @@ export class PlayerChar {
 		return this.hand.filter(c => c > 52).length;
 	}
 
-	passCard(pid: string, card: number) {
+	passCardToPlayer(card: number) {
 		const deck = Deck.getInstance()
-		const p = deck.getPlayerById(pid)
-		if (p) {
-			deck.moveCardToPool(this.hand, p.hand, card)
+		const from = deck.getDeckwithCard(card)
+		if (from) {
+			deck.moveCardToPool(this.hand, from, card)
 		}
 	}
 
@@ -202,11 +211,11 @@ export class PlayerChar {
 			}
 			element = element.parentElement as HTMLElement;
 		}
-		console.error('Player ID not found in element attributes')
+		//console.error('Player ID not found in element attributes')
 		return null
 	}
 
-	static getPlayerById(pid: string): PlayerChar | null {
+	getPlayerById(pid: string): PlayerChar | null {
 		return Deck.getInstance().getPlayerById(pid)
 	}
 
@@ -247,7 +256,7 @@ export class PlayerChar {
 				const deck = Deck.getInstance()
 				if (p) {
 					p.drawCard()
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -263,7 +272,7 @@ export class PlayerChar {
 				const deck = Deck.getInstance()
 				if (p) {
 					p.drawInitiative()
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -282,7 +291,7 @@ export class PlayerChar {
 						return
 					}
 					p.discardHand()
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -302,7 +311,7 @@ export class PlayerChar {
 					if (p.outOfCombat) {
 						p.discardHand()
 					}
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -312,21 +321,22 @@ export class PlayerChar {
 		outcombat.style.display = Util.display(isGMorOwner)
 
 
-		let removeplayer = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
-		if (!removeplayer) {
-			removeplayer = Util.getButton(playerdiv, "removeplayer", "Remove Player", "trash-can", this.id)
-			removeplayer.classList.add("btn-danger")
-			removeplayer.addEventListener('click', function () {
+		let rembut = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
+		if (!rembut) {
+			rembut = Util.getButton(playerdiv, "removeplayer", "Remove Player", "trash-can", this.id)
+			rembut.classList.add("toggle-danger")
+			rembut.addEventListener('click', function () {
 				let p = PlayerChar.getPlayer(this)
 				const deck = Deck.getInstance()
 				if (p) {
 					deck.removePlayer(p)
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
-			playerdiv.appendChild(removeplayer)
+			playerdiv.appendChild(rembut)
 		}
-		removeplayer.style.display = Util.display(isGMorOwner)
+		rembut.style.display = Util.display(isGMorOwner)
 
 		let onhold = playerdiv.querySelector('#onhold') as HTMLButtonElement
 		if (!onhold) {
@@ -337,7 +347,7 @@ export class PlayerChar {
 				if (p) {
 					p.onHold = !p.onHold
 					Util.setState(this, p.onHold)
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -359,7 +369,7 @@ export class PlayerChar {
 					Util.setState(hes, p.quick)
 					const lh = this.parentElement?.querySelector('#levelhead') as HTMLButtonElement
 					Util.setState3way(lh, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -379,7 +389,7 @@ export class PlayerChar {
 					Util.setState(this, p.quick)
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -419,7 +429,7 @@ export class PlayerChar {
 					Util.setState3way(this, p.levelHeaded, 'scales', p.impLevelHeaded, 'scales-exclaim')
 					const hes = this.parentElement?.querySelector('#hesitant') as HTMLButtonElement
 					Util.setState(hes, p.hesitant)
-					p.updateOBR()
+					//p.updateOBR()
 					deck.updateOBR()
 				}
 			})
@@ -446,7 +456,7 @@ export class PlayerChar {
 			})
 			playerdiv.appendChild(info)
 		}
-		info.style.display = Util.display(isGMorOwner)
+		info.style.display = Util.display(isOwner)
 
 
 		let pass = playerdiv.querySelector('#pass') as HTMLButtonElement
@@ -454,23 +464,30 @@ export class PlayerChar {
 			pass = Util.getButton(playerdiv, "pass", "Pass your selected card to here", "card-play", this.id)
 			pass.addEventListener('click', function (event) {
 				const deck = Deck.getInstance()
-				const from = deck.getPlayerByOwnerId(obrPlayerId)
-				if (from && from.hand.length > 0 && from.choosencard > -1) {
-					const but = event.currentTarget as HTMLButtonElement
-					const tochar = but.dataset.pid + ''
-					const to = deck.getPlayerById(tochar)
-					if (to != null && from != null) {
-						deck.moveCardToPool(to.hand, from.hand, from.choosencard)
-						to.updateOBR()
-						from.updateOBR()
+				const but = event.currentTarget as HTMLButtonElement
+				const to = deck.getPlayerById(but.dataset.pid + '')
+				if (to != null) {
+					//const playerx = deck.getPlayerByOwnerId(obrPlayerId)
+					const choosen = PlayerCard.getChoices(obrPlayerId)
+					for (let pc of choosen) {
+						//const from = deck.getDeckwithCard(pc.choosenCard)
+						//if (from && from.includes(pc.choosenCard)) {
+						//const player = deck.getPlayerWithCard(pc.choosenCard)
+						to.passCardToPlayer(pc.choosenCard)
+						PlayerCard.removeChoice(pc.ownerId, pc.choosenCard)
+						//to.updateOBR()
+						// if (player) {
+						// 	player.updateOBR()
+						// }
 						deck.updateOBR()
+						//}
 					}
 				}
 				event.preventDefault()
 			})
 			playerdiv.appendChild(pass)
 		}
-		pass.style.display = Util.display(!isOwner)
+		pass.style.display = Util.display(!isOwner || deck.isGM)
 
 		// remove cards
 		while (carddiv.firstChild) {
@@ -481,12 +498,14 @@ export class PlayerChar {
 		this.hand.forEach(cardSeq => {
 			const card = Card.byId(cardSeq);
 			const csvg = card.render(carddiv, x, y, Facing.Up);
-			csvg.dataset.pidcard = `${this.id}|${cardSeq.toString()}`;
-			if (card.sequence === this.choosencard) csvg.classList.add("choosen");
+			//csvg.dataset.pidcard = `${this.id}|${cardSeq.toString()}`;
+			if (PlayerCard.choosenList.find(c => c.choosenCard === card.sequence)) csvg.classList.add("choosen");
 			if (isOwner) {
-				csvg.addEventListener('click', () => {
-					this.choosencard = this.choosencard === card.sequence ? -1 : card.sequence;
-					this.updateOBR()
+				csvg.addEventListener('click', async () => {
+					const ownid = await OBR.player.getId();
+					//this.choosencard = this.choosencard === card.sequence ? -1 : card.sequence;
+					PlayerCard.toggleChoice(ownid, card.sequence)
+					//this.updateOBR()
 					deck.updateOBR()
 				});
 			}
@@ -503,7 +522,9 @@ export class PlayerChar {
 						char.metadata[Util.PlayerMkey] = this.getMeta;
 					}
 				})
-			).then(() => { console.log(`updated character item ${this.id}`) });
+			).then(() => {
+				//console.log(`updated character item ${this.id}`) 
+			});
 		} catch (error) {
 			console.error("Failed to update character item in OBR:", error);
 		}
@@ -516,7 +537,7 @@ export class PlayerChar {
 				characters => characters.forEach(char => {
 					if ((char.metadata[Util.PlayerMkey] as PlayerMeta)?.id === this.id) {
 						delete char.metadata[Util.PlayerMkey];
-						console.log(`deleted character item ${this.id}`)
+						//console.log(`deleted character item ${this.id}`)
 					}
 				})
 			)

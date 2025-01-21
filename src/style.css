@@ -162,145 +162,15 @@ button:focus-visible {
   /* A darker shade for hover */
 }
 
-
-/* body .btn {
-  margin: .2rem
-}
-
-body .btn svg {
-  max-height: 3rem;
-  max-width: 3rem;
-}
-
-body .btn.btn-lg svg {
-  max-height: 3rem;
-  max-width: 3rem;
-}
-
-body .btn.btn-md svg {
-  max-height: 2.2rem;
-  max-width: 2.2rem
-}
-
-body .btn.btn-sm {
-  padding: .45rem .35rem;
-  font-size: .875rem;
-  line-height: .5
-}
-
-body .btn.btn-sm svg {
-  max-height: .2rem;
-  max-width: .2rem
-}
-
-body .btn.btn-xs {
-  padding: .2rem .2rem;
-  font-size: .875rem;
-  line-height: .5
-}
-
-body .btn.btn-xs svg {
-  max-height: 1rem;
-  max-width: 1rem;
-}
-
-body .btn {
-  border: solid 1px rgba(0, 0, 0, 0);
-  font-size: 1rem;
-  padding: .025rem .05rem;
-  margin: .1rem .1rem;
-  cursor: pointer;
-  line-height: 1rem;
-  color: #fff;
-  background-color: #270dd5;
-  border-color: #198754
-} */
-
-/* body .btn:hover {
-  color: #fff;
-  background-color: #157347;
-  border-color: #146c43
-}
-
-body .btn.btn-xs {
-  padding: .025rem .125rem;
-  margin: .025rem .125rem
-}
-
-body .btn.btn-sm {
-  padding: .5rem .5rem;
-  margin: .5rem .5rem
-}
-
-body .btn.btn-secondary {
-  background-color: #333;
-  border-color: #333;
-  color: #fff
-}
-
-body .btn.btn-secondary:hover {
-  background-color: #555
-}
-
-body .btn.btn-danger {
-  color: #fff;
-  background-color: #dc3545;
+.toggle-image.toggle-danger path{
+  color: #dc3545;
   border-color: #dc3545
 }
 
-body .btn.btn-danger:hover {
-  color: #fff;
-  background-color: #bb2d3b;
+.toggle-image.toggle-danger:hover path {
+  color: #bb2d3b;
   border-color: #b02a37
 }
-
-body .btn.btn-warning {
-  color: #fff;
-  background-color: #daa405;
-  border-color: #daa405
-}
-
-body .btn.btn-warning:hover {
-  color: #fff;
-  background-color: #deb128;
-  border-color: #deb128
-}
-
-body .btn.btn-success {
-  color: #fff;
-  background-color: #198754;
-  border-color: #198754
-}
-
-body .btn.btn-success:hover {
-  color: #fff;
-  background-color: #157347;
-  border-color: #146c43
-}
-
-body .btn.btn-info {
-  color: #fff;
-  background-color: #194c87;
-  border-color: #194c87
-}
-
-body .btn.btn-info:hover {
-  color: #fff;
-  background-color: #1f5ba0;
-  border-color: #1f5ba0
-}
-
-body .btn:disabled {
-  cursor: auto;
-  background-color: #333;
-  border-color: #333;
-  color: #666
-}
-
-body .btn:disabled:hover {
-  background-color: #333;
-  color: #666
-} */
 
 @media (prefers-color-scheme: light) {
   :root {

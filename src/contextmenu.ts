@@ -42,8 +42,11 @@ export function setupContextMenu() {
 									const player = deck.addPlayer(name, item.id, pid)
 									if (player) {
 										item.metadata[Util.PlayerMkey] = player.getMeta;
-										console.log(`added player ${player.id}`)
+										player.updateOBR() //updates token
+										deck.updateOBR() //updates deck
+										//console.log(`added player ${player.id}`)
 									}
+									
 								});
 								deck.renderDeck();
 							})
@@ -54,26 +57,31 @@ export function setupContextMenu() {
 						console.warn(`getName:`, error)
 					}
 				} catch (error) {
-					console.warn(`addToInitiative:`, error)
+					console.error(`addToInitiative:`, error)
 				}
 			} else {
 				try {
 					await OBR.scene.items.updateItems(context.items, (items) => {
-						items.forEach(item => {
-							const playerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
-							if (playerMeta) {
-								const player = deck.getPlayerById(playerMeta.id);
-								if (player) {
-									deck.removePlayer(player);
-									console.log(`deleted player ${player.id}`)
+						try {
+							items.forEach(item => {
+								const playerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
+								if (playerMeta) {
+									const player = deck.getPlayerById(playerMeta.id);
+									if (player) {
+										deck.removePlayer(player);
+										//player.removeOBR()
+										deck.updateOBR()
+										//console.log(`deleted player ${player.id}`)
+									}
+									delete item.metadata[Util.PlayerMkey];
 								}
-								delete item.metadata[Util.PlayerMkey];
-							}
-						})
-						deck.renderDeck();
-					})
+							})
+						} catch(error){
+							console.error(`removeInitiative:`, error)
+						}
+					}).then(()=>{deck.renderDeck()})
 				} catch (error) {
-					console.warn(`removeInitiative:`, error)
+					console.error(`removeInitiative:`, error)
 				}
 			}
 		}
