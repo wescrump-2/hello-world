@@ -40,10 +40,9 @@ a:hover {
 body {
   margin: 0px;
   padding: 0px;
-  /* display: flex; */
   place-items: center;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 596px;
 }
 
 h1 {
@@ -52,7 +51,7 @@ h1 {
 }
 
 #app {
-  max-width: 400px;
+  max-width: 396px;
   min-width: var(--container-width);
   margin: 0 auto;
   padding: 0 auto;
@@ -84,85 +83,15 @@ h1 {
   padding: 0px;
 }
 
-.choosen {
-  border: 2px solid #00ff00;
-  z-index: 100;
-}
-
 legend {
-  font-family: Impact,  "Trebuchet MS", "Lucida Sans", "Lucida Grande", Verdana, Geneva, Tahoma, Anton, sans-serif;
+  font-family: Verdana, "Lucida Grande", "Lucida Sans", "Trebuchet MS", Geneva, Tahoma, Impact, Anton, sans-serif;
   font-size: medium;
   font-weight: bolder;
   text-align: left;
   margin-bottom: 0;
 }
 
-fieldset {
-  margin: 0px;
-  padding: 0px;
-  border-width: thick;
-  border-radius: var(--border-radius);
-}
-
-fieldset.nextplayer {
-  border-color: cornflowerblue;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* button {
-  border-radius: var(--border-radius);
-  border: 1px solid transparent;
-  padding: .1rem .1rem;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-} */
-
-/* button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-} */
-
-.toggle-image {
-  cursor: pointer;
-  margin: 0px;
-  padding: 0px;
-  vertical-align: middle;
-  border:0px;
-  background-color: transparent;
-  color:white;
-}
-
-.toggle-image path {
-  transition: fill 0.3s ease;
-}
-
-.toggle-image.btn-success path {
-  fill: #007BFF;
-  /* Active color */
-}
-
-.toggle-image path {
-  fill: #dfdfdf;
-  /* Default color */
-}
-
-.toggle-image:hover path {
-  fill: #0056b3;
-  /* A darker shade for hover */
-}
-
-.toggle-image.toggle-danger path{
+.toggle-image.toggle-danger path {
   color: #dc3545;
   border-color: #dc3545
 }
@@ -172,10 +101,21 @@ button:focus-visible {
   border-color: #b02a37
 }
 
+fieldset {
+  margin: 2px;
+  padding: 0px;
+  border-width: medium;
+  border-radius: var(--border-radius);
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #dddaee;
+    border-color: #f5c2c7;
+    --background-color: #ffffff;
+    --theme-color: #213547;
+    --alt-theme-color: #ecd69b;
   }
 
   a:hover {
@@ -185,23 +125,133 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+
+  .small-card {
+    height: var(--card-height);
+    margin: 0px;
+    padding: 0px;
+    border: .5px solid #000000;
+  }
+
+  .small-card-div {
+    height: calc(.4em + var(--card-height));
+    margin: 0px;
+    padding: 0px;
+    border: .5px solid #000000;
+  }
+
+  .toggle-image {
+    cursor: pointer;
+    margin: 0px;
+    padding: 0px;
+    vertical-align: middle;
+    border: 0px;
+    background-color: transparent;
+    color: black;
+  }
+
+  .toggle-image path {
+    transition: fill 0.3s ease;
+    fill: #202020;
+  }
+
+  .toggle-image.active path {
+    fill: #007BFF;
+    /* Active color */
+  }
+
+  .toggle-image:hover path {
+    fill: #0056b3;
+    /* A darker shade for hover */
+  }
+
+  .chosen {
+    border: 2px solid #BF40BF;
+    z-index: 100;
+  }
+
+  fieldset {
+    border-color: black;
+  }
+
+  fieldset.nextplayer {
+    border-width: thick;
+    border-color: #001aff;
+  }
 }
 
-.small-card {
-  height: var(--card-height);
-  margin: 0px;
-  padding: 0px;
-}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #ffffffdd;
+    background-color: #242424;
+    border-color: #f5c2c7;
+    --background-color: #000000;
+    --theme-color: #c6c4af;
+    --alt-theme-color: #ecd69b;
+  }
 
-.small-card-div {
-  height: calc(.4em + var(--card-height));
-  margin: 0px;
-  padding: 0px;
+  a:hover {
+    color: #535bf2;
+  }
+
+  button {
+    background-color: #1a1a1a;
+  }
+
+  .small-card {
+    height: var(--card-height);
+    margin: 0px;
+    padding: 0px;
+  }
+
+  .small-card-div {
+    height: calc(.4em + var(--card-height));
+    margin: 0px;
+    padding: 0px;
+  }
+
+  .toggle-image {
+    cursor: pointer;
+    margin: 0px;
+    padding: 0px;
+    vertical-align: middle;
+    border: 0px;
+    background-color: transparent;
+    color: white;
+  }
+
+  .toggle-image path {
+    transition: fill 0.3s ease;
+    fill: #dfdfdf;
+  }
+
+  .toggle-image.active path {
+    fill: #007BFF;
+  }
+
+  .toggle-image:hover path {
+    fill: #0056b3;
+  }
+
+  .chosen {
+    border: 2px solid #BF40BF;
+    z-index: 100;
+  }
+
+  fieldset {
+    border-color: #f1f1f1;
+  }
+
+  fieldset.nextplayer {
+    border-width: thick;
+    border-color: cornflowerblue;
+  }
 }
 
 .flex-container {
   display: flex;
-  justify-content: space-between;
+  /* justify-content: space-between; */
+  justify-content: left;
 }
 
 .flex-item-1 {

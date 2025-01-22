@@ -1,6 +1,6 @@
 import OBR, { isImage } from "@owlbear-rodeo/sdk";
 import { Card, Facing } from "./cards";
-import { Deck, PlayerCard } from "./deck";
+import { Deck } from "./deck";
 import { Util } from "./util";
 
 export enum LevelHeaded {
@@ -118,19 +118,21 @@ export class PlayerChar {
 
 	bestCard(): number {
 		if (this.hand.length === 0) return -1;
+		
+		if (this.hesitant) {
+			return this.lowCard()
+		}
 		const high = this.highCard()
-		let best = this.hand[0]
+		let best = -1 //no card is -1
 		let found = false
-		for (let pc of PlayerCard.choosenList) {
-			if (this.hand.includes(pc.choosenCard) && (!this.hesitant || pc.choosenCard !== high)) {
-				if (pc.choosenCard > best) {
-					best = pc.choosenCard
-					found = true
-				}
+		for (let pc of Deck.getInstance().chosenList.filter(p => this.hand.includes(p.chosenCard))) {
+			if (pc.chosenCard > best) {
+				best = pc.chosenCard
+				found = true
 			}
 		}
 		if (!found) {
-			best = this.hesitant ? this.lowCard() : high;
+			best = high;
 		}
 		return best
 	}
@@ -156,7 +158,7 @@ export class PlayerChar {
 		}
 		if (!this.onHold) {
 			//remove any selected cards
-			PlayerCard.removeCards(this.hand)
+			deck.removeChoiceCards(this.hand)
 			this.discardHand();
 			if (!this.outOfCombat) {
 				deck.dealFromTop(this.hand, 1, Facing.Up);
@@ -178,9 +180,9 @@ export class PlayerChar {
 	}
 
 	discardHand() {
-		//this.choosencard = -1;
-		PlayerCard.removeCards(this.hand)
-		Deck.getInstance().moveToDiscardPool(this.hand, 0);
+		const deck = Deck.getInstance();
+		deck.removeChoiceCards(this.hand)
+		deck.moveToDiscardPool(this.hand, 0);
 	}
 
 	hasJoker(): boolean {
@@ -194,7 +196,7 @@ export class PlayerChar {
 	passCardToPlayer(card: number) {
 		const deck = Deck.getInstance()
 		const from = deck.getDeckwithCard(card)
-		if (from) {
+		if (from && !this.hand.includes(card)) {
 			deck.moveCardToPool(this.hand, from, card)
 		}
 	}
@@ -320,14 +322,15 @@ export class PlayerChar {
 		let rembut = playerdiv.querySelector('#removeplayer') as HTMLButtonElement
 		if (!rembut) {
 			rembut = Util.getButton(playerdiv, "removeplayer", "Remove Player", "trash-can", this.id)
-			rembut.addEventListener('click', function () {
+			rembut.addEventListener('click', async function () {
 				let p = PlayerChar.getPlayer(this)
 				const deck = Deck.getInstance()
 				if (p) {
 					deck.removePlayer(p)
 					//p.removeOBR()
-					deck.updateOBR()
-					deck.renderDeck()
+					await deck.updateOBR().then(() => {
+						deck.renderDeck()
+					})
 				}
 			})
 			playerdiv.appendChild(rembut)
@@ -454,23 +457,25 @@ export class PlayerChar {
 		let pass = playerdiv.querySelector('#pass') as HTMLButtonElement
 		if (!pass) {
 			pass = Util.getButton(playerdiv, "pass", "Pass your selected card to here", "card-play", this.id)
-			pass.addEventListener('click', function (event) {
+			pass.addEventListener('click', async function (event) {
 				const deck = Deck.getInstance()
 				const but = event.currentTarget as HTMLButtonElement
 				const to = deck.getPlayerById(but.dataset.pid + '')
 				if (to != null) {
-					const choosen = PlayerCard.getChoices(obrPlayerId)
-					for (let pc of choosen) {
-						to.passCardToPlayer(pc.choosenCard)
-						PlayerCard.removeChoice(pc.ownerId, pc.choosenCard)
-						deck.updateOBR()
+					const chosen = deck.getPlayerChoices(obrPlayerId)
+					for (let pc of chosen) {
+						to.passCardToPlayer(pc.chosenCard)
+						deck.removeChoiceCards([pc.chosenCard])
+						await deck.updateOBR().then(() => {
+							deck.renderDeck()
+						})
 					}
 				}
 				event.preventDefault()
 			})
 			playerdiv.appendChild(pass)
 		}
-		pass.style.display = Util.display(!isOwner || deck.isGM)
+		pass.style.display = Util.display(true)
 
 		// remove cards
 		while (carddiv.firstChild) {
@@ -481,14 +486,14 @@ export class PlayerChar {
 		this.hand.forEach(cardSeq => {
 			const card = Card.byId(cardSeq);
 			const csvg = card.render(carddiv, x, y, Facing.Up);
-			//csvg.dataset.pidcard = `${this.id}|${cardSeq.toString()}`;
-			if (PlayerCard.choosenList.find(c => c.choosenCard === card.sequence)) csvg.classList.add("choosen");
-			if (isOwner) {
+			if (deck.chosenList.find(c => c.chosenCard === card.sequence)) csvg.classList.add("chosen");
+			if (isGMorOwner) {
 				csvg.addEventListener('click', async () => {
 					const ownid = await OBR.player.getId();
-					PlayerCard.toggleChoice(ownid, card.sequence)
-					deck.updateOBR()
-					deck.renderDeck()
+					deck.togglePlayerChoice(ownid, card.sequence)
+					await deck.updateOBR().then(() => {
+						deck.renderDeck()
+					})
 				});
 			}
 			x += inc;
