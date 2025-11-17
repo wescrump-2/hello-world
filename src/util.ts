@@ -1,5 +1,9 @@
 import { Card } from "./cards";
-
+let renderTimeout: number;
+export function debounceRender(callback: () => void, delay = 100) {
+  clearTimeout(renderTimeout);
+  renderTimeout = setTimeout(callback, delay);
+}
 export class Util {
     static readonly BUTTON_CLASS = 'toggle-image';
     static readonly ACTIVE_CLASS = 'active';
@@ -12,6 +16,7 @@ export class Util {
         if(on) return "initial"
         return "none"
     }
+    
     static hexToRgb(hex: string): { r: number; g: number; b: number } {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -176,41 +181,9 @@ export class Util {
         }
     }
 
-    // static setImagex(imageKey: string, svg: SVGElement, css: string) {
-    //     const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement;
-    //     if (svgButtons.contentDocument) {
-    //         const svgDocument = svgButtons.contentDocument.documentElement as unknown as SVGSVGElement;
-    //         const path = svgDocument.querySelector(`#${imageKey}`) as SVGElement;
-
-    //         if (path) {
-    //             let vbpath = path.getAttribute("viewbox")
-    //             if (!vbpath)
-    //                 vbpath = '0 0 512 512'
-    //             svg.setAttribute('viewBox', vbpath)
-    //             svg.innerHTML = path.outerHTML
-    //             svg.setAttribute('width', Util.sizePixels(css))
-    //             svg.setAttribute('height', Util.sizePixels(css))
-    //         }
-    //     }
-    // }
-
     private static buttonSize(): string {
         return getComputedStyle(document.documentElement).getPropertyValue('--button-size').trim();
     }
-
-    // static toggleButton(event: Event, imageKey: string = '') {
-    //     if (!(event.currentTarget instanceof HTMLButtonElement)) return;
-
-    //     const button = event.currentTarget;
-    //     button.classList.toggle(Util.SUCCESS_CLASS);
-
-    //     if (imageKey) {
-    //         let svg = button.querySelector(`svg .${imageKey}`) as SVGSVGElement;
-    //         if (!svg) {
-    //             Util.setImage(imageKey, button);
-    //         }
-    //     }
-    // }
 
     static getState(button:HTMLButtonElement): boolean {
         return button.classList.contains(Util.ACTIVE_CLASS);
@@ -228,7 +201,6 @@ export class Util {
             } else {
                 console.error('button is null')
             }
-
         }
     }
 
@@ -268,10 +240,6 @@ export class Util {
         Util.setImage(imageKey, button)
         return button
     }
-
-    // private static sizePixels(css: string): string {
-    //     return Util.convertToPixels(getComputedStyle(document.documentElement).getPropertyValue(css).trim())
-    // }
 
     static convertToPixels(size: string): string {
         const div = document.createElement('div');

@@ -68,7 +68,6 @@ export function setupContextMenu() {
 									const player = deck.getPlayerById(playerMeta.id);
 									if (player) {
 										deck.removePlayer(player);
-										//player.removeOBR()
 										deck.updateOBR()
 										//console.log(`deleted player ${player.id}`)
 									}

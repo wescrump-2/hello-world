@@ -123,7 +123,8 @@ export class Card {
         container.appendChild(div);
         div.title = this.toString();
         svg.classList.add(...Card.abscard);
-
+        svg.classList.add('card');
+        
         const bbox = svg.getBBox();
         if (bbox.width > 0 && bbox.height > 0) {
             svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
@@ -134,4 +135,3 @@ export class Card {
         return svg;
     }
 }
-

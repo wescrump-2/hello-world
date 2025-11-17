@@ -7,16 +7,11 @@ import buttonsImage from '/buttons.svg';
 import { setupContextMenu } from "./contextmenu";
 import { Deck, DeckMeta } from './deck';
 import { PlayerChar, PlayerMeta } from './player';
-import { Util } from './util';
+import { debounceRender, Util } from './util';
+import { initDOM } from './initDOM';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <div id="svgContainer"></div>
-    <script src="cards.js"></script>
-  </div>
-  <object id="cards-svg" width="0" height="0" data="${cardsImage}" type="image/svg+xml"></object>
-  <object id="buttons-svg" width="0" height="0" data="${buttonsImage}" type="image/svg+xml"></object>   
-`
+initDOM(cardsImage, buttonsImage);
+
 function setupCards() {
   const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
   const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
@@ -33,12 +28,15 @@ window.addEventListener("load", () => {
 
 OBR.onReady(async () => {
   setupContextMenu();
-  await setupGameState();
+  const unsubscribes = await setupGameState();
+  window.addEventListener('beforeunload', () => {
+    unsubscribes.forEach(fn => fn());
+  })
 });
 
 
 let unsubscribe: (() => void)[] = [];
-async function setupGameState(): Promise<void> {
+async function setupGameState(): Promise<(() => void)[]> {
   const deck = Deck.getInstance();
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
@@ -56,72 +54,94 @@ async function setupGameState(): Promise<void> {
     const dmd = metadata[Util.DeckMkey] as DeckMeta;
     if (dmd && 'cardpool' in dmd && Array.isArray(dmd.cardpool)) {
       deck.updateState(dmd);
-      deck.renderDeck()
     } else {
-      await deck.updateOBR();
+      deck.updateState(undefined);
     }
+    deck.needsFullRender = true;
+    deck.renderDeck();
   } catch (error) {
     console.error(`Failed to get room metadata:`, error);
   }
 
   // Setup callback for scene items change
   unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
-  await updatePlayerStateAll()
+
+  try {
+    if (await OBR.scene.isReady()) {
+      const initialItems = await OBR.scene.items.getItems();
+      updatePlayerStateAll(initialItems);
+    }
+  } catch (error) {
+    console.error("Failed to initialize player state:", error);
+  }
+  setTimeout(() => deck.updateOBR(), 0);
+  return unsubscribe;
 }
 
 function renderRoom(metadata: any) {
   const dmd = metadata[Util.DeckMkey] as DeckMeta;
   if (dmd) {
     Deck.getInstance().updateState(dmd);
+    Deck.getInstance().renderDeck();
   }
 }
 
-async function updatePlayerStateAll() {
-  let shouldRender = false
+function updatePlayerStateAll(items: Item[]) {
+  let shouldRender = false;
   try {
-
-    if (await OBR.scene.isReady()) {
-      const items = await OBR.scene.items.getItems(
-        (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
-      )
-      if (items && items.length > 0) {
-        shouldRender = shouldRender || await updatePlayerState(items)
-      }
+    const playerItems = items.filter(
+      (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
+    );
+    if (playerItems.length > 0) {
+      shouldRender = updatePlayerState(playerItems);
     }
   } catch (error) {
-    console.error(`Failed to get scene items:`, error)
+    console.error(`Failed to process scene items:`, error);
   }
   if (shouldRender) {
-    Deck.getInstance().renderDeck()
+    debounceRender(() => Deck.getInstance().renderDeck());
   }
 }
 
-async function updatePlayerState(items: Item[]): Promise<boolean> {
-  // const deck = Deck.getInstance();
+function updatePlayerState(items: Item[]): boolean {
+  const deck = Deck.getInstance();
   let shouldRender = false;
+
+  const activePids = new Set(
+    items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.id).filter(Boolean)
+  );
+
+  const playersArray = deck.playersArray;
+  for (let i = playersArray.length - 1; i >= 0; i--) {
+    const localPid = playersArray[i].id;
+    if (!activePids.has(localPid)) {
+      deck.removePlayer(playersArray[i]);
+      shouldRender = true;
+    }
+  }
 
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
     if (pmd) {
-      const player = rehydratePlayer(pmd);
-      console.log(`Player:${player.playerId} retrieved from metadata`)
+      const player = rehydratePlayer(pmd, deck);
+      //console.log(`Player:${player.playerId} retrieved from metadata`)
       shouldRender = (player != null);
     }
   }
 
-  // if (shouldRender) {
-  //   deck.renderDeck();
-  // }
   return shouldRender
 }
 
-function rehydratePlayer(pmd: PlayerMeta): PlayerChar {
-  const deck = Deck.getInstance()
+function rehydratePlayer(pmd: PlayerMeta, deck: Deck): PlayerChar {
   let player = deck.getPlayerById(pmd.id);
   if (!player) {
     player = deck.addPlayer(pmd.name, pmd.id, pmd.playerId);
     deck.extractPlayerCards(player);
   }
   player.setMeta = pmd;
+
+  const handSet = new Set(pmd.hand);
+  deck.discardpile = deck.discardpile.filter(c => !handSet.has(c));
+  console.log('Discard cleaned for rehydrate:', deck.discardpile.length); 
   return player;
 }

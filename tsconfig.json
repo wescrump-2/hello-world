@@ -13,14 +13,15 @@
     "esModuleInterop": true,
     "noEmit": true,
     "strict": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "moduleDetection": "force",
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }

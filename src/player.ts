@@ -9,6 +9,12 @@ export enum LevelHeaded {
 	ImpLevelHeaded = 2
 }
 
+export enum TacticianLevel {
+  None = 0,
+  Tactician = 1,
+  MasterTactician = 2
+}
+
 export interface PlayerMeta {
 	hand: number[];
 	id: string;
@@ -118,25 +124,11 @@ export class PlayerChar {
 
 	bestCard(): number {
 		if (this.hand.length === 0) return -1;
-		
-		if (this.hesitant) {
-			return this.lowCard()
-		}
-		const high = this.highCard()
-		let best = -1 //no card is -1
-		let found = false
-		for (let pc of Deck.getInstance().chosenList.filter(p => this.hand.includes(p.chosenCard))) {
-			if (pc.chosenCard > best) {
-				best = pc.chosenCard
-				found = true
-			}
-		}
-		if (!found) {
-			best = high;
-		}
-		return best
+		if (this.hesitant) return this.lowCard();
+		const high = this.highCard();
+		const maxChosen = Deck.getInstance().getMaxChosenInHand(this.hand);  // O(1) lookup
+		return maxChosen > -1 ? maxChosen : high;
 	}
-
 	highCard(): number {
 		return this.hand.length ? Math.max(...this.hand) : 1;
 	}
@@ -183,6 +175,7 @@ export class PlayerChar {
 		const deck = Deck.getInstance();
 		deck.removeChoiceCards(this.hand)
 		deck.moveToDiscardPool(this.hand, 0);
+		this.hand = [];
 	}
 
 	hasJoker(): boolean {
@@ -452,7 +445,6 @@ export class PlayerChar {
 			playerdiv.appendChild(info)
 		}
 		info.style.display = Util.display(isOwner)
-
 
 		let pass = playerdiv.querySelector('#pass') as HTMLButtonElement
 		if (!pass) {
