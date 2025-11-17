@@ -188,7 +188,10 @@ export class Deck {
 	}
 
 	newRound() {
-		this.playersArray.forEach(p => this.moveToDiscardPool(p.hand));
+		this.playersArray.forEach(p => {
+			this.moveToDiscardPool(p.hand);
+			p.hand = [];
+		});
 		this.needsFullRender = true;
 	}
 
