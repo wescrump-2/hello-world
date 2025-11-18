@@ -206,9 +206,9 @@ export class PlayerChar {
 		return this.hand.some(c => c > 52);
 	}
 
-	countJoker(): number {
-		return this.hand.filter(c => c > 52).length;
-	}
+	// countJoker(): number {
+	// 	return this.hand.filter(c => c > 52).length;
+	// }
 
 	passCardToPlayer(card: number) {
 		const deck = Deck.getInstance()
@@ -501,6 +501,8 @@ export class PlayerChar {
 
 		this.cardContainer.innerHTML = ''; // fast clear
 		const deck = Deck.getInstance();
+		const isOwner = this.playerId === CURRENT_PLAYER_ID;
+		const isGM = deck.isGM;
 		const inc = Util.offset('--card-spread-inc', this.hand.length);
 
 		let x = 0;
@@ -509,6 +511,13 @@ export class PlayerChar {
 			const svg = card.render(this.cardContainer, x, 0, Facing.Up);
 			if (deck.isCardSelected(seq)) svg.classList.add("chosen");
 			svg.setAttribute('data-card-id', seq.toString());
+			if (isGM || isOwner) {
+				svg.style.cursor = "pointer";
+				svg.addEventListener('click', () => {
+					deck.togglePlayerChoice(CURRENT_PLAYER_ID!, seq);
+					deck.updateOBR().then(() => deck.renderDeck());
+				});
+			}
 			x += inc;
 		}
 	}
