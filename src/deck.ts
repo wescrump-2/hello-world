@@ -28,6 +28,10 @@ export class Deck {
 	private static instance: Deck;
 	public needsFullRender = true;  // Dirty flag for optimization
 	public isGM: boolean = false;
+	public activePlayerPids: Set<string> = new Set();
+
+	// get activePlayerPids(): Set<string> { return this.activePids; }
+	//updateActivePlayerPids(pids: Set<string>) { this.activePids = pids; }
 
 	// Graphic assets
 	private svgcontainer!: HTMLDivElement;
@@ -384,15 +388,19 @@ export class Deck {
 		const id = player.id;
 		if (this.players.has(id)) {
 			try {
-				const fieldset = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid="${id}"]`);
-				fieldset?.parentElement?.removeChild(fieldset);
+				//const fieldset = document.querySelector<HTMLFieldSetElement>(`fieldset[data-pid="${id}"]`);
+				//fieldset?.parentElement?.removeChild(fieldset);
+				//if (fieldset) fieldset.remove();
+				document.querySelector(`fieldset[data-pid="${id}"]`)?.remove();
 				this.moveToDiscardPool(player.hand);
+				player.hand = [];
 				this.players.delete(id);
 				this.chosenCards.delete(id);
 				this.needsFullRender = true;
 			} finally {
 				player.removeOBR();
 			}
+			this.renderDeck();
 		}
 	}
 	private updatePlayerOrderAndHighlight() {
@@ -556,9 +564,9 @@ export class Deck {
 	}
 
 	renderPlayers(div: HTMLDivElement) {
-		let x = 0, y = 0;
+		//let x = 0, y = 0;
 		this.playersArray.forEach(p => {
-			p.render(div, x, y++);  // Render without sorting (sort happens in updatePlayerOrderAndHighlight)
+			p.render(div);//, x, y++);  // Render without sorting (sort happens in updatePlayerOrderAndHighlight)
 		});
 
 	}

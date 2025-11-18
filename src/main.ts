@@ -6,8 +6,8 @@ import buttonsImage from '/buttons.svg';
 
 import { setupContextMenu } from "./contextmenu";
 import { Deck, DeckMeta } from './deck';
-import { PlayerChar, PlayerMeta } from './player';
-import { debounceRender, Util } from './util';
+import { getCurrentPlayerId, PlayerChar, PlayerMeta } from './player';
+import { Util } from './util';
 import { initDOM } from './initDOM';
 
 initDOM(cardsImage, buttonsImage);
@@ -40,7 +40,7 @@ async function setupGameState(): Promise<(() => void)[]> {
   const deck = Deck.getInstance();
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
-    deck.currentPlayer
+    //deck.currentPlayer
   } catch (error) {
     console.error("Failed to get GM role:", error);
   }
@@ -63,18 +63,26 @@ async function setupGameState(): Promise<(() => void)[]> {
     console.error(`Failed to get room metadata:`, error);
   }
 
-  // Setup callback for scene items change
-  unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
-
   try {
     if (await OBR.scene.isReady()) {
+      await getCurrentPlayerId();
       const initialItems = await OBR.scene.items.getItems();
       updatePlayerStateAll(initialItems);
+      // NEW: Capture initial active PIDs snapshot
+      const deck = Deck.getInstance();
+      const initialPids = new Set(
+        initialItems.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.id).filter(Boolean)
+      );
+      deck.activePlayerPids = initialPids;
     }
   } catch (error) {
     console.error("Failed to initialize player state:", error);
   }
-  setTimeout(() => deck.updateOBR(), 0);
+
+  // Setup callback for scene items change
+  unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
+
+  //setTimeout(() => deck.updateOBR(), 0);
   return unsubscribe;
 }
 
@@ -94,12 +102,15 @@ function updatePlayerStateAll(items: Item[]) {
     );
     if (playerItems.length > 0) {
       shouldRender = updatePlayerState(playerItems);
+    } else {
+      // NEW: Force render if no items (last delete)
+      shouldRender = true;
     }
   } catch (error) {
     console.error(`Failed to process scene items:`, error);
   }
   if (shouldRender) {
-    debounceRender(() => Deck.getInstance().renderDeck());
+    Deck.getInstance().renderDeck();
   }
 }
 
@@ -129,6 +140,9 @@ function updatePlayerState(items: Item[]): boolean {
     }
   }
 
+  if (shouldRender) {
+    Deck.getInstance().renderDeck();
+  }
   return shouldRender
 }
 
@@ -136,12 +150,14 @@ function rehydratePlayer(pmd: PlayerMeta, deck: Deck): PlayerChar {
   let player = deck.getPlayerById(pmd.id);
   if (!player) {
     player = deck.addPlayer(pmd.name, pmd.id, pmd.playerId);
-    deck.extractPlayerCards(player);
   }
   player.setMeta = pmd;
+  deck.extractPlayerCards(player);
 
-  const handSet = new Set(pmd.hand);
-  deck.discardpile = deck.discardpile.filter(c => !handSet.has(c));
-  console.log('Discard cleaned for rehydrate:', deck.discardpile.length); 
+  // const handSet = new Set(pmd.hand);
+  // deck.discardpile = deck.discardpile.filter(c => !handSet.has(c));
+  // console.log('Discard cleaned for rehydrate:', deck.discardpile.length);
   return player;
 }
+
+
