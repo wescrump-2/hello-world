@@ -32,7 +32,7 @@ export interface PlayerMeta {
 	hesitant: boolean;
 }
 
-let CURRENT_PLAYER_ID: string | null = null;
+export let CURRENT_PLAYER_ID: string | null = null;
 let CURRENT_PLAYER_ID_PROMISE: Promise<string> | null = null;
 
 export async function getCurrentPlayerId(): Promise<string> {
@@ -252,6 +252,7 @@ export class PlayerChar {
 		this.cardContainer = fieldset.children[2] as HTMLDivElement;
 
 		this.setupAllButtons();
+		console.log(`[DEBUG] Created controls for player ${this.id}. CURRENT_PLAYER_ID:`, CURRENT_PLAYER_ID);  // ← ADD
 		this.updateButtonVisibility(); // initial state
 	}
 
@@ -437,6 +438,8 @@ export class PlayerChar {
 		this.createControls(container);     // creates once
 		this.updateButtonStates();          // only toggles classes/text
 		this.updateButtonVisibility();      // show/hide based on GM/owner
+		console.log(`[DEBUG] Render complete for ${this.id}. Button 'drawcard' display:`, this.buttons.get("drawcard")?.style.display);  // ← ADD
+
 		this.renderHandOnly();              // only clears and redraws cards
 	}
 
@@ -465,15 +468,9 @@ export class PlayerChar {
 	}
 
 	private updateButtonVisibility() {
-		if (!CURRENT_PLAYER_ID) {
-			// If player ID still loading (very rare), hide everything owner-specific
-			const allButtons = Array.from(this.buttons.values());
-			allButtons.forEach(b => b.style.display = "none");
-			return;
-		}
-
-		const isOwner = this.playerId === CURRENT_PLAYER_ID;
-		const isGM = Deck.getInstance().isGM;
+		const deck = Deck.getInstance();
+        const isOwner = CURRENT_PLAYER_ID ? this.playerId === CURRENT_PLAYER_ID : false;
+		const isGM = deck.isGM;
 		const isGMorOwner = isGM || isOwner;
 
 		// Helper
@@ -501,8 +498,8 @@ export class PlayerChar {
 
 		this.cardContainer.innerHTML = ''; // fast clear
 		const deck = Deck.getInstance();
-		const isOwner = this.playerId === CURRENT_PLAYER_ID;
-		const isGM = deck.isGM;
+		// const isOwner = this.playerId === CURRENT_PLAYER_ID;
+		// const isGM = deck.isGM;
 		const inc = Util.offset('--card-spread-inc', this.hand.length);
 
 		let x = 0;
@@ -511,13 +508,14 @@ export class PlayerChar {
 			const svg = card.render(this.cardContainer, x, 0, Facing.Up);
 			if (deck.isCardSelected(seq)) svg.classList.add("chosen");
 			svg.setAttribute('data-card-id', seq.toString());
-			if (isGM || isOwner) {
-				svg.style.cursor = "pointer";
-				svg.addEventListener('click', () => {
-					deck.togglePlayerChoice(CURRENT_PLAYER_ID!, seq);
-					deck.updateOBR().then(() => deck.renderDeck());
-				});
-			}
+			// if (isGM || isOwner) {
+			// 	svg.style.cursor = "pointer";
+			// 	svg.addEventListener('click', () => {
+			// 		deck.togglePlayerChoice(CURRENT_PLAYER_ID!, seq);
+			// 		deck.updateOBR().then(() => deck.renderDeck());
+			// 	});
+			// }
+			svg.classList.add('card');
 			x += inc;
 		}
 	}

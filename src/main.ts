@@ -27,6 +27,7 @@ window.addEventListener("load", () => {
 })
 
 OBR.onReady(async () => {
+  await getCurrentPlayerId();
   setupContextMenu();
   const unsubscribes = await setupGameState();
   window.addEventListener('beforeunload', () => {
@@ -65,7 +66,6 @@ async function setupGameState(): Promise<(() => void)[]> {
 
   try {
     if (await OBR.scene.isReady()) {
-      await getCurrentPlayerId();
       const initialItems = await OBR.scene.items.getItems();
       updatePlayerStateAll(initialItems);
       // NEW: Capture initial active PIDs snapshot

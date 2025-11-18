@@ -1,5 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { PlayerChar } from "./player";
+import { PlayerChar, CURRENT_PLAYER_ID } from "./player";
 import { Card, Facing } from "./cards";
 import { debounceRender, Util } from "./util";
 
@@ -109,6 +109,7 @@ export class Deck {
 			Deck.instance = new Deck();
 			Deck.instance.svgcontainer = document.getElementById('svgContainer') as HTMLDivElement;
 			Deck.instance.shuffle();
+			Deck.instance.initCardSelectionDelegation();
 		}
 		return Deck.instance;
 	}
@@ -139,7 +140,7 @@ export class Deck {
 			this.chosenCards.set(ownid, set);
 		}
 		this.needsFullRender = true;
-		this.renderDeck();
+		debounceRender(() => this.renderDeck());
 	}
 
 	removeChoiceCards(cards: number[]) {
@@ -439,7 +440,7 @@ export class Deck {
 	}
 
 	renderDeck() {
-		this.initCardSelectionDelegation();
+		////this.initCardSelectionDelegation();
 
 		if (!this.needsFullRender && this.svgcontainer.children.length > 0) {
 			this.updatePlayerOrderAndHighlight();
@@ -640,9 +641,7 @@ export class Deck {
 		});
 	}
 
-	// Add this once – one single delegated listener for ALL cards
 	private initCardSelectionDelegation() {
-		// Prevent adding the listener multiple times
 		if (this.svgcontainer.dataset.cardDelegation === 'true') return;
 		this.svgcontainer.dataset.cardDelegation = 'true';
 
@@ -676,7 +675,7 @@ export class Deck {
 			e.stopPropagation();
 
 			try {
-				const ownid = await OBR.player.getId();
+				const ownid = CURRENT_PLAYER_ID!;
 				this.togglePlayerChoice(ownid, cardId);
 				await this.updateOBR();
 				debounceRender(() => this.renderDeck())
