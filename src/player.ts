@@ -369,7 +369,6 @@ export class PlayerChar {
 			this.boundHandlers.set("removeplayer", async () => {
 				Debug.log("player.removePlayer");
 				deck.removePlayer(this);
-				////deck.renderDeck();
 				deck.triggerPlayerStateChange();
 			});
 			removeplayer.addEventListener('click', this.boundHandlers.get("removeplayer")!);
@@ -473,7 +472,6 @@ export class PlayerChar {
 						giver.render(deck.svgcontainer);
 						receiver.render(deck.svgcontainer);
 					}
-					////deck.renderDeck();
 					deck.triggerPlayerStateChange();
 				}
 				event?.preventDefault();

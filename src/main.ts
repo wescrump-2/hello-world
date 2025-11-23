@@ -52,9 +52,9 @@ async function setupGameState(): Promise<void> {
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
     unsubscribes.push(
-      OBR.player.onChange((player) => {
+      OBR.player.onChange(async (player) => {
         deck.isGM = player.role === "GM";
-        deck.renderDeck(); // maybe needed
+        deck.renderDeckAsync(); // maybe needed
       })
     );
   } catch (error) {
@@ -84,10 +84,10 @@ async function setupGameState(): Promise<void> {
   }
 
   unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));
-  deck.renderDeck();
+  deck.renderDeckAsync();
 }
 
-function renderRoom(metadata: Record<string, any>) {
+async function renderRoom(metadata: Record<string, any>) {
   Debug.log("renderRoom called.")
   const deck = Deck.getInstance();
   const newMeta = metadata[Util.DeckMkey] as DeckMeta | undefined;
@@ -96,22 +96,22 @@ function renderRoom(metadata: Record<string, any>) {
     deck.updateState(newMeta);
   }
 
-  deck.renderDeck();
+  deck.renderDeckAsync();
 }
 
-function updatePlayerStateAll(items: Item[]) {
+async function updatePlayerStateAll(items: Item[]) {
   Debug.log("updatePlayerStateAll called.")
   const playerItems = items.filter(
     (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
   );
-  const changed = updatePlayerState(playerItems);
+  const changed = await updatePlayerState(playerItems);
 
-  if (changed || playerItems.length === 0) {
+  if ( changed || playerItems.length === 0) {
     Debug.updateFromPlayers(Deck.getInstance().playerNames)
   }
 }
 
-function updatePlayerState(items: Item[]): boolean {
+async function updatePlayerState(items: Item[]): Promise<boolean> {
   const deck = Deck.getInstance();
   let changed = false;
 
@@ -135,7 +135,7 @@ function updatePlayerState(items: Item[]): boolean {
   }
 
   if (changed) {
-    deck.renderDeck();
+    deck.renderDeckAsync();
   }
   return changed;
 }

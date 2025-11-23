@@ -104,58 +104,76 @@ export class Deck {
 		}
 		pc.selectedBy = '';
 	}
-	triggerPlayerStateChange() {
-		this.debounceOBRSave();
-	}
+
 	private saveTimeout: number | null = null;
 
-	public debounceOBRSave() {
-		Debug.log("debounceOBRSave called.");
-		// Cancel any pending save
+	private savePromise: Promise<void> | null = null;
+
+	public triggerPlayerStateChange(): Promise<void> {
+		Debug.log("triggerPlayerStateChange called");
+
+		// Cancel any existing timeout
 		if (this.saveTimeout !== null) {
 			clearTimeout(this.saveTimeout);
+			this.saveTimeout = null;
 		}
 
-		// Schedule a new one — this one WILL run
-		this.saveTimeout = window.setTimeout(async () => {
-			Debug.log("Saving deck state to OBR...");
-			try {
-				// These awaits are now guaranteed to run
-				await OBR.room.setMetadata({ [Util.DeckMkey]: this.Meta });
+		// If there's already a pending save promise, return it
+		if (this.savePromise) {
+			return this.savePromise;
+		}
 
-				const playerMetas = this.playersArray.map(p => ({
-					id: p.characterId,
-					meta: p.Meta
-				}));
+		// Create a new promise that will resolve when save completes
+		const promise = new Promise<void>((resolve, reject) => {
+			this.saveTimeout = window.setTimeout(async () => {
+				try {
+					Debug.log("Executing debounced save to OBR...");
+					await this.performSave();
+					Debug.log("Save completed successfully");
+					resolve();
+				} catch (err) {
+					console.error("Failed to save deck state:", err);
+					reject(err);
+				} finally {
+					this.saveTimeout = null;
+					this.savePromise = null;
+				}
+			}, 300);
+		});
 
-				if (playerMetas.length > 0) {
-					await OBR.scene.items.updateItems(
-						(item): item is Image =>
-							item.layer === "CHARACTER" &&
-							isImage(item) &&
-							item.metadata[Util.PlayerMkey] !== undefined,
-						(chars) => {
-							for (const char of chars) {
-								const pm = char.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
-								if (pm) {
-									const updated = playerMetas.find(m => m.id === pm.characterId);
-									if (updated) {
-										char.metadata[Util.PlayerMkey] = updated.meta;
-									}
-								}
+		this.savePromise = promise;
+		return promise;
+	}
+	private async performSave(): Promise<void> {
+		// Save room metadata
+		await OBR.room.setMetadata({ [Util.DeckMkey]: this.Meta });
+
+		// Save all player metadata to their tokens
+		const playerMetas = this.playersArray.map(p => ({
+			id: p.characterId,
+			meta: p.Meta
+		}));
+
+		if (playerMetas.length > 0) {
+			await OBR.scene.items.updateItems(
+				(item): item is Image =>
+					item.layer === "CHARACTER" &&
+					isImage(item) &&
+					!!item.metadata[Util.PlayerMkey],
+				(chars) => {
+					for (const char of chars) {
+						const pm = char.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
+						if (pm?.characterId) {
+							const updated = playerMetas.find(m => m.id === pm.characterId);
+							if (updated) {
+								char.metadata[Util.PlayerMkey] = updated.meta;
 							}
 						}
-					);
+					}
 				}
-
-				Debug.log("Deck state saved successfully!");
-			} catch (err) {
-				console.error("Failed to save deck state:", err);
-			}
-			this.saveTimeout = null;
-		}, 300); // 300ms = perfect balance
+			);
+		}
 	}
-
 	public cleanupOrphanCards() {
 		let cleaned = 0;
 		for (const card of this.carddeck) {
@@ -468,8 +486,19 @@ export class Deck {
 		});
 	}
 
-	renderDeck() {
-		Debug.log("%cRENDER DECK — Full render started", "color: cyan; font-weight: bold; font-size: 12px");
+	public async renderDeckAsync(): Promise<void> {
+		Debug.log("%cRENDER DECK ASYNC — Starting", "color: cyan; font-weight: bold; font-size: 12px");
+
+		// Wait for any pending save to complete first
+		if (this.savePromise) {
+			Debug.log("Waiting for in-progress save before render...");
+			await this.savePromise;
+		}
+		this.renderDeck();
+
+		Debug.log("%cRENDER DECK ASYNC — Finished", "color: cyan; font-weight: bold; font-size: 12px");
+	}
+	private renderDeck() {
 		this.renderDraw(this.svgcontainer);
 		if (this.isGM) {
 			this.renderDiscardPile(this.svgcontainer);
@@ -478,7 +507,6 @@ export class Deck {
 		this.renderPlayers(this.svgcontainer);
 		this.updatePlayerOrderAndHighlight();
 		this.checkJokerNotification();
-		Debug.log("%cRENDER DECK — Full render finished", "color: cyan; font-weight: bold; font-size: 12px");
 	}
 
 	private renderPile(id: string, title: string, order: number, cards: number[], facing: Facing, increment: string, buttonsConfig: Array<{ id: string; label: string; icon: string; handler: () => void }>) {

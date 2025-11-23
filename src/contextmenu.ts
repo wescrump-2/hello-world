@@ -56,7 +56,7 @@ export function setupContextMenu() {
 						item.metadata[Util.PlayerMkey] = player.Meta;
 					}
 				});
-				deck.renderDeck();
+				deck.renderDeckAsync();
 			}
 
 			// ─── REMOVE FROM INITIATIVE ───
