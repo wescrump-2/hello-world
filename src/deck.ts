@@ -38,7 +38,6 @@ export class Deck {
 
 	// Graphic assets
 	public svgcontainer!: HTMLDivElement;
-	private jokerNotified: number = 0;
 	public players: Map<string, PlayerChar> = new Map();
 	get playersArray(): PlayerChar[] { return Array.from(this.players.values()); }
 	get playerNames(): string[] { return Array.from(this.players.values()).map(p => p.name); }
@@ -53,8 +52,10 @@ export class Deck {
 	private constructor() { }
 
 	get Meta(): DeckMeta { return { ...this.meta }; }
-	applyMeta(newMeta: DeckMeta) {
+	applyMeta(newMeta: DeckMeta): boolean {
+		const changed = JSON.stringify(this.meta) !== JSON.stringify(newMeta);
 		Object.assign(this.meta, newMeta);
+		return changed
 	}
 	get back(): number { return this.meta.back; }
 	set back(n: number) { this.meta.back = n; }
@@ -321,7 +322,6 @@ export class Deck {
 	}
 
 	initializeDeck() {
-		this.jokerNotified = 0;
 		this.carddeck = Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1))
 		this.carddeck.forEach(c => {
 			if (!this.use4jokers && (c.cid === 55 || c.cid === 56)) {
@@ -336,27 +336,17 @@ export class Deck {
 		return this.carddeck.filter(c => !Deck.isSamePile(c.pile, 'draw') && !Deck.isSamePile(c.pile, 'remove'));
 	}
 
-	getTimeBasedRandomNumber(): number {
-		const now = new Date().getTime();
-		const seed = now % 1000;
-		const random = (seed / 1000);
-		const result = Math.floor(random * 8) + 2;
-		return result;
-	}
-
 	shuffle() {
 		if (!this.isGM) return;
 		this.playersArray.forEach(p => { this.moveToPool('draw', p.pileId) }); // return hands
 		this.moveToPool('draw', 'pool'); //return card pool
 		this.moveToPool('draw', 'discard'); //return discard
-
-		for (let s = 0; s < this.getTimeBasedRandomNumber(); s++) {
-			for (let i = this.carddeck.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				let tmp = this.carddeck[i].order;
-				this.carddeck[i].order = this.carddeck[j].order;
-				this.carddeck[j].order = tmp;
-			}
+		const array = this.carddeck;
+		for (let i = this.carddeck.length - 1; i > 0; i--) {
+			const randomBytes = new Uint32Array(1);
+			crypto.getRandomValues(randomBytes);
+			const j = randomBytes[0] % (i + 1);
+			[array[i].order, array[j].order] = [array[j].order, array[i].order];
 		}
 	}
 
@@ -383,6 +373,9 @@ export class Deck {
 		for (let i = 0; i < numCards; i++) {
 			const pc = drawPile[i];
 			this.setPile(pc, to);
+			if (Card.isJoker(pc.cid)) {
+				this.showNotification('Joker drawn, shuffle and issue Bennies.', "INFO");
+			}
 			if (dir !== Facing.None) {
 				Card.byId(pc.cid).dir = dir;
 			}
@@ -420,7 +413,7 @@ export class Deck {
 	}
 
 	jokersDrawn(): number {
-		return this.carddeck.filter(c => !Deck.isSamePile(c.pile, 'draw') && !Deck.isSamePile(c.pile, 'remove') && c.cid > 52).length;
+		return this.carddeck.filter(c => !Deck.isSamePile(c.pile, 'draw') && !Deck.isSamePile(c.pile, 'remove') && Card.isJoker(c.cid)).length;
 	}
 
 	addPlayer(name: string, charid: string, playerId: string): PlayerChar {
@@ -506,7 +499,6 @@ export class Deck {
 		}
 		this.renderPlayers(this.svgcontainer);
 		this.updatePlayerOrderAndHighlight();
-		this.checkJokerNotification();
 	}
 
 	private renderPile(id: string, title: string, order: number, cards: number[], facing: Facing, increment: string, buttonsConfig: Array<{ id: string; label: string; icon: string; handler: () => void }>) {
@@ -639,17 +631,9 @@ export class Deck {
 		});
 	}
 
-	private checkJokerNotification() {
-		const drawnJokers = this.jokersDrawn();
-		if (drawnJokers > this.jokerNotified) {
-			this.showNotification('Joker drawn, shuffle and issue Bennies.', "INFO");
-			this.jokerNotified = drawnJokers;
-		}
-	}
-
-	showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
+	async showNotification(message: string, level: "DEFAULT" | "ERROR" | "INFO" | "SUCCESS" | "WARNING" = "DEFAULT") {
 		try {
-			OBR.notification.show(message, level);
+			await OBR.notification.show(message, level);
 		} catch (error) {
 			console.error('Failed to show notification:', error);
 		}

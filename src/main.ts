@@ -4,7 +4,7 @@ import cardsImage from '/cards.svg';
 import buttonsImage from '/buttons.svg';
 import { setupContextMenu } from "./contextmenu";
 import { Deck, DeckMeta } from './deck';
-import { getCurrentPlayerId, PlayerChar, PlayerMeta } from './player';
+import { getCurrentPlayerId, PlayerMeta } from './player';
 import { Debug, Util } from './util';
 import { initDOM } from './initDOM';
 
@@ -51,12 +51,6 @@ async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
-    unsubscribes.push(
-      OBR.player.onChange(async (player) => {
-        deck.isGM = player.role === "GM";
-        deck.renderDeckAsync(); // maybe needed
-      })
-    );
   } catch (error) {
     console.error("Failed to get GM role:", error);
   }
@@ -106,7 +100,7 @@ async function updatePlayerStateAll(items: Item[]) {
   );
   const changed = await updatePlayerState(playerItems);
 
-  if ( changed || playerItems.length === 0) {
+  if (changed || playerItems.length === 0) {
     Debug.updateFromPlayers(Deck.getInstance().playerNames)
   }
 }
@@ -128,9 +122,9 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
     if (pmd?.characterId) {
-      const player = rehydratePlayer(pmd, deck);
-      Debug.log(`Player:${player.playerId} with hand:${player.characterId} retrieved from metadata`)
-      changed = true;
+      if (rehydratePlayer(pmd, deck)) {
+        changed = true;
+      }
     }
   }
 
@@ -140,14 +134,18 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
   return changed;
 }
 
-function rehydratePlayer(pmd: PlayerMeta, deck: Deck): PlayerChar {
+function rehydratePlayer(pmd: PlayerMeta, deck: Deck): boolean {
   let player = deck.getPlayerById(pmd.characterId);
+  let changed = false;
   if (!player) {
     player = deck.addPlayer(pmd.name, pmd.characterId, pmd.playerId);
+    changed = true;
   }
-  player.applyMeta(pmd);
+  if (player.applyMeta(pmd)) {
+    changed = true;
+  }
   Debug.updateFromPlayers(deck.playerNames)
-  return player;
+  return changed;
 }
 
 // --- List ALL room metadata keys and their sizes ---

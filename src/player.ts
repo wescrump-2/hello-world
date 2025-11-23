@@ -136,10 +136,10 @@ export class PlayerChar {
 
 	get Meta(): PlayerMeta { return { ...this.meta }; }
 
-	applyMeta(newMeta: PlayerMeta) {
-		this.meta = {
-			...newMeta
-		};
+	applyMeta(newMeta: PlayerMeta): boolean {
+		const oldJson = JSON.stringify(this.meta);
+		this.meta = { ...newMeta };
+		return oldJson !== JSON.stringify(newMeta);
 	}
 
 	get hand(): number[] {
@@ -194,12 +194,11 @@ export class PlayerChar {
 	}
 
 	highCard(): number {
-		return this.hand.length ? Math.max(...this.hand) : 1;
+		return this.hand.length > 0 ? Math.max(...this.hand) : -1;
 	}
 
 	lowCard(): number {
-		if (this.hand.length === 0) return -1;
-		return this.hasJoker() ? this.hand.find(Card.isJoker) ?? Math.min(...this.hand) : Math.min(...this.hand);
+		return this.hand.length > 0 ? Math.min(...this.hand) : -1;
 	}
 
 	drawCard() {
@@ -221,8 +220,14 @@ export class PlayerChar {
 			if (this.impLevelHeaded) deck.dealFromTop(this.pileId, 1, Facing.Up);
 			if (this.levelHeaded || this.impLevelHeaded || this.hesitant) deck.dealFromTop(this.pileId, 1, Facing.Up);
 			if (this.quick) {
-				while (deck.drawdeck.length > 0 && this.hand.every(c => Card.byId(c).rank <= 5)) {
+				let safety = 0;
+				while (deck.drawdeck.length > 0 &&
+					this.hand.every(c => Card.byId(c).rank <= 5) &&
+					safety++ < 16) {   // ← prevents infinite loop
 					deck.dealFromTop(this.pileId, 1, Facing.Up);
+				}
+				if (safety >= 16) {
+					Debug.log("Quick edge aborted — possible infinite loop prevented");
 				}
 			}
 		}
@@ -241,7 +246,7 @@ export class PlayerChar {
 	}
 
 	hasJoker(): boolean {
-		return this.hand.some(c => c > 52);
+		return this.hand.some(c => Card.isJoker(c));
 	}
 
 	static getPlayer(element: HTMLElement): PlayerChar | null {
@@ -461,11 +466,11 @@ export class PlayerChar {
 				//get cards selected by player and set the pile to hand of targetId
 				let pileId = { characterId: toHandId } as PileId
 				let selected = deck.carddeck.filter(c => c.selectedBy === CURRENT_PLAYER_ID);
-				selected.forEach(c => { 
-					deck.setPile(c, pileId); 
-					flag = true 
+				selected.forEach(c => {
+					deck.setPile(c, pileId);
+					flag = true
 				})
-				 if (flag) {
+				if (flag) {
 					const giver = deck.getPlayerById(this.characterId);
 					const receiver = deck.getPlayerById(toHandId);
 					if (giver && receiver) {

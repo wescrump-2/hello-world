@@ -95,9 +95,6 @@ export class Card {
         return c > 52;
     }
 
-    public isJoker(): boolean {
-        return this.rank === Rank.Joker;
-    }
 
     public static cardSpread(type: string): string {
         return getComputedStyle(document.documentElement).getPropertyValue(type).trim();
