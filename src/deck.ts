@@ -263,6 +263,7 @@ export class Deck {
 	discardAllHands() {
 		Debug.log("discardAllHands");
 		if (!this.isGM) return;
+		if (this.playersArray.every(p => p.hand.length === 0)) return;
 
 		let anyChange = false;
 
@@ -275,7 +276,6 @@ export class Deck {
 				}
 			}
 		} finally {
-
 			if (anyChange) {
 				this.triggerPlayerStateChange();
 			} else {
