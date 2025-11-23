@@ -547,7 +547,7 @@ export class PlayerChar {
 	}
 
 	private renderHandOnly() {
-		Debug.log(`   DRAWING HAND → ${this.name}: [${this.hand.map(c => Card.byId(c).toString()).join(', ')}]`);
+		Debug.log(`   DRAWING HAND → ${this.name}: [${this.hand.map(c => Card.byId(c).displayText()).join(', ')}]`);
 
 		this.cardContainer.replaceChildren();
 		const inc = Util.offset('--card-spread-inc', this.hand.length);

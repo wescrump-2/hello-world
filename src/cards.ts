@@ -103,10 +103,12 @@ export class Card {
         return getComputedStyle(document.documentElement).getPropertyValue(type).trim();
     }
 
-    public toString(): string {
-        if (this.dir === Facing.Up) {
+    public displayText(): string {
+        if (this.dir === Facing.Up || Debug.enabled) {
             let pc = Deck.getInstance().carddeck.find(c => c.cid === this.sequence);
-            return `${Rank[this.rank]} of ${(this.rank === Rank.Joker) ? this.color : this.suit}[${this.sequence}:${pc?.order}/${pc?.dealOrder}]`;
+            let dbg = (Debug.enabled) ? `[${this.sequence}:${pc?.order}/${pc?.dealOrder}]` : '';
+            return `${Rank[this.rank]} of ${(this.rank === Rank.Joker) ? this.color : this.suit}${dbg}`
+            
         } else {
             return 'card';
         }
@@ -132,7 +134,7 @@ export class Card {
         const source = this.dir === Facing.Up ? this.face : Deck.getInstance().backsvg;
         svg.replaceChildren();
         svg.append(...Array.from(source.children).map(c => c.cloneNode(true)));
-        div.title = this.toString();
+        div.title = this.displayText();
 
         // === viewBox: set only once, and ONLY when the SVG is attached and has content ===
         if (!svg.hasAttribute('viewBox') && svg.isConnected && svg.children.length > 0) {
