@@ -1,163 +1,175 @@
 import './style.css';
 import OBR, { isImage, Image, Item } from "@owlbear-rodeo/sdk";
-
 import cardsImage from '/cards.svg';
 import buttonsImage from '/buttons.svg';
-
 import { setupContextMenu } from "./contextmenu";
 import { Deck, DeckMeta } from './deck';
 import { getCurrentPlayerId, PlayerChar, PlayerMeta } from './player';
-import { Util } from './util';
+import { Debug, Util } from './util';
 import { initDOM } from './initDOM';
 
+let unsubscribes: (() => void)[] = [];
+
 initDOM(cardsImage, buttonsImage);
+window.addEventListener("load", () => { setupCards() });
+
+OBR.onReady(async () => {
+  await getCurrentPlayerId();
+  await new Promise<void>((resolve) => {
+    OBR.scene.onReadyChange((isReady) => {
+      if (isReady) resolve();
+    });
+    // In case we are already in a scene when the extension loads
+    OBR.scene.isReady().then((ready) => {
+      if (ready) resolve();
+    });
+  });
+  setupContextMenu();
+  await setupGameState();
+  window.addEventListener('beforeunload', () => {
+    unsubscribes.forEach(fn => fn());
+  })
+
+  if (Debug.enabled) {
+    await dumpRoomMetadata();
+    await findItemMetadataKeys();
+  }
+});
 
 function setupCards() {
   const svgCards = document.getElementById('cards-svg') as HTMLObjectElement
   const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
-    console.log("Button and card images loaded");
+    Debug.log("Button and card images loaded");
   } else {
     console.error("Failed to load SVG document")
   }
 }
-window.addEventListener("load", () => {
-  setupCards()
-})
 
-OBR.onReady(async () => {
-  await getCurrentPlayerId();
-  setupContextMenu();
-  const unsubscribes = await setupGameState();
-  window.addEventListener('beforeunload', () => {
-    unsubscribes.forEach(fn => fn());
-  })
-});
-
-
-let unsubscribe: (() => void)[] = [];
-async function setupGameState(): Promise<(() => void)[]> {
+async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
-    //deck.currentPlayer
+    unsubscribes.push(
+      OBR.player.onChange((player) => {
+        deck.isGM = player.role === "GM";
+        deck.renderDeck(); // maybe needed
+      })
+    );
   } catch (error) {
     console.error("Failed to get GM role:", error);
   }
 
-  // Setup callback for room data
-  unsubscribe.push(OBR.room.onMetadataChange(renderRoom));
+  unsubscribes.push(OBR.room.onMetadataChange(renderRoom));
 
-  // Get room data
   try {
     const metadata = await OBR.room.getMetadata();
     const dmd = metadata[Util.DeckMkey] as DeckMeta;
-    if (dmd && 'cardpool' in dmd && Array.isArray(dmd.cardpool)) {
+    if (dmd) {
       deck.updateState(dmd);
     } else {
       deck.updateState(undefined);
     }
-    deck.needsFullRender = true;
-    deck.renderDeck();
   } catch (error) {
     console.error(`Failed to get room metadata:`, error);
   }
 
   try {
-    if (await OBR.scene.isReady()) {
-      const initialItems = await OBR.scene.items.getItems();
-      updatePlayerStateAll(initialItems);
-      // NEW: Capture initial active PIDs snapshot
-      const deck = Deck.getInstance();
-      const initialPids = new Set(
-        initialItems.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.id).filter(Boolean)
-      );
-      deck.activePlayerPids = initialPids;
-    }
+    const initialItems = await OBR.scene.items.getItems();
+    updatePlayerStateAll(initialItems);
+    deck.cleanupOrphanCards();
   } catch (error) {
     console.error("Failed to initialize player state:", error);
   }
 
-  // Setup callback for scene items change
-  unsubscribe.push(OBR.scene.items.onChange(updatePlayerStateAll));
-
-  //setTimeout(() => deck.updateOBR(), 0);
-  return unsubscribe;
+  unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));
+  deck.renderDeck();
 }
 
-function renderRoom(metadata: any) {
-  const dmd = metadata[Util.DeckMkey] as DeckMeta;
-  if (dmd) {
-    Deck.getInstance().updateState(dmd);
-    Deck.getInstance().renderDeck();
+function renderRoom(metadata: Record<string, any>) {
+  Debug.log("renderRoom called.")
+  const deck = Deck.getInstance();
+  const newMeta = metadata[Util.DeckMkey] as DeckMeta | undefined;
+
+  if (newMeta) {
+    deck.updateState(newMeta);
   }
+
+  deck.renderDeck();
 }
 
 function updatePlayerStateAll(items: Item[]) {
-  let shouldRender = false;
-  try {
-    const playerItems = items.filter(
-      (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
-    );
-    if (playerItems.length > 0) {
-      shouldRender = updatePlayerState(playerItems);
-    } else {
-      // NEW: Force render if no items (last delete)
-      shouldRender = true;
-    }
-  } catch (error) {
-    console.error(`Failed to process scene items:`, error);
-  }
-  if (shouldRender) {
-    Deck.getInstance().renderDeck();
+  Debug.log("updatePlayerStateAll called.")
+  const playerItems = items.filter(
+    (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
+  );
+  const changed = updatePlayerState(playerItems);
+
+  if (changed || playerItems.length === 0) {
+    Debug.updateFromPlayers(Deck.getInstance().playerNames)
   }
 }
 
 function updatePlayerState(items: Item[]): boolean {
   const deck = Deck.getInstance();
-  let shouldRender = false;
+  let changed = false;
 
-  const activePids = new Set(
-    items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.id).filter(Boolean)
-  );
+  const activePids = new Set(items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.characterId).filter(Boolean));
 
-  const playersArray = deck.playersArray;
-  for (let i = playersArray.length - 1; i >= 0; i--) {
-    const localPid = playersArray[i].id;
+  for (let i = deck.playersArray.length - 1; i >= 0; i--) {
+    const localPid = deck.playersArray[i].characterId;
     if (!activePids.has(localPid)) {
-      deck.removePlayer(playersArray[i]);
-      shouldRender = true;
+      deck.removePlayer(deck.playersArray[i]);
+      changed = true;
     }
   }
 
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
-    if (pmd) {
+    if (pmd?.characterId) {
       const player = rehydratePlayer(pmd, deck);
-      //console.log(`Player:${player.playerId} retrieved from metadata`)
-      shouldRender = (player != null);
+      Debug.log(`Player:${player.playerId} with hand:${player.characterId} retrieved from metadata`)
+      changed = true;
     }
   }
 
-  if (shouldRender) {
-    Deck.getInstance().renderDeck();
+  if (changed) {
+    deck.renderDeck();
   }
-  return shouldRender
+  return changed;
 }
 
 function rehydratePlayer(pmd: PlayerMeta, deck: Deck): PlayerChar {
-  let player = deck.getPlayerById(pmd.id);
+  let player = deck.getPlayerById(pmd.characterId);
   if (!player) {
-    player = deck.addPlayer(pmd.name, pmd.id, pmd.playerId);
+    player = deck.addPlayer(pmd.name, pmd.characterId, pmd.playerId);
   }
-  player.setMeta = pmd;
-  deck.extractPlayerCards(player);
-
-  // const handSet = new Set(pmd.hand);
-  // deck.discardpile = deck.discardpile.filter(c => !handSet.has(c));
-  // console.log('Discard cleaned for rehydrate:', deck.discardpile.length);
+  player.applyMeta(pmd);
+  Debug.updateFromPlayers(deck.playerNames)
   return player;
 }
 
+// --- List ALL room metadata keys and their sizes ---
+async function dumpRoomMetadata() {
+  const meta = await OBR.room.getMetadata();
+  Debug.log("=== ROOM METADATA ===");
+  for (const [key, value] of Object.entries(meta)) {
+    const size = JSON.stringify(value).length;
+    Debug.log(`${key}  →  ${size} bytes`, value);
+  }
+}
+
+// --- List ALL extensions that have stored something on scene items ---
+async function findItemMetadataKeys() {
+  const items = await OBR.scene.items.getItems();
+  const keys = new Set();
+  items.forEach(item => {
+    if (item.metadata) {
+      Object.keys(item.metadata).forEach(k => keys.add(k));
+    }
+  });
+  Debug.log("=== METADATA KEYS FOUND ON SCENE ITEMS ===");
+  Debug.log(Array.from(keys).sort());
+}
 

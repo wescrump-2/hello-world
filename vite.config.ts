@@ -10,6 +10,7 @@ export default defineConfig(({ command, mode }) => {
     root: './',
     plugins: [basicSsl()],  // Keep plugin, but conditional config below
     server: isDev ? {  // ← NEW: Conditional server config
+      host: 'localhost',
       hmr: { clientPort: 443 },
       https: {
         key: fs.readFileSync('./localhost+2-key.pem'),
@@ -17,6 +18,7 @@ export default defineConfig(({ command, mode }) => {
       },
       cors: true,
       port: 5173,
+
     } : {},  // Empty for build (no HTTPS)
     build: {
       manifest: true,

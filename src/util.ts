@@ -1,9 +1,5 @@
 import { Card } from "./cards";
-let renderTimeout: number;
-export function debounceRender(callback: () => void, delay = 100) {
-  clearTimeout(renderTimeout);
-  renderTimeout = setTimeout(callback, delay);
-}
+
 export class Util {
     static readonly BUTTON_CLASS = 'toggle-image';
     static readonly ACTIVE_CLASS = 'active';
@@ -271,6 +267,24 @@ export class Util {
         return Math.max(5, Math.ceil(inc))
     }
 
+    static uuidToShortId(uuid: string): string {
+        if (!uuid || uuid === 'undefined') return '0';
+
+        const hex = uuid.replace(/-/g, '');
+        let num = BigInt(`0x${hex}`);
+
+        const dict = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+        let short = '';
+
+        while (num > 0n) {
+            const remainder = num % 62n;
+            short = dict[Number(remainder)] + short;
+            num = num / 62n; 
+        }
+        return short || '0';
+    }
+
     static shortUUID(): string {
         const uuid = crypto.randomUUID().replace(/-/g, '');
         const byteArray = new Uint8Array(uuid.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
@@ -279,7 +293,11 @@ export class Util {
             .replace(/\+/g, '-')
             .replace(/\//g, '_');
     }
-
+    static shortId(len = 7): string {
+        return Math.random().toString(36).slice(2, 2 + len);
+        // or for extra randomness:
+        // return (Math.random() * 36**len | 0).toString(36);
+    }
     static expandUUID(shortUUID: string): string {
         let paddedUUID = shortUUID + '=='.slice(0, (4 - shortUUID.length % 4) % 4);
         const byteString = atob(paddedUUID.replace(/-/g, '+').replace(/_/g, '/'));
@@ -294,6 +312,57 @@ export class Util {
     }
 }
 
+export class Debug {
+    private static _enabled = false;
+    private static wasEnabled = false;
+
+    /** Public getter — use this in your log wrapper */
+    static get enabled() {
+        return this._enabled;
+    }
+
+    /** Call this from Deck whenever the player list changes */
+    static updateFromPlayers(names: string[]) {
+        const hasDebugPlayer = names.some(p =>
+            p.toLowerCase().includes("debug")
+        );
+
+        if (hasDebugPlayer !== this._enabled) {
+            this._enabled = hasDebugPlayer;
+
+            if (hasDebugPlayer && !this.wasEnabled) {
+                Debug.log(
+                    "%cINITIATIVE DEBUG MODE ACTIVATED — 'debug' player in room.'",
+                    "color: lime; background: #000; font-weight: bold; font-size: 16px; padding: 8px 12px; border-radius: 4px;"
+                );
+            }
+            if (!hasDebugPlayer && this.wasEnabled) {
+                Debug.log(
+                    "%cINITIATIVE DEBUG MODE DEACTIVATED — no 'debug' player in room.",
+                    "color: red; background: #000; font-weight: bold; font-size: 16px; padding: 8px 12px; border-radius: 4px;"
+                );
+            }
+            this.wasEnabled = hasDebugPlayer;
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // Logging helpers — use these everywhere
+    // ──────────────────────────────────────────────
+    static log(...args: any[]) {
+        if (this._enabled) console.log(...args);
+    }
+
+    static warn(...args: any[]) {
+        if (this._enabled) console.warn(...args);
+    }
+
+    static error(...args: any[]) {
+        if (this._enabled) console.error(...args);
+    }
+}
+
+
 // import OBR from "@owlbear-rodeo/sdk";
 
 // async function checkCharacterOwnership(itemId:string) {
@@ -301,7 +370,7 @@ export class Util {
 //     const items = await OBR.scene.items.getItems((item) => item.id === itemId && item.layer === "CHARACTER");
 
 //     if (items.length === 0) {
-//       console.log("Character not found or not on the CHARACTER layer.");
+//       Debug.log("Character not found or not on the CHARACTER layer.");
 //       return false;
 //     }
 

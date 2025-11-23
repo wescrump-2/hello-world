@@ -1,5 +1,5 @@
 import { Deck } from "./deck";
-import { Util } from "./util";
+import { Debug, Util } from "./util";
 
 export enum Suit {
     Hearts = "Hearts",
@@ -99,39 +99,55 @@ export class Card {
         return this.rank === Rank.Joker;
     }
 
-    public static cardSpread(type:string): string {
+    public static cardSpread(type: string): string {
         return getComputedStyle(document.documentElement).getPropertyValue(type).trim();
     }
 
     public toString(): string {
         if (this.dir === Facing.Up) {
-            return `${Rank[this.rank]} of ${(this.rank === Rank.Joker) ? this.color : this.suit}`;
+            let pc = Deck.getInstance().carddeck.find(c => c.cid === this.sequence);
+            return `${Rank[this.rank]} of ${(this.rank === Rank.Joker) ? this.color : this.suit}[${this.sequence}:${pc?.order}/${pc?.dealOrder}]`;
         } else {
             return 'card';
         }
     }
-  
+
     public render(container: HTMLDivElement, x: number, y: number, override: Facing = Facing.None): SVGSVGElement {
         if (override !== Facing.None) this.dir = override;
 
-        const doc = container.ownerDocument;
-        const div = doc.createElement('div') as HTMLDivElement;
-        const svg = doc.createElementNS(Util.SVG_NAMESPACE, "svg") as SVGSVGElement;
+        const cardId = `card-svg-${this.sequence}`;
+        let div = container.ownerDocument.createElement('div');
+        let svg = container.ownerDocument.createElementNS(Util.SVG_NAMESPACE, "svg");
+        svg.classList.add(...Card.abscard, 'card');
+        svg.classList.toggle('chosen', Deck.getInstance().isCardSelected(this.sequence));
+        div.id = cardId;
+        div.style.position = 'absolute';
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
 
-        svg.innerHTML = Deck.getInstance().getImageSvg(this);
         div.appendChild(svg);
         container.appendChild(div);
-        div.title = this.toString();
-        svg.classList.add(...Card.abscard);
-        svg.classList.add('card');
-        
-        const bbox = svg.getBBox();
-        if (bbox.width > 0 && bbox.height > 0) {
-            svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        }
-        svg.style.top = `${y}px`;
-        svg.style.left = `${x}px`;
 
+        svg.setAttribute('data-card-id', this.sequence.toString());
+        const source = this.dir === Facing.Up ? this.face : Deck.getInstance().backsvg;
+        svg.replaceChildren();
+        svg.append(...Array.from(source.children).map(c => c.cloneNode(true)));
+        div.title = this.toString();
+
+        // === viewBox: set only once, and ONLY when the SVG is attached and has content ===
+        if (!svg.hasAttribute('viewBox') && svg.isConnected && svg.children.length > 0) {
+            requestAnimationFrame(() => {
+                try {
+                    const bbox = svg.getBBox();
+                    if (bbox.width > 0 && bbox.height > 0) {
+                        svg.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+                    }
+                } catch (e) {
+                    // Silently ignore – sometimes getBBox fails on detached/invalid SVG
+                    Debug.log("getBBox failed for card, ignore, it happens on detached svg.", this.sequence);
+                }
+            });
+        }
         return svg;
     }
 }

@@ -176,4 +176,4 @@
   
 //   // Convert to JSON for sending to Discord webhook
 //   const jsonPayload = payload.toJSON();
-//   console.log(JSON.stringify(jsonPayload, null, 2));
+//   Debug.log(JSON.stringify(jsonPayload, null, 2));

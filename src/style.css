@@ -280,3 +280,9 @@ fieldset {
   position: relative;
   overflow: hidden;
 }
+
+.initiative-container {
+    display: flex !important;
+    flex-direction: column !important;
+}
+

@@ -1,7 +1,8 @@
-import OBR, { Image } from "@owlbear-rodeo/sdk";
-import { PlayerMeta } from "./player";
-import { Util } from "./util";
+// contextmenu.ts
+import OBR from "@owlbear-rodeo/sdk";
 import { Deck } from "./deck";
+import { Util } from "./util";
+import { PlayerMeta } from "./player";
 
 export function setupContextMenu() {
 	OBR.contextMenu.create({
@@ -21,68 +22,63 @@ export function setupContextMenu() {
 				icon: "/remove.svg",
 				label: "Remove from Initiative",
 				filter: {
-					every: [{ key: "layer", value: "CHARACTER" }],
+					every: [
+						{ key: "layer", value: "CHARACTER" },
+					],
 				},
 			},
 		],
-		async onClick(context) {
+		async onClick(context, _elementId) {
 			const deck = Deck.getInstance();
-			const addToInitiative = context.items.every(item => item.metadata[Util.PlayerMkey] === undefined);
+			const playerId = await OBR.player.getId();
+			const playerName = await OBR.player.getName();
 
-			if (addToInitiative) {
-				try {
-					const pid = await OBR.player.getId();
-					try {
-						const pname = await OBR.player.getName();
-						try {
-							await OBR.scene.items.updateItems(context.items, (items) => {
-								items.forEach(item => {
-									let img = item as Image
-									let name = `${(img.text.plainText.length > 0) ? img.text.plainText : img.name}(${pname})`
-									const player = deck.addPlayer(name, item.id, pid)
-									if (player) {
-										item.metadata[Util.PlayerMkey] = player.getMeta;
-										player.updateOBR() //updates token
-										deck.updateOBR() //updates deck
-										//console.log(`added player ${player.id}`)
-									}
-									
-								});
-							})
-						} catch (error) {
-							console.warn(`getId:`, error)
-						}
-					} catch (error) {
-						console.warn(`getName:`, error)
+			const itemsToAdd = context.items.filter(
+				(item) => item.metadata[Util.PlayerMkey] === undefined
+			);
+			const itemsToRemove = context.items.filter(
+				(item) => item.metadata[Util.PlayerMkey] !== undefined
+			);
+
+			// ─── ADD TO INITIATIVE ───
+			if (itemsToAdd.length > 0) {
+				await OBR.scene.items.updateItems(itemsToAdd, (items) => {
+					for (const item of items) {
+						const displayName = (item as any).text?.plainText?.trim() || item.name?.trim() || "Nameless Hero";
+
+						const player = deck.addPlayer(
+							`${displayName} (${playerName})`,
+							//item.id,
+							Util.shortId(), //this gives a unique id for charactar hand id.
+							playerId
+						);
+
+						item.metadata[Util.PlayerMkey] = player.Meta;
 					}
-				} catch (error) {
-					console.error(`addToInitiative:`, error)
-				}
-			} else {
-				try {
-					await OBR.scene.items.updateItems(context.items, (items) => {
-						try {
-							items.forEach(item => {
-								const playerMeta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
-								if (playerMeta) {
-									const player = deck.getPlayerById(playerMeta.id);
-									if (player) {
-										deck.removePlayer(player);
-										deck.updateOBR()
-										//console.log(`deleted player ${player.id}`)
-									}
-									delete item.metadata[Util.PlayerMkey];
-									deck.renderDeck()
-								}
-							})
-						} catch(error){
-							console.error(`removeInitiative:`, error)
-						}
-					})
-				} catch (error) {
-					console.error(`removeInitiative:`, error)
-				}
+				});
+				deck.renderDeck();
 			}
-		}
-	})
+
+			// ─── REMOVE FROM INITIATIVE ───
+			if (itemsToRemove.length > 0) {
+				// First, clean up local players (moves cards to discard, removes from Map)
+				for (const item of itemsToRemove) {
+					const meta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
+					if (meta) {
+						const player = deck.getPlayerById(meta.characterId);
+						if (player) {
+							deck.removePlayer(player); // sync, moves cards + deletes from Map
+						}
+					}
+				}
+
+				// Then delete metadata from tokens
+				await OBR.scene.items.updateItems(itemsToRemove, (items) => {
+					for (const item of items) {
+						delete item.metadata[Util.PlayerMkey];
+					}
+				});
+			}
+		},
+	});
 }
