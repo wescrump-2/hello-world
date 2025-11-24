@@ -129,8 +129,43 @@ export class Deck {
 
 	private async performSave(): Promise<void> {
 		const compressed = Util.compress(this.Meta);
-		await OBR.room.setMetadata({ [Util.DeckMkey]: compressed });
-		//await OBR.room.setMetadata({ [Util.DeckMkey]: this.Meta });
+		try {
+			await OBR.room.setMetadata({ [Util.DeckMkey]: compressed });
+		} catch (err: any) {
+			// This is the EXACT error OBR throws when >16KB
+			if (err.message?.includes("metadata") && err.message?.includes("16")) {
+				Debug.error("METADATA TOO LARGE (>16KB)! Clearing corrupted data and resetting deck.");
+
+				try {
+					// Step 1: Nuke the bad metadata
+					await OBR.room.setMetadata({ [Util.DeckMkey]: null });
+					Debug.log("Corrupted metadata cleared");
+
+					// Step 2: Reinitialize clean deck
+					this.initializeDeck();
+					this.shuffle();
+
+					// Step 3: Save the clean version
+					const freshCompressed = Util.compress(this.Meta);
+					await OBR.room.setMetadata({ [Util.DeckMkey]: freshCompressed });
+
+					Debug.log("Fresh deck saved after cleanup", freshCompressed.length, "chars");
+
+					// Step 4: Notify everyone
+					await OBR.notification.show("Deck metadata was too large and has been reset!", "WARNING");
+
+					// Force full re-render
+					this.renderDeckAsync();
+				} catch (cleanupErr) {
+					Debug.error("Failed to recover from oversized metadata:", cleanupErr);
+					await OBR.notification.show("CRITICAL: Failed to reset deck after size error!", "ERROR");
+				}
+			} else {
+				// Any other error — re-throw
+				Debug.error("Failed to save metadata:", err);
+				throw err;
+			}
+		}
 
 		// Save all player metadata to their tokens
 		const playerMetas = this.playersArray.map(p => ({
