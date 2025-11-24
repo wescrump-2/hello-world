@@ -143,7 +143,7 @@ export class Card {
                     }
                 } catch (e) {
                     // Silently ignore – sometimes getBBox fails on detached/invalid SVG
-                    Debug.log("getBBox failed for card, ignore, it happens on detached svg.", this.sequence);
+                    Debug.warn("getBBox failed for card, ignore, it happens on detached svg.", this.sequence);
                 }
             });
         }

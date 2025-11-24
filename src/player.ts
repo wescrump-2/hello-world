@@ -227,7 +227,7 @@ export class PlayerChar {
 					deck.dealFromTop(this.pileId, 1, Facing.Up);
 				}
 				if (safety >= 16) {
-					Debug.log("Quick edge aborted — possible infinite loop prevented");
+					Debug.error("Quick edge aborted — possible infinite loop prevented");
 				}
 			}
 		}
@@ -261,7 +261,7 @@ export class PlayerChar {
 			}
 			element = element.parentElement as HTMLElement;
 		}
-		console.error('Player ID not found in element attributes')
+		Debug.error('Player ID not found in element attributes')
 		return null
 	}
 
@@ -574,7 +574,7 @@ export class PlayerChar {
 				})
 			)
 		} catch (error) {
-			console.error("Failed to remove character item from scene:", error);
+			Debug.error("Failed to remove character item from scene:", error);
 		}
 	}
 }

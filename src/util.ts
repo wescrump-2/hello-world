@@ -1,4 +1,6 @@
 import { Card } from "./cards";
+import * as pako from 'pako';
+import { DeckMeta, PlayerCard } from "./deck";
 
 export class Util {
     static readonly BUTTON_CLASS = 'toggle-image';
@@ -195,7 +197,7 @@ export class Util {
             if (button) {
                 button.classList.remove(Util.ACTIVE_CLASS);
             } else {
-                console.error('button is null')
+                Debug.error('button is null')
             }
         }
     }
@@ -310,6 +312,66 @@ export class Util {
         // Ensure the UUID format is correct by adding hyphens
         return `${hexUUID.slice(0, 8)}-${hexUUID.slice(8, 12)}-${hexUUID.slice(12, 16)}-${hexUUID.slice(16, 20)}-${hexUUID.slice(20)}`;
     }
+
+    // Compress
+ static compress(data: DeckMeta): Uint8Array {
+    const serialized = JSON.stringify(data);
+    const compressed = pako.deflate(serialized);
+    Debug.log(`compressing... original: ${serialized.length}, compressed: ${compressed.length}`)
+    return compressed;
+}
+
+static isCompressed(value: Uint8Array): boolean {
+    if (!value) return false;
+    const firstByte = value[0];
+    return firstByte === 120; // 120 = 0x78 → zlib/deflate header
+  }
+
+// Decompress
+ static decompress(compressedData: Uint8Array): DeckMeta {
+    try {
+        if (compressedData === undefined) 
+            Debug.log("compressedData is undefined.")
+        const decompressed = pako.inflate(compressedData);
+        Debug.log(`decompressing... compressed: ${compressedData.length}, decompressed: ${decompressed.length}`)
+        const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as DeckMeta;
+        return parsed;
+    } catch (err) {
+        Debug.error("Failed to decompress deck:", err);
+        return {
+                carddeck: Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1)),
+                back: 0,
+                scale: 1,
+                use4jokers: false,
+            };
+    }
+ }
+
+ static getByteSize(value: any): number {
+  if (value instanceof Uint8Array) return value.length;
+  if (Array.isArray(value) && value.every(n => typeof n === 'number' && n >= 0 && n <= 255)) {
+    return value.length;
+  }
+  return JSON.stringify(value).length;
+}
+
+
+ static getDeckMeta(metadata: Record<string, any>): DeckMeta | undefined {
+    const raw = metadata[Util.DeckMkey] as Uint8Array;
+    if (!raw) return undefined;
+
+    if (Util.isCompressed(raw)) {
+      try {
+        return Util.decompress(raw) as DeckMeta;
+      } catch (e) {
+        Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
+        return undefined;
+      }
+    }
+
+    // Old uncompressed format
+    return metadata[Util.DeckMkey];
+  }
 }
 
 export class Debug {
@@ -393,7 +455,7 @@ export class Debug {
 
 //     return false; // If no match is found or if ownership cannot be confirmed
 //   } catch (error) {
-//     console.error('Error checking character ownership:', error);
+//     Debug.error('Error checking character ownership:', error);
 //     return false;
 //   }
 // }

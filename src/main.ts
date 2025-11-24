@@ -3,7 +3,7 @@ import OBR, { isImage, Image, Item } from "@owlbear-rodeo/sdk";
 import cardsImage from '/cards.svg';
 import buttonsImage from '/buttons.svg';
 import { setupContextMenu } from "./contextmenu";
-import { Deck, DeckMeta } from './deck';
+import { Deck } from './deck';
 import { getCurrentPlayerId, PlayerMeta } from './player';
 import { Debug, Util } from './util';
 import { initDOM } from './initDOM';
@@ -43,30 +43,33 @@ function setupCards() {
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     Debug.log("Button and card images loaded");
   } else {
-    console.error("Failed to load SVG document")
+    Debug.error("Failed to load SVG document")
   }
 }
 
 async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
+     
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
   } catch (error) {
-    console.error("Failed to get GM role:", error);
+    Debug.error("Failed to get GM role:", error);
   }
 
   unsubscribes.push(OBR.room.onMetadataChange(renderRoom));
 
   try {
+    //const metadata = await OBR.room.getMetadata();
+    //const dmd = metadata[Util.DeckMkey] as DeckMeta;
     const metadata = await OBR.room.getMetadata();
-    const dmd = metadata[Util.DeckMkey] as DeckMeta;
+    const dmd = Util.getDeckMeta(metadata);
     if (dmd) {
       deck.updateState(dmd);
     } else {
       deck.updateState(undefined);
     }
   } catch (error) {
-    console.error(`Failed to get room metadata:`, error);
+    Debug.error(`Failed to get room metadata:`, error);
   }
 
   try {
@@ -74,7 +77,7 @@ async function setupGameState(): Promise<void> {
     updatePlayerStateAll(initialItems);
     deck.cleanupOrphanCards();
   } catch (error) {
-    console.error("Failed to initialize player state:", error);
+    Debug.error("Failed to initialize player state:", error);
   }
 
   unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));
@@ -84,8 +87,8 @@ async function setupGameState(): Promise<void> {
 async function renderRoom(metadata: Record<string, any>) {
   Debug.log("renderRoom called.")
   const deck = Deck.getInstance();
-  const newMeta = metadata[Util.DeckMkey] as DeckMeta | undefined;
-
+  //const newMeta = metadata[Util.DeckMkey] as DeckMeta | undefined;
+  const newMeta = Util.getDeckMeta(metadata)
   if (newMeta) {
     deck.updateState(newMeta);
   }
@@ -153,7 +156,7 @@ async function dumpRoomMetadata() {
   const meta = await OBR.room.getMetadata();
   Debug.log("=== ROOM METADATA ===");
   for (const [key, value] of Object.entries(meta)) {
-    const size = JSON.stringify(value).length;
+    const size = Util.getByteSize(value);
     Debug.log(`${key}  →  ${size} bytes`, value);
   }
 }

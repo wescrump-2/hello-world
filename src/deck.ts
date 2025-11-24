@@ -107,47 +107,30 @@ export class Deck {
 	}
 
 	private saveTimeout: number | null = null;
-
-	private savePromise: Promise<void> | null = null;
-
+	private saveQueue: Promise<void> = Promise.resolve();
 	public triggerPlayerStateChange(): Promise<void> {
-		Debug.log("triggerPlayerStateChange called");
+		Debug.log("triggerPlayerStateChange queued");
 
-		// Cancel any existing timeout
+		// Cancel any pending timeout
 		if (this.saveTimeout !== null) {
 			clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
 		}
 
-		// If there's already a pending save promise, return it
-		if (this.savePromise) {
-			return this.savePromise;
-		}
+		// Schedule a new save after 300ms of inactivity
+		this.saveTimeout = window.setTimeout(() => {
+			this.saveQueue = this.saveQueue.then(() => this.performSave());
+			this.saveTimeout = null;
+		}, 300);
 
-		// Create a new promise that will resolve when save completes
-		const promise = new Promise<void>((resolve, reject) => {
-			this.saveTimeout = window.setTimeout(async () => {
-				try {
-					Debug.log("Executing debounced save to OBR...");
-					await this.performSave();
-					Debug.log("Save completed successfully");
-					resolve();
-				} catch (err) {
-					console.error("Failed to save deck state:", err);
-					reject(err);
-				} finally {
-					this.saveTimeout = null;
-					this.savePromise = null;
-				}
-			}, 300);
-		});
-
-		this.savePromise = promise;
-		return promise;
+		// Return the eventual save promise
+		return this.saveQueue;
 	}
+
 	private async performSave(): Promise<void> {
-		// Save room metadata
-		await OBR.room.setMetadata({ [Util.DeckMkey]: this.Meta });
+		const compressed = Util.compress(this.Meta);
+		await OBR.room.setMetadata({ [Util.DeckMkey]: compressed });
+		//await OBR.room.setMetadata({ [Util.DeckMkey]: this.Meta });
 
 		// Save all player metadata to their tokens
 		const playerMetas = this.playersArray.map(p => ({
@@ -182,7 +165,7 @@ export class Deck {
 				const characterId = card.pile.characterId;
 				// Correct check: does this player still exist in the current players map?
 				if (!this.players.has(characterId)) {
-					Debug.log(`Orphan card ${card.cid} from deleted player ${characterId} → moving to discard`);
+					Debug.warn(`Orphan card ${card.cid} from deleted player ${characterId} → moving to discard`);
 					this.setPile(card, 'discard');
 					cleaned++;
 				}
@@ -346,7 +329,7 @@ export class Deck {
 			const randomBytes = new Uint32Array(1);
 			crypto.getRandomValues(randomBytes);
 			const j = randomBytes[0] % (i + 1);
-			[array[i].order, array[j].order] = [array[j].order, array[i].order];
+			[array[i].order, array[j].order, array[i].selectedBy] = [array[j].order, array[i].order, ''];
 		}
 	}
 
@@ -482,10 +465,9 @@ export class Deck {
 	public async renderDeckAsync(): Promise<void> {
 		Debug.log("%cRENDER DECK ASYNC — Starting", "color: cyan; font-weight: bold; font-size: 12px");
 
-		// Wait for any pending save to complete first
-		if (this.savePromise) {
-			Debug.log("Waiting for in-progress save before render...");
-			await this.savePromise;
+		// Wait for any in-progress save
+		if (this.saveQueue) {
+			await this.saveQueue.catch(() => { }); // ignore errors
 		}
 		this.renderDeck();
 
@@ -503,9 +485,6 @@ export class Deck {
 
 	private renderPile(id: string, title: string, order: number, cards: number[], facing: Facing, increment: string, buttonsConfig: Array<{ id: string; label: string; icon: string; handler: () => void }>) {
 		const doc = this.svgcontainer.ownerDocument;
-		//let fieldset = doc.getElementById(id) as HTMLFieldSetElement;
-		let fieldsetold = this.svgcontainer.querySelector(`#${id}`) as HTMLFieldSetElement;
-		Debug.log(`${fieldsetold?.innerText}`)
 		let fieldset = this.svgcontainer.querySelector(`fieldset#${id}`) as HTMLFieldSetElement;
 		const legid = `leg${id}`;
 		const cardsid = `${id.toLowerCase()}cards`;
@@ -635,7 +614,7 @@ export class Deck {
 		try {
 			await OBR.notification.show(message, level);
 		} catch (error) {
-			console.error('Failed to show notification:', error);
+			Debug.error('Failed to show notification:', error);
 		}
 	}
 
@@ -643,7 +622,7 @@ export class Deck {
 		if (dmd) {
 			this.applyMeta(dmd);
 		} else {
-			Debug.log("No metadata found for this extension in the room.");
+			Debug.warn("No metadata found for this extension in the room.");
 			if (!this.meta) this.initializeDeck()
 			this.shuffleDeck();
 		}
@@ -658,7 +637,6 @@ export class Deck {
 			card.render(container, x, 0, facing);
 			x += inc;
 		});
-		Debug.log(`cards: ${cards.length}; container: ${container.childElementCount}`);
 	}
 
 	private initCardSelectionDelegation() {
@@ -710,7 +688,7 @@ export class Deck {
 			try {
 				this.toggleCardSelection(ownId, cardId);
 			} catch (err) {
-				console.error('Card selection failed:', err);
+				Debug.error('Card selection failed:', err);
 			}
 		});
 	}
