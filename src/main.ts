@@ -15,16 +15,22 @@ window.addEventListener("load", () => { setupCards() });
 
 OBR.onReady(async () => {
   await getCurrentPlayerId();
-  await new Promise<void>((resolve) => {
-    OBR.scene.onReadyChange((isReady) => {
-      if (isReady) resolve();
-    });
-    // In case we are already in a scene when the extension loads
-    OBR.scene.isReady().then((ready) => {
-      if (ready) resolve();
-    });
-  });
   setupContextMenu();
+  // Optional: react to entering/leaving scene later if needed
+  OBR.scene.onReadyChange(async (isReady) => {
+    if (isReady) {
+      console.log("Entered scene");
+      // Do scene-specific init here if needed
+    } else {
+      console.log("Left scene");
+    }
+  });
+
+  // Check once at startup
+  const isReady = await OBR.scene.isReady();
+  if (isReady) {
+    // Do any one-time scene init
+  }
   await setupGameState();
   window.addEventListener('beforeunload', () => {
     unsubscribes.forEach(fn => fn());
@@ -49,7 +55,7 @@ function setupCards() {
 
 async function setupGameState(): Promise<void> {
   const deck = Deck.getInstance();
-     
+
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
   } catch (error) {
@@ -59,8 +65,6 @@ async function setupGameState(): Promise<void> {
   unsubscribes.push(OBR.room.onMetadataChange(renderRoom));
 
   try {
-    //const metadata = await OBR.room.getMetadata();
-    //const dmd = metadata[Util.DeckMkey] as DeckMeta;
     const metadata = await OBR.room.getMetadata();
     const dmd = Util.getDeckMeta(metadata);
     if (dmd) {
@@ -70,6 +74,8 @@ async function setupGameState(): Promise<void> {
     }
   } catch (error) {
     Debug.error(`Failed to get room metadata:`, error);
+    deck.initializeDeck();
+    deck.shuffleDeck();
   }
 
   try {
