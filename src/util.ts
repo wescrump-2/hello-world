@@ -314,65 +314,185 @@ export class Util {
     }
 
     // Compress
- static compress(data: DeckMeta): Uint8Array {
-    const serialized = JSON.stringify(data);
-    const compressed = pako.deflate(serialized);
-    Debug.log(`compressing... original: ${serialized.length}, compressed: ${compressed.length}`)
-    return compressed;
-}
-
-static isCompressed(value: Uint8Array): boolean {
-    if (!value) return false;
-    const firstByte = value[0];
-    return firstByte === 120; // 120 = 0x78 → zlib/deflate header
-  }
-
-// Decompress
- static decompress(compressedData: Uint8Array): DeckMeta {
-    try {
-        if (compressedData === undefined) 
-            Debug.log("compressedData is undefined.")
-        const decompressed = pako.inflate(compressedData);
-        Debug.log(`decompressing... compressed: ${compressedData.length}, decompressed: ${decompressed.length}`)
-        const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as DeckMeta;
-        return parsed;
-    } catch (err) {
-        Debug.error("Failed to decompress deck:", err);
-        return {
-                carddeck: Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1)),
-                back: 0,
-                scale: 1,
-                use4jokers: false,
-            };
-    }
- }
-
- static getByteSize(value: any): number {
-  if (value instanceof Uint8Array) return value.length;
-  if (Array.isArray(value) && value.every(n => typeof n === 'number' && n >= 0 && n <= 255)) {
-    return value.length;
-  }
-  return JSON.stringify(value).length;
-}
-
-
- static getDeckMeta(metadata: Record<string, any>): DeckMeta | undefined {
-    const raw = metadata[Util.DeckMkey] as Uint8Array;
-    if (!raw) return undefined;
-
-    if (Util.isCompressed(raw)) {
-      try {
-        return Util.decompress(raw) as DeckMeta;
-      } catch (e) {
-        Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
-        return undefined;
-      }
+    static compress(data: DeckMeta): Uint8Array {
+        const serialized = JSON.stringify(data);
+        const compressed = pako.deflate(serialized, { level: 9 });
+        Debug.log(`compressing... original: ${serialized.length}, compressed: ${compressed.length}`)
+        return compressed;
     }
 
-    // Old uncompressed format
-    return metadata[Util.DeckMkey];
-  }
-}
+    static isCompressed(value: Uint8Array): boolean {
+        if (!value) return false;
+        const firstByte = value[0];
+        return firstByte === 120; // 120 = 0x78 → zlib/deflate header
+    }
+
+    // Decompress
+    static decompress(compressedData: Uint8Array): DeckMeta {
+        try {
+            if (compressedData === undefined) 
+                Debug.log("compressedData is undefined.")
+            const decompressed = pako.inflate(compressedData);
+            Debug.log(`decompressing... compressed: ${compressedData.length}, decompressed: ${decompressed.length}`)
+            const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as DeckMeta;
+            return parsed;
+        } catch (err) {
+            Debug.error("Failed to decompress deck:", err);
+            return {
+                    carddeck: Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1)),
+                    back: 0,
+                    scale: 1,
+                    use4jokers: false,
+                };
+        }
+    }
+    static B_62: string = 'B62';
+    static BASE62_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    static objectToBase62(obj: any): string {
+        // 1. Serialize to JSON
+        const jsonString = JSON.stringify(obj);
+
+        // 2. Encode to UTF-8 bytes
+        const utf8Encoder = new TextEncoder();
+        const dataBytes = utf8Encoder.encode(jsonString);
+
+        // 3. Compress with gzip (max compression)
+        const compressed = pako.deflate(dataBytes, { level: 9 });
+
+        // 4. Convert to Base62
+        const base62Data = Util.uint8ArrayToBase62(compressed);
+
+        // 5. Add safety prefix
+        return 'B62' + base62Data;
+    }
+
+    static base62ToObject<T = any>(encoded: string): T {
+        // Check for magic prefix
+        if (!encoded.startsWith('B62')) {
+            throw new Error('Invalid Base62-encoded data: missing "B62" prefix');
+        }
+
+        const base62Data = encoded.slice(3); // Remove "B62"
+
+        if (base62Data.length === 0) {
+            throw new Error('Invalid Base62-encoded data: empty after prefix');
+        }
+
+        try {
+            // Decode Base62 → bytes
+            const bytes = Util.base62ToUint8Array(base62Data);
+
+            // Decompress
+            const decompressed = pako.inflate(bytes);
+
+            // Convert to JSON
+            const jsonString = new TextDecoder().decode(decompressed);
+
+            return JSON.parse(jsonString) as T;
+        } catch (err) {
+            throw new Error(`Failed to decode Base62 data: ${(err as Error).message}`);
+        }
+    }
+
+    static uint8ArrayToBase62(bytes: Uint8Array): string {
+        let num = BigInt(0);
+        for (const byte of bytes) {
+            num = (num << 8n) + BigInt(byte);
+        }
+
+        if (num === 0n) return '0';
+
+        let result = '';
+        const base = 62n;
+        while (num > 0n) {
+            const remainder = num % base;
+            num = num / base;
+            result = Util.BASE62_CHARS.charAt(Number(remainder)) + result;
+        }
+
+        return result;
+    }
+
+    static base62ToUint8Array(str: string): Uint8Array {
+        let num = BigInt(0);
+        const base = BigInt(62);
+        const charToVal = new Map<string, number>();
+
+        for (let i = 0; i < Util.BASE62_CHARS.length; i++) {
+            charToVal.set(Util.BASE62_CHARS[i], i);
+        }
+
+        for (const char of str) {
+            const val = charToVal.get(char);
+            if (val === undefined) {
+                throw new Error(`Invalid Base62 character: ${char}`);
+            }
+            num = num * base + BigInt(val);
+        }
+
+        const bytes: number[] = [];
+        if (num === 0n) {
+            bytes.push(0);
+        } else {
+            while (num > 0n) {
+                bytes.unshift(Number(num & 0xffn));
+                num >>= 8n;
+            }
+        }
+
+        return new Uint8Array(bytes);
+    }
+
+// // ────── Example ──────
+
+// const original = {
+//   name: "Alice",
+//   score: 123456,
+//   items: ["sword", "shield"],
+//   stats: { hp: 100, mp: 50 }
+// };
+
+// const encoded = objectToBase62(original);
+// console.log("Encoded:", encoded); // Starts with B62...
+
+// const decoded = base62ToObject(encoded);
+// console.log("Round-trip OK:", JSON.stringify(decoded) === JSON.stringify(original));
+
+
+
+    static getByteSize(value: any): number {
+        if (value instanceof Uint8Array) return value.length;
+        if (Array.isArray(value) && value.every(n => typeof n === 'number' && n >= 0 && n <= 255)) {
+            return value.length;
+        }
+        return JSON.stringify(value).length;
+    }
+
+
+    static getDeckMeta(metadata: Record<string, any>): DeckMeta | undefined {
+        const newraw = metadata[Util.DeckMkey] as string;
+        if (!newraw) return undefined;
+        // new way, compressed and base62 string
+        if (newraw.startsWith(Util.B_62)) {
+            return Util.base62ToObject<DeckMeta>(newraw);
+        } else {
+            // only compressed meta
+            const raw = metadata[Util.DeckMkey] as Uint8Array;
+            if (!raw) return undefined;
+
+            if (Util.isCompressed(raw)) {
+                try {
+                    return Util.decompress(raw) as DeckMeta;
+                } catch (e) {
+                    Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
+                    return undefined;
+                }
+            }
+        }
+        // uncompressed meta
+        return metadata[Util.DeckMkey];
+    }
+}//end Util
 
 export class Debug {
     private static _enabled = false;
@@ -422,7 +542,7 @@ export class Debug {
     static error(...args: any[]) {
         if (this._enabled) console.error(...args);
     }
-}
+}// end Debug
 
 
 // import OBR from "@owlbear-rodeo/sdk";
