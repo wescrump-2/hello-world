@@ -470,23 +470,15 @@ export class Util {
 
 
     static getDeckMeta(metadata: Record<string, any>): DeckMeta | undefined {
-        const newraw = metadata[Util.DeckMkey] as string;
-        if (!newraw) return undefined;
-        // new way, compressed and base62 string
-        if (newraw.startsWith(Util.B_62)) {
-            return Util.base62ToObject<DeckMeta>(newraw);
-        } else {
-            // only compressed meta
-            const raw = metadata[Util.DeckMkey] as Uint8Array;
-            if (!raw) return undefined;
+        const raw = metadata[Util.DeckMkey] as Uint8Array;
+        if (!raw) return undefined;
 
-            if (Util.isCompressed(raw)) {
-                try {
-                    return Util.decompress(raw) as DeckMeta;
-                } catch (e) {
-                    Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
-                    return undefined;
-                }
+        if (Util.isCompressed(raw)) {
+            try {
+                return Util.decompress(raw) as DeckMeta;
+            } catch (e) {
+                Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
+                return undefined;
             }
         }
         // uncompressed meta
