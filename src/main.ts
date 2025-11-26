@@ -93,7 +93,6 @@ async function setupGameState(): Promise<void> {
 async function renderRoom(metadata: Record<string, any>) {
   Debug.log("renderRoom called.")
   const deck = Deck.getInstance();
-  //const newMeta = metadata[Util.DeckMkey] as DeckMeta | undefined;
   const newMeta = Util.getDeckMeta(metadata)
   if (newMeta) {
     deck.updateState(newMeta);

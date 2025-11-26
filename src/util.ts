@@ -15,6 +15,7 @@ export class Util {
         return "none"
     }
     
+/*     
     static hexToRgb(hex: string): { r: number; g: number; b: number } {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -155,7 +156,7 @@ export class Util {
 
         return colors;
     }
-
+ */
     static setImage(imageKey: string, button: HTMLButtonElement) {
         let svg = button.querySelector('svg') as SVGSVGElement;
         if (!svg) {
@@ -239,17 +240,6 @@ export class Util {
         return button
     }
 
-    static convertToPixels(size: string): string {
-        const div = document.createElement('div');
-        div.style.width = size;
-        div.style.visibility = "hidden"
-        div.style.position = "absolute"
-        document.body.appendChild(div)
-        const computedWidth = window.getComputedStyle(div).width
-        document.body.removeChild(div)
-        return computedWidth
-    }
-
     static rem2px(remstr: string): number {
         let rem = parseFloat(remstr);
         if (Number.isNaN(rem)) rem = 1.0
@@ -269,48 +259,8 @@ export class Util {
         return Math.max(5, Math.ceil(inc))
     }
 
-    static uuidToShortId(uuid: string): string {
-        if (!uuid || uuid === 'undefined') return '0';
-
-        const hex = uuid.replace(/-/g, '');
-        let num = BigInt(`0x${hex}`);
-
-        const dict = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-
-        let short = '';
-
-        while (num > 0n) {
-            const remainder = num % 62n;
-            short = dict[Number(remainder)] + short;
-            num = num / 62n; 
-        }
-        return short || '0';
-    }
-
-    static shortUUID(): string {
-        const uuid = crypto.randomUUID().replace(/-/g, '');
-        const byteArray = new Uint8Array(uuid.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-        return btoa(String.fromCharCode(...byteArray))
-            .replace(/=+$/, '')
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_');
-    }
     static shortId(len = 7): string {
         return Math.random().toString(36).slice(2, 2 + len);
-        // or for extra randomness:
-        // return (Math.random() * 36**len | 0).toString(36);
-    }
-    static expandUUID(shortUUID: string): string {
-        let paddedUUID = shortUUID + '=='.slice(0, (4 - shortUUID.length % 4) % 4);
-        const byteString = atob(paddedUUID.replace(/-/g, '+').replace(/_/g, '/'));
-        const byteArray = new Uint8Array(byteString.length);
-        for (let i = 0; i < byteString.length; i++) {
-            byteArray[i] = byteString.charCodeAt(i);
-        }
-        const hexUUID = Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('');
-
-        // Ensure the UUID format is correct by adding hyphens
-        return `${hexUUID.slice(0, 8)}-${hexUUID.slice(8, 12)}-${hexUUID.slice(12, 16)}-${hexUUID.slice(16, 20)}-${hexUUID.slice(20)}`;
     }
 
     // Compress
@@ -346,120 +296,7 @@ export class Util {
                 };
         }
     }
-    static B_62: string = 'B62';
-    static BASE62_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    static objectToBase62(obj: any): string {
-        // 1. Serialize to JSON
-        const jsonString = JSON.stringify(obj);
-
-        // 2. Encode to UTF-8 bytes
-        const utf8Encoder = new TextEncoder();
-        const dataBytes = utf8Encoder.encode(jsonString);
-
-        // 3. Compress with gzip (max compression)
-        const compressed = pako.deflate(dataBytes, { level: 9 });
-
-        // 4. Convert to Base62
-        const base62Data = Util.uint8ArrayToBase62(compressed);
-
-        // 5. Add safety prefix
-        return 'B62' + base62Data;
-    }
-
-    static base62ToObject<T = any>(encoded: string): T {
-        // Check for magic prefix
-        if (!encoded.startsWith('B62')) {
-            throw new Error('Invalid Base62-encoded data: missing "B62" prefix');
-        }
-
-        const base62Data = encoded.slice(3); // Remove "B62"
-
-        if (base62Data.length === 0) {
-            throw new Error('Invalid Base62-encoded data: empty after prefix');
-        }
-
-        try {
-            // Decode Base62 → bytes
-            const bytes = Util.base62ToUint8Array(base62Data);
-
-            // Decompress
-            const decompressed = pako.inflate(bytes);
-
-            // Convert to JSON
-            const jsonString = new TextDecoder().decode(decompressed);
-
-            return JSON.parse(jsonString) as T;
-        } catch (err) {
-            throw new Error(`Failed to decode Base62 data: ${(err as Error).message}`);
-        }
-    }
-
-    static uint8ArrayToBase62(bytes: Uint8Array): string {
-        let num = BigInt(0);
-        for (const byte of bytes) {
-            num = (num << 8n) + BigInt(byte);
-        }
-
-        if (num === 0n) return '0';
-
-        let result = '';
-        const base = 62n;
-        while (num > 0n) {
-            const remainder = num % base;
-            num = num / base;
-            result = Util.BASE62_CHARS.charAt(Number(remainder)) + result;
-        }
-
-        return result;
-    }
-
-    static base62ToUint8Array(str: string): Uint8Array {
-        let num = BigInt(0);
-        const base = BigInt(62);
-        const charToVal = new Map<string, number>();
-
-        for (let i = 0; i < Util.BASE62_CHARS.length; i++) {
-            charToVal.set(Util.BASE62_CHARS[i], i);
-        }
-
-        for (const char of str) {
-            const val = charToVal.get(char);
-            if (val === undefined) {
-                throw new Error(`Invalid Base62 character: ${char}`);
-            }
-            num = num * base + BigInt(val);
-        }
-
-        const bytes: number[] = [];
-        if (num === 0n) {
-            bytes.push(0);
-        } else {
-            while (num > 0n) {
-                bytes.unshift(Number(num & 0xffn));
-                num >>= 8n;
-            }
-        }
-
-        return new Uint8Array(bytes);
-    }
-
-// // ────── Example ──────
-
-// const original = {
-//   name: "Alice",
-//   score: 123456,
-//   items: ["sword", "shield"],
-//   stats: { hp: 100, mp: 50 }
-// };
-
-// const encoded = objectToBase62(original);
-// console.log("Encoded:", encoded); // Starts with B62...
-
-// const decoded = base62ToObject(encoded);
-// console.log("Round-trip OK:", JSON.stringify(decoded) === JSON.stringify(original));
-
-
-
+    
     static getByteSize(value: any): number {
         if (value instanceof Uint8Array) return value.length;
         if (Array.isArray(value) && value.every(n => typeof n === 'number' && n >= 0 && n <= 255)) {
@@ -490,12 +327,10 @@ export class Debug {
     private static _enabled = false;
     private static wasEnabled = false;
 
-    /** Public getter — use this in your log wrapper */
     static get enabled() {
         return this._enabled;
     }
 
-    /** Call this from Deck whenever the player list changes */
     static updateFromPlayers(names: string[]) {
         const hasDebugPlayer = names.some(p =>
             p.toLowerCase().includes("debug")
@@ -520,9 +355,6 @@ export class Debug {
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Logging helpers — use these everywhere
-    // ──────────────────────────────────────────────
     static log(...args: any[]) {
         if (this._enabled) console.log(...args);
     }

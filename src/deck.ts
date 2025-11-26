@@ -128,11 +128,7 @@ export class Deck {
 	}
 
 	private async performSave(): Promise<void> {
-		// just the compressed version
 		const compressed = Util.compress(this.Meta);
-		// // test, new compression. UPDate, this is actually larger in size so staying with the byte array.
-		// const compressb62 = Util.objectToBase62(this.Meta);
-		// console.log(`compare compressions: compress:${Util.getByteSize(compressed)} vs b62:${compressb62.length}`)
 		try {
 			await OBR.room.setMetadata({ [Util.DeckMkey]: compressed });
 		} catch (err: any) {
