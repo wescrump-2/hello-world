@@ -9,6 +9,8 @@ export interface DeckMeta {
 	back: number;
 	use4jokers: boolean;
 	scale: number;
+	discardVisible: boolean;
+	poolVisible: boolean;
 	carddeck: PlayerCard[];
 }
 
@@ -47,6 +49,8 @@ export class Deck {
 		back: 0,
 		scale: 1,
 		use4jokers: false,
+		discardVisible: false,
+		poolVisible: false,
 	};
 
 	private constructor() { }
@@ -86,6 +90,10 @@ export class Deck {
 	set scale(s: number) { this.meta.scale = s; }
 	get use4jokers(): boolean { return this.meta.use4jokers; }
 	set use4jokers(uj: boolean) { this.meta.use4jokers = uj; }
+	get discardVisible(): boolean { return this.meta.discardVisible; }
+	set discardVisible(dv: boolean) { this.meta.discardVisible = dv; }
+	get poolVisible(): boolean { return this.meta.poolVisible; }
+	set poolVisible(pv: boolean) { this.meta.poolVisible = pv; }
 	get deckcount(): number { return this.use4jokers ? 56 : 54; }
 	get backsvg(): SVGElement { return Card.backs[this.back]; }
 
@@ -339,6 +347,24 @@ export class Deck {
 		);
 	}
 
+	toggleDiscardPile() {
+		this.discardVisible = !this.discardVisible;
+		this.triggerPlayerStateChange();
+		this.showNotification(
+			this.discardVisible ? "Discard pile is now visible to players" : "Discard pile is now hidden from players",
+			"INFO"
+		);
+	}
+
+	toggleCardPool() {
+		this.poolVisible = !this.poolVisible;
+		this.triggerPlayerStateChange();
+		this.showNotification(
+			this.poolVisible ? "Card pool is now visible to players" : "Card pool is now hidden from players",
+			"INFO"
+		);
+	}
+
 	initializeDeck() {
 		this.carddeck = Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1))
 		this.carddeck.forEach(c => {
@@ -469,10 +495,21 @@ export class Deck {
 		}
 
 		requestAnimationFrame(() => {
-			// Sort players by best card (highest first)
+			// Sort players by adjusted best card: active, then on-hold, then zero-cards not out of combat, then out of combat
 			const currentPlayers = this.playersArray;
 			if (currentPlayers.length === 0) return;
-			const sorted = [...currentPlayers].sort((a, b) => (b.bestCard() ?? 0) - (a.bestCard() ?? 0));
+			const sorted = [...currentPlayers].sort((a, b) => {
+				const getAdjustedBestCard = (p: PlayerChar) => {
+					const base = p.bestCard() ?? 0;
+					if (p.outOfCombat) return base - 168; // Out of combat last
+					if (p.hand.length === 0) return base - 112; // Zero cards before out of combat
+					if (p.onHold) return base - 56; // On hold after active
+					return base; // Active first
+				};
+				const scoreA = getAdjustedBestCard(a);
+				const scoreB = getAdjustedBestCard(b);
+				return scoreB - scoreA; // Descending order
+			});
 			const topPlayerId = sorted[0].characterId;
 
 			// Update CSS order + highlight — NO DOM remove/insert!
@@ -510,8 +547,10 @@ export class Deck {
 	}
 	private renderDeck() {
 		this.renderDraw(this.svgcontainer);
-		if (this.isGM) {
+		if (this.isGM || this.discardVisible) {
 			this.renderDiscardPile(this.svgcontainer);
+		}
+		if (this.isGM || this.poolVisible) {
 			this.renderCardPool(this.svgcontainer);
 		}
 		this.renderPlayers(this.svgcontainer);
@@ -609,9 +648,14 @@ export class Deck {
 			'--card-spread-inc',
 			[
 				{ id: 'shf', label: 'Shuffle', icon: 'stack', handler: () => this.shuffleDeck() },
-				{ id: 'dah', label: 'Discard All Hands', icon: 'card-burn', handler: () => this.discardAllHands() }
+				{ id: 'dah', label: 'Discard All Hands', icon: 'card-burn', handler: () => this.discardAllHands() },
+				{ id: 'sdp', label: 'Toggle Discard Visibility', icon: 'cog', handler: () => this.toggleDiscardPile() }
 			]
 		);
+
+		// Highlight the visibility toggle button if discard is visible to players
+		const sdpBtn = _container.querySelector('#sdp') as HTMLButtonElement;
+		if (sdpBtn) Util.setState(sdpBtn, this.discardVisible);
 	}
 
 	renderCardPool(_container: HTMLDivElement) {
@@ -626,9 +670,14 @@ export class Deck {
 			'--card-spread-inc',
 			[
 				{ id: 'cp', label: 'Deal a card to pool', icon: 'card-play', handler: () => this.drawCardPool() },
-				{ id: 'dcp', label: 'Discard Card Pool', icon: 'card-burn', handler: () => this.discardCardPool() }
+				{ id: 'dcp', label: 'Discard Card Pool', icon: 'card-burn', handler: () => this.discardCardPool() },
+				{ id: 'scp', label: 'Toggle Card Pool Visibility', icon: 'cog', handler: () => this.toggleCardPool() }
 			]
 		);
+
+		// Highlight the visibility toggle button if card pool is visible to players
+		const scpBtn = _container.querySelector('#scp') as HTMLButtonElement;
+		if (scpBtn) Util.setState(scpBtn, this.poolVisible);
 	}
 
 	renderPlayers(div: HTMLDivElement) {

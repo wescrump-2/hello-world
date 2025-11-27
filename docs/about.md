@@ -96,6 +96,13 @@ Each player in initiative has their own section showing:
 5. **Resolution**: After all players act, GM can shuffle discard pile back into draw deck
 6. **Repeat**: Continue dealing cards each round as needed
 
+### Player States and Initiative Order
+
+- **Active Players**: Players with initiative cards participate normally in turn order
+- **On Hold**: Players marked "On Hold" skip drawing new initiative cards but retain any existing cards, which may still affect their position in the turn order
+- **Out of Combat**: Players marked "Out of Combat" skip drawing new initiative cards but retain any existing cards, which may still affect their position in the turn order
+- **Hesitant**: Players with the Hesitant hindrance always act last among players with cards
+
 ## Special Rules
 
 ### Jokers
@@ -135,7 +142,7 @@ Players can click the **Interludes** button to see suggestions based on their ca
 
 ### Players Not in Order
 - Initiative order updates automatically based on card values
-- Players with "On Hold" or "Out of Combat" are skipped
+- Players with "On Hold" or "Out of Combat" are skipped during new card draws but may retain cards from previous rounds that affect sorting
 
 ### Missing Buttons
 - Some buttons are GM-only and won't appear for regular players

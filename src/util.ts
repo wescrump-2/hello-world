@@ -293,6 +293,8 @@ export class Util {
                     back: 0,
                     scale: 1,
                     use4jokers: false,
+                    discardVisible: false,
+                    poolVisible: false,
                 };
         }
     }
