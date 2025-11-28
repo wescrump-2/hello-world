@@ -549,9 +549,21 @@ export class Deck {
 		this.renderDraw(this.svgcontainer);
 		if (this.isGM || this.discardVisible) {
 			this.renderDiscardPile(this.svgcontainer);
+		} else {
+			// Remove discard pile if not visible
+			const discardFieldset = this.svgcontainer.querySelector('fieldset#Discard') as HTMLFieldSetElement;
+			if (discardFieldset) {
+				discardFieldset.remove();
+			}
 		}
 		if (this.isGM || this.poolVisible) {
 			this.renderCardPool(this.svgcontainer);
+		} else {
+			// Remove card pool if not visible
+			const poolFieldset = this.svgcontainer.querySelector('fieldset#Pool') as HTMLFieldSetElement;
+			if (poolFieldset) {
+				poolFieldset.remove();
+			}
 		}
 		this.renderPlayers(this.svgcontainer);
 		this.updatePlayerOrderAndHighlight();
