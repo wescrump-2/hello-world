@@ -117,8 +117,6 @@ export class Deck {
 	private saveTimeout: number | null = null;
 	private saveQueue: Promise<void> = Promise.resolve();
 	public triggerPlayerStateChange(): Promise<void> {
-		Debug.log("triggerPlayerStateChange queued");
-
 		// Cancel any pending timeout
 		if (this.saveTimeout !== null) {
 			clearTimeout(this.saveTimeout);
@@ -215,7 +213,6 @@ export class Deck {
 			}
 		}
 		if (cleaned > 0) {
-			Debug.log(`Cleaned ${cleaned} orphan cards from deleted players`);
 			this.triggerPlayerStateChange();
 		}
 	}
@@ -304,8 +301,6 @@ export class Deck {
 		} finally {
 			if (anyChange) {
 				this.triggerPlayerStateChange();
-			} else {
-				Debug.log("%cDISCARD ALL HANDS → No cards to discard, skipping render/save", "color: gray");
 			}
 		}
 	}

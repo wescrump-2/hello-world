@@ -97,6 +97,9 @@ Each character added to the initiative tracker has their own section showing:
 - **Level Headed Edge**:![Level Headed Edge Button](levelheaded.png) Draw extra cards at start of round, defaults to highest, but can be selected to use a different card for initiative order
   - Single click: Level Headed (draw 2 cards)
   - Double click: Improved Level Headed (draw 3 cards)
+- **Tactician Edge**:![Tactician Edge Button](tactician.png) Draw extra cards at start of round that can be passed to allies
+  - Single click: Tactician (draw 1 card)
+  - Double click: Master Tactician (draw 2 cards)
 
 ##### GM-Only Buttons:
 - **Draw Hand**:![Draw Hand Button](drawhand.png) Deal initiative cards to this specific player
@@ -105,7 +108,7 @@ Each character added to the initiative tracker has their own section showing:
 
 1. **Setup**: GM and players adds characters to initiative using the context menu
 2. **Deal Cards**: GM clicks "Deal Action Cards" to give each player their initiative cards
-3. **Apply Edges**: Players/GM activate relevant edges (Level Headed, Quick, etc.) for their character(s)
+3. **Apply Edges**: Players/GM activate relevant edges (Level Headed, Quick, Tactician, etc.) for their character(s)
 4. **Turn Order**: Players/GM act in order from highest(top) to lowest card
 5. **End of Turn**: Players/GM discards hand at the end of turn, initiative list updates with next player at top
 5. **Resolution**: After all characters act, GM can shuffle discard pile back into draw deck
@@ -138,6 +141,12 @@ When a Joker is drawn:
 
 #### Hesitant
 - Lowest card determines turn order among characters
+
+#### Tactician
+- Dealt an extra Action Card that can be given to an ally
+- Master Tactician: Dealt two extra Action Cards that can be given to allies
+
+These extra cards are not part of the player's Action Cards hand and have zero effect unless they are passed to another  character's whereby they can participate in finding that characters initiative order.
 
 ### Interludes
 Interludes are DM-initiated storytelling opportunities that occur at the GM's discretion, usually during downtime. When the GM deals interlude cards, players receive cards that suggest story topics for developing their characters. The cards are used purely for narrative purposes and players can tell their narrative in any order or choose not to participate. Good stories should be rewarded with a bennie from the GM.

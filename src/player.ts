@@ -29,6 +29,7 @@ export interface PlayerMeta {
 	quick: boolean;
 	canchoose: boolean;
 	hesitant: boolean;
+	tacticianCards: number[];
 }
 
 export let CURRENT_PLAYER_ID: string | null = null;
@@ -71,6 +72,7 @@ export class PlayerChar {
 			quick: false,
 			canchoose: false,
 			hesitant: false,
+			tacticianCards: [],
 		};
 	}
 
@@ -134,6 +136,19 @@ export class PlayerChar {
 		this.meta.hesitant = v;
 	}
 
+	get tacticianCards(): number[] { return [...this.meta.tacticianCards]; }
+	set tacticianCards(v: number[]) {
+		this.meta.tacticianCards = [...v];
+	}
+
+	addTacticianCard(cardId: number) {
+		this.meta.tacticianCards.push(cardId);
+	}
+
+	removeTacticianCard(cardId: number) {
+		this.meta.tacticianCards = this.meta.tacticianCards.filter(id => id !== cardId);
+	}
+
 	get Meta(): PlayerMeta { return { ...this.meta }; }
 
 	applyMeta(newMeta: PlayerMeta): boolean {
@@ -190,15 +205,21 @@ export class PlayerChar {
 		if (this.hesitant) return this.lowCard();
 		const high = this.highCard();
 		const maxChosen = Deck.getInstance().getMaxChosenInHand(this.pileId);  // O(1) lookup
-		return maxChosen > -1 ? maxChosen : high;
+		// Don't use Tactician cards for initiative, even if selected
+		if (maxChosen > -1 && !this.tacticianCards.includes(maxChosen)) {
+			return maxChosen;
+		}
+		return high;
 	}
 
 	highCard(): number {
-		return this.hand.length > 0 ? Math.max(...this.hand) : -1;
+		const regularCards = this.hand.filter(c => !this.tacticianCards.includes(c));
+		return regularCards.length > 0 ? Math.max(...regularCards) : -1;
 	}
 
 	lowCard(): number {
-		return this.hand.length > 0 ? Math.min(...this.hand) : -1;
+		const regularCards = this.hand.filter(c => !this.tacticianCards.includes(c));
+		return regularCards.length > 0 ? Math.min(...regularCards) : -1;
 	}
 
 	drawCard() {
@@ -215,6 +236,7 @@ export class PlayerChar {
 		}
 
 		deck.moveToDiscardPool(this.pileId, 0);
+		this.tacticianCards = []; // Clear tactician cards for new round
 		if (!this.outOfCombat) {
 			deck.dealFromTop(this.pileId, 1, Facing.Up);
 			if (this.impLevelHeaded) deck.dealFromTop(this.pileId, 1, Facing.Up);
@@ -230,6 +252,13 @@ export class PlayerChar {
 					Debug.error("Quick edge aborted — possible infinite loop prevented");
 				}
 			}
+			// Deal tactician cards
+			const numTacticianCards = this.mastertactician ? 2 : this.tactician ? 1 : 0;
+			for (let i = 0; i < numTacticianCards; i++) {
+				deck.dealFromTop(this.pileId, 1, Facing.Up);
+				const lastCard = this.hand[this.hand.length - 1];
+				this.addTacticianCard(lastCard);
+			}
 		}
 	}
 
@@ -243,6 +272,7 @@ export class PlayerChar {
 	discardHand() {
 		const deck = Deck.getInstance();
 		deck.moveToDiscardPool(this.pileId, 0);
+		this.tacticianCards = [];
 	}
 
 	hasJoker(): boolean {
@@ -431,6 +461,21 @@ export class PlayerChar {
 			levelhead.addEventListener('click', this.boundHandlers.get("levelhead")!);
 		}
 
+		// ─── Tactician / Master Tactician ───
+		const tactician = getBtn("tactician", "Tactician Edge", "crown");
+		if (!this.boundHandlers.has("tactician")) {
+			this.boundHandlers.set("tactician", () => {
+				this.toggleTactician();
+				Util.setState3way(tactician,
+					this.tactician, "crown",
+					this.mastertactician, "crown-star"
+				);
+				this.updateButtonStates();
+				deck.triggerPlayerStateChange();
+			});
+			tactician.addEventListener('click', this.boundHandlers.get("tactician")!);
+		}
+
 		// ─── Interlude Info Popover ───
 		const info = getBtn("info", "Interludes", "suits");
 		if (!this.boundHandlers.has("info")) {
@@ -468,7 +513,12 @@ export class PlayerChar {
 				let selected = deck.carddeck.filter(c => c.selectedBy === CURRENT_PLAYER_ID);
 				selected.forEach(c => {
 					deck.setPile(c, pileId);
-					flag = true
+					flag = true;
+					// Remove from tactician cards if it was one
+					const giver = deck.getPlayerById(this.characterId);
+					if (giver && giver.tacticianCards.includes(c.cid)) {
+						giver.removeTacticianCard(c.cid);
+					}
 				})
 				if (flag) {
 					const giver = deck.getPlayerById(this.characterId);
@@ -521,6 +571,13 @@ export class PlayerChar {
 		} else if (this.levelHeaded) {
 			Util.setImage("scales", levelheadBtn);
 		}
+
+		const tacticianBtn = this.buttons.get("tactician")!;
+		Util.setState3way(
+			tacticianBtn,
+			this.tactician, "crown",
+			this.mastertactician, "crown-star"
+		);
 	}
 
 	private updateButtonVisibility() {
@@ -544,20 +601,22 @@ export class PlayerChar {
 		show(this.buttons.get("hesitant"), isGMorOwner);
 		show(this.buttons.get("quick"), isGMorOwner);
 		show(this.buttons.get("levelhead"), isGMorOwner);
+		show(this.buttons.get("tactician"), isGMorOwner);
 
 		show(this.buttons.get("info"), isOwner);
 		show(this.buttons.get("pass"), true);
 	}
 
 	private renderHandOnly() {
-		Debug.log(`   DRAWING HAND → ${this.name}: [${this.hand.map(c => Card.byId(c).displayText()).join(', ')}]`);
-
 		this.cardContainer.replaceChildren();
 		const inc = Util.offset('--card-spread-inc', this.hand.length);
 		let x = 0;
 		this.hand.forEach(c => {
 			const card = Card.byId(c);
-			card.render(this.cardContainer, x, 0, Facing.Up);
+			const svg = card.render(this.cardContainer, x, 0, Facing.Up);
+			if (this.tacticianCards.includes(c)) {
+				svg.classList.add('tactician-card');
+			}
 			x += inc;
 		});
 	}
@@ -568,8 +627,8 @@ export class PlayerChar {
 				item => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined,
 				characters => characters.forEach(char => {
 					if ((char.metadata[Util.PlayerMkey] as PlayerMeta)?.characterId === this.characterId) {
-						delete char.metadata[Util.PlayerMkey];
-						Debug.log(`deleted character item ${this.characterId}`)
+						//delete char.metadata[Util.PlayerMkey];
+						char.metadata[Util.PlayerMkey] = undefined;
 					}
 				})
 			)

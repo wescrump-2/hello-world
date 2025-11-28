@@ -47,7 +47,7 @@ function setupCards() {
   const svgButtons = document.getElementById('buttons-svg') as HTMLObjectElement
 
   if (svgCards.contentDocument && svgButtons.contentDocument) {
-    Debug.log("Button and card images loaded");
+    console.log("Button and card images loaded");
   } else {
     Debug.error("Failed to load SVG document")
   }
@@ -91,18 +91,20 @@ async function setupGameState(): Promise<void> {
 }
 
 async function renderRoom(metadata: Record<string, any>) {
-  Debug.log("renderRoom called.")
   const deck = Deck.getInstance();
   const newMeta = Util.getDeckMeta(metadata)
   if (newMeta) {
     deck.updateState(newMeta);
   }
 
+  // Reload player states from scene items
+  const items = await OBR.scene.items.getItems();
+  await updatePlayerStateAll(items);
+
   deck.renderDeckAsync();
 }
 
 async function updatePlayerStateAll(items: Item[]) {
-  Debug.log("updatePlayerStateAll called.")
   const playerItems = items.filter(
     (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
   );

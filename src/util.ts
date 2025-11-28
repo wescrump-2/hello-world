@@ -267,7 +267,6 @@ export class Util {
     static compress(data: DeckMeta): Uint8Array {
         const serialized = JSON.stringify(data);
         const compressed = pako.deflate(serialized, { level: 9 });
-        Debug.log(`compressing... original: ${serialized.length}, compressed: ${compressed.length}`)
         return compressed;
     }
 
@@ -280,10 +279,7 @@ export class Util {
     // Decompress
     static decompress(compressedData: Uint8Array): DeckMeta {
         try {
-            if (compressedData === undefined) 
-                Debug.log("compressedData is undefined.")
             const decompressed = pako.inflate(compressedData);
-            Debug.log(`decompressing... compressed: ${compressedData.length}, decompressed: ${decompressed.length}`)
             const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as DeckMeta;
             return parsed;
         } catch (err) {

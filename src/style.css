@@ -166,7 +166,8 @@ fieldset {
   }
 
   .chosen {
-    border: 2px solid #BF40BF;
+    outline: 2px solid #BF40BF;
+    outline-offset: -2px;
     z-index: 100;
   }
 
@@ -284,5 +285,11 @@ fieldset {
 .initiative-container {
     display: flex !important;
     flex-direction: column !important;
+}
+
+.tactician-card {
+    outline: 3px solid #FFD700;
+    outline-offset: -3px;
+    z-index: 50;
 }
 

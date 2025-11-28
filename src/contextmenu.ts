@@ -75,7 +75,8 @@ export function setupContextMenu() {
 				// Then delete metadata from tokens
 				await OBR.scene.items.updateItems(itemsToRemove, (items) => {
 					for (const item of items) {
-						delete item.metadata[Util.PlayerMkey];
+						//delete item.metadata[Util.PlayerMkey];
+						item.metadata[Util.PlayerMkey] = undefined;
 					}
 				});
 			}
