@@ -6,7 +6,7 @@ A card-based initiative tracker extension for [Owlbear Rodeo](https://owlbear-ro
 
 This extension implements the Savage Worlds initiative system with Action Cards using a standard deck of 52 playing cards plus 2 or 4 jokers. Players draw Action Cards to determine their initiative order, with various edges and hindrances affecting how cards are drawn and played.
 
-![Main Interface](images/main-interface.png)
+![Main Interface](cardsinterface.png)
 
 ## Getting Started
 
@@ -20,44 +20,56 @@ This extension implements the Savage Worlds initiative system with Action Cards 
 
 Right-click on character tokens in your scene and select "Add to Initiative" from the context menu.
 
-![Adding Characters](images/add-character.png)
+![Adding Characters](addcharacter.png)
 
 Characters will appear in the initiative tracker with their own card hands and control buttons.
+
+If the character token is already in the initiative tracker, when right clicking on a token will show "Remove from Initiative"
+
+![Removing Characters](removecharacter.png)
+
+Clicking on this in the context menu will remove that character's hand from the tracker completely.
+
 
 ## Interface Overview
 
 The extension displays several sections:
 
 ### Draw Deck
+
+![Draw Deck Section](drawdeck.png)
+
 The main deck of cards used for initiative. Always visible to all players and the GM.
+
 - **Card Count**: Shows number of cards remaining in the Draw Deck
 - **Buttons**:
-  - **Deal Action Cards**: Deals Action Cards to all active players
-  - **Deal Interlude Cards**: Deals Interlude for storytelling (DM-initiated)
-  - **Use Four Jokers**: Toggle between 54-card deck (2 jokers) and 56-card deck (4 jokers), resets Draw Deck and shuffles
-  - **Change Back**: Cycle through different card back designs (solely cosmetic)
-
-![Draw Deck Section](images/draw-deck.png)
+  - **Deal Action Cards**:![Deal Action Cards Button](dealcards.png) Deals Action Cards to all active players
+  - **Deal Interlude Cards**:![Deal Interlude Cards Button](dealinterlude.png) Deals Interlude for storytelling (DM-initiated)
+  - **Use Four Jokers**:![Use Four Jokers Button](use4jokers.png) Toggle between 54-card deck (2 jokers) and 56-card deck (4 jokers), resets Draw Deck and shuffles
+  - **Change Back**:![Change Back Button](changebacks.png) Cycle through different card back designs (solely cosmetic)
 
 ### Discard Pile
+
+![Discard Pile Section](discardpile.png)
+
 Cards that have been played or discarded. Always visible to the GM; but GM can choose to show to players if desired.
 - **Card Count**: Shows number of discarded cards
 - **Buttons** (GM Only):
-  - **Shuffle**: Return all cards to draw deck and shuffle the deck
-  - **Discard All Hands**: Force all players to discard their current hands
-  - **Toggle Discard Pile Visibility**: Show/hide the discard pile to/from players
-
-![Discard Pile Section](images/discard-pile.png)
+  - **Shuffle**:![Shuffle Button](shufflecards.png) Return all cards to draw deck and shuffle the deck
+  - **Discard All Hands**:![Discard All Hands Button](discardcards.png) Force all players to discard their current hands
+  - **Toggle Discard Pile Visibility**:![Toggle Discard Pile Visibility Button](togglevisibility.png) Show/hide the discard pile to/from players
 
 ### Card Pool
+
+![Card Pool Section](cardpool.png)
+
 A shared pool of cards for special situations. Primarily for GM use.
+
 - **Card Count**: Shows number of cards in Card Pool
 - **Buttons** (GM Only):
-  - **Deal a Card to Pool**: Draw one card face-up to the pool
-  - **Discard Card Pool**: Move all pool cards to discard pile
-  - **Toggle Card Pool Visibility**: Show/hide the card pool to/from players
-
-![Card Pool Section](images/card-pool.png)
+  - **Deal a Card to Pool**:![Deal a Card to Pool Button](playcard.png) Draw one card face-up to the pool
+  - **Discard Card Pool**:![Discard Card Pool Button](discardcards.png) Move all pool cards to discard pile
+  - **Toggle Card Pool Visibility**:![Toggle Card Pool Visibility Button](togglevisibility.png) Show/hide the card pool to/from players
 
 ### Player Sections
 Each character added to the initiative tracker has their own section showing:
@@ -68,27 +80,26 @@ Each character added to the initiative tracker has their own section showing:
 #### Player Control Buttons
 
 ##### Available to Players:
-- **Draw a Card**: Draw a single card to your hand
-- **Discard Hand**: Discard all cards in your hand
-- **Out of Combat**: Remove yourself from initiative (discards hand)
-- **Remove Player**: Remove character from initiative tracking
-- **On Hold**: Temporarily pause your initiative (card remains but you're skipped)
-- **Interludes**: Open popup showing storytelling suggestions based on your interlude card's suit
-- **Pass Cards**: Pass selected cards to this hand (only on other players hands, GM can pass selected cards to any hand)
-
-![Player Controls](images/player-controls.png)
+- **Draw a Card**:![Draw a Card Button](drawcard.png) Draw a single card to your hand
+- **Discard Hand**:![Discard Hand Button](discardhand.png) Discard all cards in your hand
+- **Out of Combat**:![Out of Combat Button](outofcombat.png) Remove yourself from initiative order (discards hand)
+- **Remove Player**:![Remove Player Button](deleteplayer.png) Remove character from initiative tracking
+- **On Hold**:![On Hold Button](onhold.png) Temporarily pause your initiative (card remains but you're skipped)
+- **Interludes**:![Interludes Button](dealinterlude.png) Open popup showing storytelling suggestions based on your interlude card's suit
+- **Pass Cards**:![Pass Cards Button](playcard.png) Pass selected cards to this hand (only on other players hands, GM can pass selected cards to any hand)
 
 ##### Edge/Hindrance Buttons:
-- **Hesitant Hindrance**: Forces you to act on your lowest value card rather than highest
-- **Quick Edge**: Draw additional cards until you get one above 5
-- **Level Headed Edge**: Draw extra cards at start of round, defaults to highest, but can be selected to use a different card for initiative order
+
+![Edge Buttons](edgecontrols.png)
+
+- **Hesitant Hindrance**:![Hesitant Hindrance Button](hesitant.png) Forces you to act on your lowest value card rather than highest
+- **Quick Edge**:![Quick Edge Button](quick.png) Draw additional cards until you get one above 5
+- **Level Headed Edge**:![Level Headed Edge Button](levelheaded.png) Draw extra cards at start of round, defaults to highest, but can be selected to use a different card for initiative order
   - Single click: Level Headed (draw 2 cards)
   - Double click: Improved Level Headed (draw 3 cards)
 
-![Edge Buttons](images/edge-buttons.png)
-
 ##### GM-Only Buttons:
-- **Draw Hand**: Deal initiative cards to this specific player
+- **Draw Hand**:![Draw Hand Button](drawhand.png) Deal initiative cards to this specific player
 
 ## How Initiative Works
 
