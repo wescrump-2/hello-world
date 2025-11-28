@@ -12,9 +12,9 @@ This extension implements the Savage Worlds initiative system with Action Cards 
 
 ### Installation
 
-1. Install the extension from the Owlbear Rodeo extension marketplace
+1. Install the extension from the manifest at https://swit-beryl.vercel.app/manifest.json
 2. Open your Owlbear Rodeo scene
-3. Click the Savage Worlds Initiative icon in the toolbar to open the tracker
+3. Click the Savage Worlds Initiative icon ![Savage Worlds Initiative Tracker](switicon.png) in the toolbar to open the tracker
 
 ### Adding Characters to Initiative
 
