@@ -315,7 +315,7 @@ export class Util {
                 const { ["cardpool"]: _cp, 
                     ["discardpile"]: _dp,
                     ["drawdeck"]: _dd,
-                    ["choosenList"]: _cl, 
+                    ["chosenList"]: _cl, 
                     ["currentPlayer"]: _p,
                     ["currentRound"]: _cr,
                     ...rest } = decomp;
