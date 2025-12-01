@@ -83,7 +83,6 @@ async function setupGameState(): Promise<void> {
     await updatePlayerStateAll(initialItems).then(() => {
       if (deck.drawdeck.length === 0) {
         deck.shuffleDeck();
-        deck.triggerPlayerStateChange();
       }
       deck.cleanupOrphanCards();
     });
