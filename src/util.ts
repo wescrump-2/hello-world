@@ -310,7 +310,16 @@ export class Util {
 
         if (Util.isCompressed(raw)) {
             try {
-                return Util.decompress(raw) as DeckMeta;
+                let decomp:any = Util.decompress(raw);
+                //cleanup by destructuring
+                const { ["cardpool"]: _cp, 
+                    ["discardpile"]: _dp,
+                    ["drawdeck"]: _dd,
+                    ["choosenlist"]: _cl, 
+                    ["currentplayer"]: _p,
+                    ["currentround"]: _cr,
+                    ...rest } = decomp;
+                return rest as DeckMeta;
             } catch (e) {
                 Debug.warn("Failed to decompress DeckMeta – falling back to raw", e);
                 return undefined;
