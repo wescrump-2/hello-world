@@ -6,6 +6,7 @@ import { Debug, Util } from "./util";
 export type PileId = 'draw' | 'discard' | 'pool' | 'remove' | { characterId: string }
 
 export interface DeckMeta {
+
 	back: number;
 	use4jokers: boolean;
 	scale: number;
