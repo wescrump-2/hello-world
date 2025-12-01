@@ -80,14 +80,15 @@ async function setupGameState(): Promise<void> {
 
   try {
     const initialItems = await OBR.scene.items.getItems();
-    updatePlayerStateAll(initialItems);
-    deck.cleanupOrphanCards();
+    await updatePlayerStateAll(initialItems).then(() => {
+      if (deck.drawdeck.length === 0) {
+        deck.shuffleDeck();
+      }
+      deck.cleanupOrphanCards();
+    });
+
   } catch (error) {
     Debug.error("Failed to initialize player state:", error);
-  }
-
-  if (deck.drawdeck.length === 0) {
-    deck.shuffleDeck();
   }
 
   unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));

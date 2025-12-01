@@ -541,7 +541,7 @@ export class Deck {
 		Debug.log("%cRENDER DECK ASYNC — Finished", "color: cyan; font-weight: bold; font-size: 12px");
 	}
 	private renderDeck() {
-		this.renderDraw(this.svgcontainer);
+		this.renderDraw();
 		if (this.isGM || this.discardVisible) {
 			this.renderDiscardPile(this.svgcontainer);
 		} else {
@@ -560,7 +560,7 @@ export class Deck {
 				poolFieldset.remove();
 			}
 		}
-		this.renderPlayers(this.svgcontainer);
+		this.renderPlayers();
 		this.updatePlayerOrderAndHighlight();
 	}
 
@@ -620,7 +620,8 @@ export class Deck {
 		return fieldset;
 	}
 
-	renderDraw(container: HTMLDivElement) {
+	renderDraw() {
+		const container = this.svgcontainer;
 		Debug.log(`%cRENDER → Draw Deck (${this.drawdeck.length} cards)`, "color: #4CAF50; font-weight: bold");
 
 		this.renderPile(
@@ -687,7 +688,8 @@ export class Deck {
 		if (scpBtn) Util.setState(scpBtn, this.poolVisible);
 	}
 
-	renderPlayers(div: HTMLDivElement) {
+	renderPlayers() {
+		const div = this.svgcontainer;
 		this.playersArray.forEach(p => {
 			p.render(div);
 		});
