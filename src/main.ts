@@ -72,6 +72,9 @@ async function setupGameState(): Promise<void> {
     } else {
       deck.updateState(undefined);
     }
+    if (deck.drawdeck.length === 0) {
+      deck.shuffleDeck();
+    }
   } catch (error) {
     Debug.error(`Failed to get room metadata:`, error);
     deck.initializeDeck();

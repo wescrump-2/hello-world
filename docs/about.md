@@ -1,6 +1,18 @@
+---
+title: Savage Worlds Initiative Tracker
+description: Savage Worlds Initiative Tracker extension for Owlbear Rodeo.
+author: Wes Crump
+image: https://swit-beryl.vercel.app/docs/switicon.png
+icon: https://swit-beryl.vercel.app/logo.png
+tags:
+  - savage-worlds
+  - initiative-tracker
+manifest: https://swit-beryl.vercel.app/manifest.json
+---
+
 # Savage Worlds Initiative Tracker (Action Cards)
 
-A card-based initiative tracker extension for [Owlbear Rodeo](https://owlbear-rodeo.com/), designed specifically for the Savage Worlds RPG system using Action Cards.
+A card-based initiative tracker extension Savage Worlds Adventure Edition(SWADE) fans using [Owlbear Rodeo](https://owlbear-rodeo.com/), designed specifically for the Savage Worlds initative system using Action Cards.
 
 ## Overview
 
@@ -181,10 +193,10 @@ Players can click the **Interludes** button to see suggested topics based on the
 
 This project acknowledges the following:
 
-- [Pinnacle Entertainment Group](https://peginc.com/) for the Savage Worlds RPG system
-- [savaged.us](https://savaged.us/) for community resources and support
-- [Game-Icons.net](https://game-icons.net/) for the button icons used in the interface
+- **Savage Worlds Adventure Edition** by [Pinnacle Entertainment Group](https://www.peginc.com/) 
+- **Savaged.com** by [savaged.us](https://savaged.us/) for the original concept that inspired this Owlbear Rodeo extension.
+- **Game Icons** from https://game-icons.net/ for the icon assets used in the interface.
 
----
+## Support
 
-*For more information about Savage Worlds, visit the official website at [peginc.com](https://peginc.com/)*
+For issues or questions, please contact the developer or check the Owlbear Rodeo community forums.
