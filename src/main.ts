@@ -72,9 +72,6 @@ async function setupGameState(): Promise<void> {
     } else {
       deck.updateState(undefined);
     }
-    if (deck.drawdeck.length === 0) {
-      deck.shuffleDeck();
-    }
   } catch (error) {
     Debug.error(`Failed to get room metadata:`, error);
     deck.initializeDeck();
@@ -87,6 +84,10 @@ async function setupGameState(): Promise<void> {
     deck.cleanupOrphanCards();
   } catch (error) {
     Debug.error("Failed to initialize player state:", error);
+  }
+
+  if (deck.drawdeck.length === 0) {
+    deck.shuffleDeck();
   }
 
   unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));
