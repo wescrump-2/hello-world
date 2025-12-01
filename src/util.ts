@@ -315,9 +315,9 @@ export class Util {
                 const { ["cardpool"]: _cp, 
                     ["discardpile"]: _dp,
                     ["drawdeck"]: _dd,
-                    ["choosenlist"]: _cl, 
-                    ["currentplayer"]: _p,
-                    ["currentround"]: _cr,
+                    ["choosenList"]: _cl, 
+                    ["currentPlayer"]: _p,
+                    ["currentRound"]: _cr,
                     ...rest } = decomp;
                 return rest as DeckMeta;
             } catch (e) {
@@ -380,7 +380,7 @@ export class Debug {
 
 // async function checkCharacterOwnership(itemId:string) {
 //   try {
-//     const items = await OBR.scene.items.getItems((item) => item.id === itemId && item.layer === "CHARACTER");
+//     const items = await OBR.scene.items.getItems(    (item): item is Image =>       item.layer ==="CHARACTER" &&   isImage(item)    );
 
 //     if (items.length === 0) {
 //       Debug.log("Character not found or not on the CHARACTER layer.");

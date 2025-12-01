@@ -79,7 +79,7 @@ async function setupGameState(): Promise<void> {
   }
 
   try {
-    const initialItems = await OBR.scene.items.getItems();
+    const initialItems = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item));
     await updatePlayerStateAll(initialItems).then(() => {
       if (deck.drawdeck.length === 0) {
         deck.shuffleDeck();
@@ -91,7 +91,10 @@ async function setupGameState(): Promise<void> {
     Debug.error("Failed to initialize player state:", error);
   }
 
-  unsubscribes.push(OBR.scene.items.onChange(updatePlayerStateAll));
+  unsubscribes.push(OBR.scene.items.onChange(async (context) => {
+    const chars = context.filter(item => isImage(item) && item.layer === 'CHARACTER');
+    await updatePlayerStateAll(chars);
+  }));
   deck.renderDeckAsync();
 }
 
@@ -103,16 +106,12 @@ async function renderRoom(metadata: Record<string, any>) {
   }
 
   // Reload player states from scene items
-  const items = await OBR.scene.items.getItems();
+  const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
   await updatePlayerStateAll(items);
-
   deck.renderDeckAsync();
 }
 
-async function updatePlayerStateAll(items: Item[]) {
-  const playerItems = items.filter(
-    (item): item is Image => item.layer === "CHARACTER" && isImage(item) && item.metadata[Util.PlayerMkey] !== undefined
-  );
+async function updatePlayerStateAll(playerItems: Item[]) {
   const changed = await updatePlayerState(playerItems);
 
   if (changed || playerItems.length === 0) {
@@ -175,7 +174,11 @@ async function dumpRoomMetadata() {
 
 // --- List ALL extensions that have stored something on scene items ---
 async function findItemMetadataKeys() {
-  const items = await OBR.scene.items.getItems();
+  const items = await OBR.scene.items.getItems(
+    (item): item is Image =>
+      item.layer === "CHARACTER" &&  // Filter by Character layer
+      isImage(item)                  // Filter by image type
+  );
   const keys = new Set();
   items.forEach(item => {
     if (item.metadata) {
