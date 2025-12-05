@@ -379,7 +379,6 @@ export class Deck {
 	}
 
 	shuffle() {
-		if (!this.isGM && !Debug.enabled) return;
 		this.playersArray.forEach(p => { this.moveToPool('draw', p.pileId) }); // return hands
 		this.moveToPool('draw', 'pool'); //return card pool
 		this.moveToPool('draw', 'discard'); //return discard
