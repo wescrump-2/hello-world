@@ -1,6 +1,7 @@
 import { Card } from "./cards";
 import * as pako from 'pako';
 import { DeckMeta, PlayerCard } from "./deck";
+import OBR from "@owlbear-rodeo/sdk";
 
 export class Util {
     static readonly BUTTON_CLASS = 'toggle-image';
@@ -328,6 +329,29 @@ export class Util {
         // uncompressed meta
         return metadata[Util.DeckMkey];
     }
+
+  static async ensureSceneReady(): Promise<boolean> {
+    try {
+      const isReady = await OBR.scene.isReady();
+      if (!isReady) {
+        Debug.warn("Scene not ready, waiting for scene to be ready...");
+        // Wait for scene to be ready
+        await new Promise<void>((resolve) => {
+          const unsubscribe = OBR.scene.onReadyChange((ready: boolean) => {
+            if (ready) {
+              unsubscribe();
+              resolve();
+            }
+          });
+        });
+        return true;
+      }
+      return true;
+    } catch (error) {
+      Debug.error("Failed to check scene readiness:", error);
+      return false;
+    }
+  }
 }//end Util
 
 export class Debug {

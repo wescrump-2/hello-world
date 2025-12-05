@@ -135,9 +135,11 @@ export class Deck {
 	}
 
 	private async performSave(): Promise<void> {
-		const compressed = Util.compress(this.Meta);
-		try {
-			await OBR.room.setMetadata({ [Util.DeckMkey]: compressed });
+	  const compressed = Util.compress(this.Meta);
+	  try {
+	    // Ensure scene is ready before saving metadata
+	    await Util.ensureSceneReady();
+	    await OBR.scene.setMetadata({ [Util.DeckMkey]: compressed });
 		} catch (err: any) {
 			// This is the EXACT error OBR throws when >16KB
 			if (err.message?.includes("metadata") && err.message?.includes("16")) {
@@ -145,7 +147,7 @@ export class Deck {
 
 				try {
 					// Step 1: Nuke the bad metadata
-					await OBR.room.setMetadata({ [Util.DeckMkey]: null });
+					await OBR.scene.setMetadata({ [Util.DeckMkey]: null });
 					Debug.log("Corrupted metadata cleared");
 
 					// Step 2: Reinitialize clean deck
@@ -154,7 +156,7 @@ export class Deck {
 
 					// Step 3: Save the clean version
 					const freshCompressed = Util.compress(this.Meta);
-					await OBR.room.setMetadata({ [Util.DeckMkey]: freshCompressed });
+					await OBR.scene.setMetadata({ [Util.DeckMkey]: freshCompressed });
 
 					Debug.log("Fresh deck saved after cleanup", freshCompressed.length, "chars");
 

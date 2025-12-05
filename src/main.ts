@@ -17,14 +17,14 @@ OBR.onReady(async () => {
   await getCurrentPlayerId();
   setupContextMenu();
   // Optional: react to entering/leaving scene later if needed
-  OBR.scene.onReadyChange(async (isReady) => {
+  unsubscribes.push(OBR.scene.onReadyChange(async (isReady) => {
     if (isReady) {
       console.log("Entered scene");
       // Do scene-specific init here if needed
     } else {
       console.log("Left scene");
     }
-  });
+  }));
 
   // Check once at startup
   const isReady = await OBR.scene.isReady();
@@ -35,6 +35,9 @@ OBR.onReady(async () => {
   window.addEventListener('beforeunload', () => {
     unsubscribes.forEach(fn => fn());
   })
+
+  // Migrate old room metadata to scene
+  await migrateOldRoomMetadata();
 
   if (Debug.enabled) {
     await dumpRoomMetadata();
@@ -62,10 +65,12 @@ async function setupGameState(): Promise<void> {
     Debug.error("Failed to get GM role:", error);
   }
 
-  unsubscribes.push(OBR.room.onMetadataChange(renderRoom));
+  unsubscribes.push(OBR.scene.onMetadataChange(renderScene));
 
   try {
-    const metadata = await OBR.room.getMetadata();
+    // Ensure scene is ready before accessing metadata
+    await Util.ensureSceneReady();
+    const metadata = await OBR.scene.getMetadata();
     const dmd = Util.getDeckMeta(metadata);
     if (dmd) {
       deck.updateState(dmd);
@@ -98,16 +103,24 @@ async function setupGameState(): Promise<void> {
   deck.renderDeckAsync();
 }
 
-async function renderRoom(metadata: Record<string, any>) {
+async function renderScene(metadata: Record<string, any>) {
   const deck = Deck.getInstance();
   const newMeta = Util.getDeckMeta(metadata)
   if (newMeta) {
     deck.updateState(newMeta);
   }
 
-  // Reload player states from scene items
-  const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
-  await updatePlayerStateAll(items);
+  try {
+    // Ensure scene is ready before accessing items
+    await Util.ensureSceneReady();
+
+    // Reload player states from scene items
+    const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
+    await updatePlayerStateAll(items);
+  } catch (error) {
+    Debug.error("Failed to reload player states in renderScene:", error);
+  }
+
   deck.renderDeckAsync();
 }
 
@@ -185,7 +198,45 @@ async function findItemMetadataKeys() {
       Object.keys(item.metadata).forEach(k => keys.add(k));
     }
   });
+
   Debug.log("=== METADATA KEYS FOUND ON SCENE ITEMS ===");
   Debug.log(Array.from(keys).sort());
+}
+
+
+async function migrateOldRoomMetadata() {
+  try {
+    // Ensure scene is ready before migration
+    await Util.ensureSceneReady();
+
+    // Check if old metadata exists on the room
+    const roomMetadata = await OBR.room.getMetadata();
+    const oldDeckMeta = roomMetadata[Util.DeckMkey];
+
+    if (oldDeckMeta) {
+      Debug.log("Found old deck metadata on room, migrating to scene...");
+
+      // Get current scene metadata
+      const sceneMetadata = await OBR.scene.getMetadata();
+
+      // Check if scene already has the metadata
+      if (!sceneMetadata[Util.DeckMkey]) {
+        // Migrate the data to scene
+        await OBR.scene.setMetadata({ [Util.DeckMkey]: oldDeckMeta });
+        Debug.log("Successfully migrated deck metadata from room to scene");
+      }
+
+      // Remove old metadata from room
+      await OBR.room.setMetadata({ [Util.DeckMkey]: null });
+      Debug.log("Removed old deck metadata from room");
+
+      // Show notification to GM
+      if (Deck.getInstance().isGM) {
+        await OBR.notification.show("Deck metadata has been migrated from room to scene storage", "INFO");
+      }
+    }
+  } catch (error) {
+    Debug.error("Failed to migrate old room metadata:", error);
+  }
 }
 
