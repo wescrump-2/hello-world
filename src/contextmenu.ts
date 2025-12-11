@@ -13,9 +13,9 @@ export function setupContextMenu() {
 				label: "Add to Initiative",
 				filter: {
 					every: [
-						{ key: "layer", value: "CHARACTER" },
-						{ key: ["metadata", Util.PlayerMkey], value: undefined },
-					],
+					{ key: "layer", value: "CHARACTER" },
+					{ key: ["metadata", Util.PlayerMkey], value: undefined },
+				],
 				},
 			},
 			{
@@ -23,15 +23,23 @@ export function setupContextMenu() {
 				label: "Remove from Initiative",
 				filter: {
 					every: [
-						{ key: "layer", value: "CHARACTER" },
-					],
+					{ key: "layer", value: "CHARACTER" },
+				],
 				},
 			},
 		],
 		async onClick(context, _elementId) {
 			const deck = Deck.getInstance();
-			const playerId = await OBR.player.getId();
-			const playerName = await OBR.player.getName();
+			let playerId = '';
+			let playerName = '';
+			
+			try {
+				playerId = await OBR.player.getId();
+				playerName = await OBR.player.getName();
+			} catch (error) {
+				console.error("Failed to get player info:", error);
+				return;
+			}
 
 			const itemsToAdd = context.items.filter(
 				(item) => item.metadata[Util.PlayerMkey] === undefined
@@ -42,21 +50,25 @@ export function setupContextMenu() {
 
 			// ─── ADD TO INITIATIVE ───
 			if (itemsToAdd.length > 0) {
-				await OBR.scene.items.updateItems(itemsToAdd, (items) => {
-					for (const item of items) {
-						const displayName = (item as any).text?.plainText?.trim() || item.name?.trim() || "Nameless Hero";
+				try {
+					await OBR.scene.items.updateItems(itemsToAdd, (items) => {
+						for (const item of items) {
+							const displayName = (item as any).text?.plainText?.trim() || item.name?.trim() || "Nameless Hero";
 
-						const player = deck.addPlayer(
-							`${displayName} (${playerName})`,
-							//item.id,
-							Util.shortId(), //this gives a unique id for charactar hand id.
-							playerId
-						);
+							const player = deck.addPlayer(
+								`${displayName} (${playerName})`,
+								//item.id,
+								Util.shortId(), //this gives a unique id for charactar hand id.
+								playerId
+							);
 
-						item.metadata[Util.PlayerMkey] = player.Meta;
-					}
-				});
-				deck.renderDeckAsync();
+							item.metadata[Util.PlayerMkey] = player.Meta;
+						}
+					});
+					deck.renderDeckAsync();
+				} catch (error) {
+					console.error("Failed to add items to initiative:", error);
+				}
 			}
 
 			// ─── REMOVE FROM INITIATIVE ───
@@ -73,12 +85,16 @@ export function setupContextMenu() {
 				}
 
 				// Then delete metadata from tokens
-				await OBR.scene.items.updateItems(itemsToRemove, (items) => {
-					for (const item of items) {
-						//delete item.metadata[Util.PlayerMkey];
-						item.metadata[Util.PlayerMkey] = undefined;
-					}
-				});
+				try {
+					await OBR.scene.items.updateItems(itemsToRemove, (items) => {
+						for (const item of items) {
+							//delete item.metadata[Util.PlayerMkey];
+							item.metadata[Util.PlayerMkey] = undefined;
+						}
+					});
+				} catch (error) {
+					console.error("Failed to remove items from initiative:", error);
+				}
 			}
 		},
 	});

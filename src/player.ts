@@ -249,7 +249,7 @@ export class PlayerChar {
 					deck.dealFromTop(this.pileId, 1, Facing.Up);
 				}
 				if (safety >= 16) {
-					Debug.error("Quick edge aborted — possible infinite loop prevented");
+					console.error("Quick edge aborted — possible infinite loop prevented");
 				}
 			}
 			// Deal tactician cards
@@ -291,7 +291,7 @@ export class PlayerChar {
 			}
 			element = element.parentElement as HTMLElement;
 		}
-		Debug.error('Player ID not found in element attributes')
+		console.error('Player ID not found in element attributes')
 		return null
 	}
 
@@ -633,7 +633,7 @@ export class PlayerChar {
 				})
 			)
 		} catch (error) {
-			Debug.error("Failed to remove character item from scene:", error);
+			console.error("Failed to remove character item from scene:", error);
 		}
 	}
 }

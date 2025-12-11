@@ -27,11 +27,15 @@ OBR.onReady(async () => {
   }));
 
   // Check once at startup
-  const isReady = await OBR.scene.isReady();
-  if (isReady) {
-    // Do any one-time scene init
+  try {
+    const isReady = await OBR.scene.isReady();
+    if (isReady) {
+      // Do any one-time scene init
+    }
+    await setupGameState();
+  } catch (error) {
+    console.error("Failed during initial setup:", error);
   }
-  await setupGameState();
   window.addEventListener('beforeunload', () => {
     unsubscribes.forEach(fn => fn());
   })
@@ -40,8 +44,12 @@ OBR.onReady(async () => {
   await migrateOldRoomMetadata();
 
   if (Debug.enabled) {
-    await dumpRoomMetadata();
-    await findItemMetadataKeys();
+    try {
+      await dumpRoomMetadata();
+      await findItemMetadataKeys();
+    } catch (error) {
+      console.error("Failed to execute debug functions:", error);
+    }
   }
 });
 
@@ -52,7 +60,7 @@ function setupCards() {
   if (svgCards.contentDocument && svgButtons.contentDocument) {
     console.log("Button and card images loaded");
   } else {
-    Debug.error("Failed to load SVG document")
+    console.error("Failed to load SVG document")
   }
 }
 
@@ -62,7 +70,7 @@ async function setupGameState(): Promise<void> {
   try {
     deck.isGM = (await OBR.player.getRole()) === "GM";
   } catch (error) {
-    Debug.error("Failed to get GM role:", error);
+    console.error("Failed to get GM role:", error);
   }
 
   unsubscribes.push(OBR.scene.onMetadataChange(renderScene));
@@ -78,7 +86,7 @@ async function setupGameState(): Promise<void> {
       deck.updateState(undefined);
     }
   } catch (error) {
-    Debug.error(`Failed to get room metadata:`, error);
+    console.error(`Failed to get room metadata:`, error);
     deck.initializeDeck();
     deck.shuffleDeck();
   }
@@ -93,7 +101,7 @@ async function setupGameState(): Promise<void> {
     });
 
   } catch (error) {
-    Debug.error("Failed to initialize player state:", error);
+    console.error("Failed to initialize player state:", error);
   }
 
   unsubscribes.push(OBR.scene.items.onChange(async (context) => {
@@ -118,7 +126,7 @@ async function renderScene(metadata: Record<string, any>) {
     const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
     await updatePlayerStateAll(items);
   } catch (error) {
-    Debug.error("Failed to reload player states in renderScene:", error);
+    console.error("Failed to reload player states in renderScene:", error);
   }
 
   deck.renderDeckAsync();
@@ -236,7 +244,7 @@ async function migrateOldRoomMetadata() {
       }
     }
   } catch (error) {
-    Debug.error("Failed to migrate old room metadata:", error);
+    console.error("Failed to migrate old room metadata:", error);
   }
 }
 

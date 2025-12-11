@@ -135,15 +135,15 @@ export class Deck {
 	}
 
 	private async performSave(): Promise<void> {
-	  const compressed = Util.compress(this.Meta);
-	  try {
-	    // Ensure scene is ready before saving metadata
-	    await Util.ensureSceneReady();
-	    await OBR.scene.setMetadata({ [Util.DeckMkey]: compressed });
+		const compressed = Util.compress(this.Meta);
+		try {
+			// Ensure scene is ready before saving metadata
+			await Util.ensureSceneReady();
+			await OBR.scene.setMetadata({ [Util.DeckMkey]: compressed });
 		} catch (err: any) {
 			// This is the EXACT error OBR throws when >16KB
 			if (err.message?.includes("metadata") && err.message?.includes("16")) {
-				Debug.error("METADATA TOO LARGE (>16KB)! Clearing corrupted data and resetting deck.");
+				console.error("METADATA TOO LARGE (>16KB)! Clearing corrupted data and resetting deck.");
 
 				try {
 					// Step 1: Nuke the bad metadata
@@ -166,12 +166,12 @@ export class Deck {
 					// Force full re-render
 					this.renderDeckAsync();
 				} catch (cleanupErr) {
-					Debug.error("Failed to recover from oversized metadata:", cleanupErr);
+					console.error("Failed to recover from oversized metadata:", cleanupErr);
 					await OBR.notification.show("CRITICAL: Failed to reset deck after size error!", "ERROR");
 				}
 			} else {
 				// Any other error — re-throw
-				Debug.error("Failed to save metadata:", err);
+				console.error("Failed to save metadata:", err);
 				throw err;
 			}
 		}
@@ -183,23 +183,27 @@ export class Deck {
 		}));
 
 		if (playerMetas.length > 0) {
-			await OBR.scene.items.updateItems(
-				(item): item is Image =>
-					item.layer === "CHARACTER" &&
-					isImage(item) &&
-					!!item.metadata[Util.PlayerMkey],
-				(chars) => {
-					for (const char of chars) {
-						const pm = char.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
-						if (pm?.characterId) {
-							const updated = playerMetas.find(m => m.id === pm.characterId);
-							if (updated) {
-								char.metadata[Util.PlayerMkey] = updated.meta;
+			try {
+				await OBR.scene.items.updateItems(
+					(item): item is Image =>
+						item.layer === "CHARACTER" &&
+						isImage(item) &&
+						!!item.metadata[Util.PlayerMkey],
+					(chars) => {
+						for (const char of chars) {
+							const pm = char.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
+							if (pm?.characterId) {
+								const updated = playerMetas.find(m => m.id === pm.characterId);
+								if (updated) {
+									char.metadata[Util.PlayerMkey] = updated.meta;
+								}
 							}
 						}
 					}
-				}
-			);
+				);
+			} catch (error) {
+				console.error("Failed to update player metadata:", error);
+			}
 		}
 	}
 	public cleanupOrphanCards() {
@@ -709,13 +713,23 @@ export class Deck {
 		try {
 			await OBR.notification.show(message, level);
 		} catch (error) {
-			Debug.error('Failed to show notification:', error);
+			console.error('Failed to show notification:', error);
 		}
 	}
 
 	async updateState(dmd?: DeckMeta) {
 		if (dmd) {
 			this.applyMeta(dmd);
+			// Ensure joker consistency with use4jokers setting
+			this.carddeck.forEach(card => {
+				if (card.cid >= 55 && card.cid <= 56) {
+					const shouldBeInDraw = this.use4jokers;
+					const isInDraw = Deck.isSamePile(card.pile, 'draw');
+					if (shouldBeInDraw !== isInDraw) {
+						this.setPile(card, shouldBeInDraw ? 'draw' : 'remove');
+					}
+				}
+			});
 		} else {
 			Debug.warn("No metadata found for this extension in the room.");
 			if (!this.meta) this.initializeDeck()
@@ -783,7 +797,7 @@ export class Deck {
 			try {
 				this.toggleCardSelection(ownId, cardId);
 			} catch (err) {
-				Debug.error('Card selection failed:', err);
+				console.error('Card selection failed:', err);
 			}
 		});
 	}

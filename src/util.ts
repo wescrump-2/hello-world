@@ -199,7 +199,7 @@ export class Util {
             if (button) {
                 button.classList.remove(Util.ACTIVE_CLASS);
             } else {
-                Debug.error('button is null')
+                console.error('button is null')
             }
         }
     }
@@ -284,7 +284,7 @@ export class Util {
             const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as DeckMeta;
             return parsed;
         } catch (err) {
-            Debug.error("Failed to decompress deck:", err);
+            console.error("Failed to decompress deck:", err);
             return {
                     carddeck: Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1)),
                     back: 0,
@@ -348,7 +348,7 @@ export class Util {
       }
       return true;
     } catch (error) {
-      Debug.error("Failed to check scene readiness:", error);
+      console.error("Failed to check scene readiness:", error);
       return false;
     }
   }
@@ -430,7 +430,7 @@ export class Debug {
 
 //     return false; // If no match is found or if ownership cannot be confirmed
 //   } catch (error) {
-//     Debug.error('Error checking character ownership:', error);
+//     console.error('Error checking character ownership:', error);
 //     return false;
 //   }
 // }
