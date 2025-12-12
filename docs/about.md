@@ -10,8 +10,6 @@ tags:
 manifest: https://swit-beryl.vercel.app/manifest.json
 ---
 
-# Savage Worlds Initiative Tracker (Action Cards)
-
 A card-based initiative tracker extension Savage Worlds Adventure Edition(SWADE) fans using [Owlbear Rodeo](https://owlbear-rodeo.com/), designed specifically for the Savage Worlds initative system using Action Cards.
 
 ## Overview
