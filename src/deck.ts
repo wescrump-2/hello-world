@@ -263,19 +263,15 @@ export class Deck {
 
 	drawInitiative() {
 		Debug.log("drawInitiative");
-
 		try {
 			this.playersArray.forEach(p => p.drawInitiative());
 		} finally {
-			////this.suppressRender = false;
-
 			this.triggerPlayerStateChange();
 		}
 	}
 
 	drawInterlude() {
 		Debug.log("drawInterlude");
-
 		try {
 			this.playersArray.forEach(p => p.drawInterlude());
 		} finally {
@@ -286,7 +282,6 @@ export class Deck {
 	shuffleDeck() {
 		Debug.log("shuffleDeck");
 		this.shuffle()
-
 		this.triggerPlayerStateChange();
 	}
 
@@ -326,15 +321,25 @@ export class Deck {
 		try {
 			this.moveToDiscardPool('pool', 0)
 		} finally {
-			////this.suppressRender = false;
-
 			this.triggerPlayerStateChange();
 		}
 	}
 
-
 	getPlayerById(pid: string | null): PlayerChar | null {
-		return pid ? this.players.get(pid) ?? null : null;
+		try {
+			if (!pid) {
+				return null;
+			}
+			const player = this.players.get(pid);
+			if (!player) {
+				Debug.warn(`Player with ID ${pid} not found.`);
+				return null;
+			}
+			return player;
+		} catch (error) {
+			console.error(`Failed to retrieve player with ID ${pid}:`, error);
+			return null;
+		}
 	}
 
 	toggleJokers() {
@@ -612,7 +617,6 @@ export class Deck {
 			btn.setAttribute('aria-label', config.label);
 			btn.addEventListener('click', () => {
 				config.handler();
-				////this.updateOBR();
 			});
 			butdiv.appendChild(btn);
 		});
@@ -755,7 +759,6 @@ export class Deck {
 		this.svgcontainer.addEventListener('click', async (e) => {
 			let target: EventTarget | null = e.target;
 
-			// Walk up from <path>, <rect>, etc. to the <g class="card">
 			while (target && target !== this.svgcontainer) {
 				if (target instanceof SVGElement && (target.classList.contains('card') || target.hasAttribute('data-card-id'))) {
 					break;

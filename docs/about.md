@@ -2,7 +2,7 @@
 title: Savage Worlds Initiative Tracker
 description: Savage Worlds Initiative Tracker extension for Owlbear Rodeo.
 author: Wes Crump
-image: https://swit-beryl.vercel.app/docs/switicon.png
+image: https://swit-beryl.vercel.app/switicon.png
 icon: https://swit-beryl.vercel.app/logo.png
 tags:
   - savage-worlds
@@ -24,7 +24,7 @@ This extension implements the Savage Worlds initiative system with Action Cards 
 
 ### Installation
 
-1. Install the extension from the manifest at https://swit-beryl.vercel.app/manifest.json
+1. Install the extension from the manifest at <https://swit-beryl.vercel.app/manifest.json>
 2. Open your Owlbear Rodeo scene
 3. Click the Savage Worlds Initiative icon ![Savage Worlds Initiative Tracker](switicon.png) in the toolbar to open the tracker
 
@@ -41,7 +41,6 @@ If the character token is already in the initiative tracker, when right clicking
 ![Removing Characters](removecharacter.png)
 
 Clicking on this in the context menu will remove that character's hand from the tracker completely.
-
 
 ## Interface Overview
 
@@ -65,6 +64,7 @@ The main deck of cards used for initiative. Always visible to all players and th
 ![Discard Pile Section](discardpile.png)
 
 Cards that have been played or discarded. Always visible to the GM; but GM can choose to show to players if desired.
+
 - **Card Count**: Shows number of discarded cards
 - **Buttons** (GM Only):
   - **Shuffle**:![Shuffle Button](shufflecards.png) Return all cards to draw deck and shuffle the deck
@@ -84,14 +84,17 @@ A shared pool of cards for special situations. Primarily for GM use.
   - **Toggle Card Pool Visibility**:![Toggle Card Pool Visibility Button](togglevisibility.png) Show/hide the card pool to/from players
 
 ### Player Sections
+
 Each character added to the initiative tracker has their own section showing:
+
 - **Player Name**: Character name and player name
 - **Card Hand**: Current Action or Interlude cards (face-up)
 - **Initiative Order**: Players are automatically sorted by their best card for initiative
 
 #### Player Control Buttons
 
-##### Available to Players:
+##### Available to Players
+
 - **Draw a Card**:![Draw a Card Button](drawcard.png) Draw a single card to your hand
 - **Discard Hand**:![Discard Hand Button](discardhand.png) Discard all cards in your hand
 - **Out of Combat**:![Out of Combat Button](outofcombat.png) Remove yourself from initiative order (discards hand)
@@ -100,7 +103,7 @@ Each character added to the initiative tracker has their own section showing:
 - **Interludes**:![Interludes Button](dealinterlude.png) Open popup showing storytelling suggestions based on your interlude card's suit
 - **Pass Cards**:![Pass Cards Button](playcard.png) Pass selected cards to this hand (only on other players hands, GM can pass selected cards to any hand)
 
-##### Edge/Hindrance Buttons:
+##### Edge/Hindrance Buttons
 
 ![Edge Buttons](edgecontrols.png)
 
@@ -113,7 +116,8 @@ Each character added to the initiative tracker has their own section showing:
   - Single click: Tactician (draw 1 card)
   - Double click: Master Tactician (draw 2 cards)
 
-##### GM-Only Buttons:
+##### GM-Only Buttons
+
 - **Draw Hand**:![Draw Hand Button](drawhand.png) Deal initiative cards to this specific player
 
 ## How Initiative Works
@@ -123,8 +127,8 @@ Each character added to the initiative tracker has their own section showing:
 3. **Apply Edges**: Players/GM activate relevant edges (Level Headed, Quick, Tactician, etc.) for their character(s)
 4. **Turn Order**: Players/GM act in order from highest(top) to lowest card
 5. **End of Turn**: Players/GM discards hand at the end of turn, initiative list updates with next player at top
-5. **Resolution**: After all characters act, GM can shuffle discard pile back into draw deck
-6. **Repeat**: Start next round of play by dealing cards as needed
+6. **Resolution**: After all characters act, GM can shuffle discard pile back into draw deck
+7. **Repeat**: Start next round of play by dealing cards as needed
 
 ### Player States and Initiative Order
 
@@ -136,7 +140,9 @@ Each character added to the initiative tracker has their own section showing:
 ## Special Rules
 
 ### Jokers
+
 When a Joker is drawn:
+
 - Issue Bennies to all players immediately
 - The Joker acts at any time in the round they choose (no opposed roll interruption needed)
 - Shuffle the deck at the end of the round
@@ -144,26 +150,32 @@ When a Joker is drawn:
 ### Edges and Hindrances
 
 #### Level Headed
+
 - Dealt an extra Action Card, chooses which to act on
 - Improved Level Headed: Dealt three Action Cards, chooses which to act on
 
 #### Quick
+
 - Dealt additional cards until getting one above 5
 - Acts on the highest card drawn
 
 #### Hesitant
+
 - Lowest card determines turn order among characters
 
 #### Tactician
+
 - Dealt an extra Action Card that can be given to an ally
 - Master Tactician: Dealt two extra Action Cards that can be given to allies
 
 These extra cards are not part of the player's Action Cards hand and have zero effect unless they are passed to another  character's whereby they can participate in finding that characters initiative order.
 
 ### Interludes
+
 Interludes are DM-initiated storytelling opportunities that occur at the GM's discretion, usually during downtime. When the GM deals interlude cards, players receive cards that suggest story topics for developing their characters. The cards are used purely for narrative purposes and players can tell their narrative in any order or choose not to participate. Good stories should be rewarded with a bennie from the GM.
 
 Players can click the **Interludes** button to see suggested topics based on their card's suit:
+
 - **Hearts**: Social interactions, gathering information
 - **Diamonds**: Acquiring resources, shopping
 - **Clubs**: Crafting, repairing equipment
@@ -172,14 +184,17 @@ Players can click the **Interludes** button to see suggested topics based on the
 ## Troubleshooting
 
 ### Cards Not Appearing
+
 - Ensure you're in an active Owlbear Rodeo scene
 - Check that the extension is properly loaded
 
 ### Players Not in Order
+
 - Initiative order updates automatically based on card values
 - Players with "On Hold" or "Out of Combat" are skipped during new card draws but may retain cards from previous rounds that affect sorting
 
 ### Missing Buttons
+
 - Some buttons are GM-only and won't appear for regular players
 - Owner-only buttons require you to have added the character token to the tracker
 
@@ -193,9 +208,9 @@ Players can click the **Interludes** button to see suggested topics based on the
 
 This project acknowledges the following:
 
-- **Savage Worlds Adventure Edition** by [Pinnacle Entertainment Group](https://www.peginc.com/) 
+- **Savage Worlds Adventure Edition** by [Pinnacle Entertainment Group](https://www.peginc.com/)
 - **Savaged.com** by [savaged.us](https://savaged.us/) for the original concept that inspired this Owlbear Rodeo extension.
-- **Game Icons** from https://game-icons.net/ for the icon assets used in the interface.
+- **Game Icons** from <https://game-icons.net/> for the icon assets used in the interface.
 
 ## Support
 

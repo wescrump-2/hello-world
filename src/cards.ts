@@ -44,7 +44,6 @@ export class Card {
     public static readonly abscard: string[] = ["position-absolute", "small-card"];
     public static readonly relcard: string[] = ["position-relative", "small-card"];
     public static readonly concard: string[] = ["position-relative", "small-card-div"];
-    //public static backindex: number = 0;
 
     public sequence: number;
     public dir: Facing = Facing.Down;
