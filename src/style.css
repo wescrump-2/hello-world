@@ -102,9 +102,9 @@ legend {
 }
 
 fieldset {
-  margin: 2px;
+  margin: 0px;
   padding: 0px;
-  border-width: medium;
+  border-width: thin;
   border-radius: var(--border-radius);
 }
 

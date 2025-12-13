@@ -12,7 +12,7 @@ export class Util {
     static DeckMkey = `${Util.ID}/deck`;
 
     static display(on:boolean):string {
-        if(on) return "initial"
+        if (on) return ""
         return "none"
     }
 
