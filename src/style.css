@@ -124,6 +124,7 @@ fieldset {
 
   button {
     background-color: #f9f9f9;
+    display: inline-block;
   }
 
   .small-card {
@@ -251,7 +252,6 @@ fieldset {
 
 .flex-container {
   display: flex;
-  /* justify-content: space-between; */
   justify-content: left;
 }
 
@@ -259,6 +259,11 @@ fieldset {
   width: 12rem;
   border: none;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .flex-item-2 {
@@ -271,6 +276,11 @@ fieldset {
   width: 4.5rem;
   border: none;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .position-absolute {
@@ -283,13 +293,12 @@ fieldset {
 }
 
 .initiative-container {
-    display: flex !important;
-    flex-direction: column !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .tactician-card {
-    outline: 3px solid #FFD700;
-    outline-offset: -3px;
-    z-index: 50;
+  outline: 3px solid #FFD700;
+  outline-offset: -3px;
+  z-index: 50;
 }
-

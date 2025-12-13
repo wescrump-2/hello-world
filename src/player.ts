@@ -602,7 +602,6 @@ export class PlayerChar {
 		show(this.buttons.get("quick"), isGMorOwner);
 		show(this.buttons.get("levelhead"), isGMorOwner);
 		show(this.buttons.get("tactician"), isGMorOwner);
-
 		show(this.buttons.get("info"), isOwner);
 		show(this.buttons.get("pass"), true);
 	}
