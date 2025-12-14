@@ -163,7 +163,7 @@ When a Joker is drawn:
 
 #### Tactician
 
-- Dealt an extra Action Card that can be given to an ally
+- Dealt an extra Action Card that can be given to an ally (outline in gold)
 - Master Tactician: Dealt two extra Action Cards that can be given to allies
 
 These extra cards are not part of the player's Action Cards hand and have zero effect unless they are passed to another  character's whereby they can participate in finding that characters initiative order.

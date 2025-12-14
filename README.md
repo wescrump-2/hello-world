@@ -1,6 +1,6 @@
 # Savage Worlds Initiative (Action Cards)
 
-A custom Savage Worlds Initiative extension for Savage Worlds Adventure Edition (SWADE) fans using Owlbear Rodeo. This extension simulates the Action Deck mechanics of SWADE, including support for Action Cards, Interludes, use of 2 or 4 Jokers, Edges/Hindrances, and more.
+A custom Savage Worlds Initiative extension for Savage Worlds Adventure Edition (SWADE) fans using Owlbear Rodeo. This extension simulates the Action Deck mechanics of SWADE, including support for Action Cards, Interludes, use of 2 or 4 Jokers, initiative affecting Edges/Hindrances, and more.
 
 ## Installation
 

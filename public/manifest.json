@@ -5,6 +5,7 @@
   "author": "Wes Crump",
   "icon": "/icon.png",
   "description": "Savage Worlds card based initiative tracker for Owlbear Rodeo.",
+  "homepage_url": "https://github.com/wescrump-2/hello-world",
   "action": {
     "title": "Savage Worlds Initiative",
     "icon": "/icon.svg",
