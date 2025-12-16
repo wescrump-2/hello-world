@@ -2,52 +2,101 @@
   font-family: Impact, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  /* Backgrounds - Dark grays for a modern "night mode" feel */
+  --obr-background-default: rgba(18, 18, 18, 1);
+  /* Near-black main background */
+  --obr-background-paper: rgba(30, 30, 30, 1);
+  /* Slightly elevated for panels/cards */
+
+  /* Text - Light grays/whites for high contrast on dark backgrounds */
+  --obr-text-primary: rgba(255, 255, 255, 1);
+  /* Bright white for main text */
+  --obr-text-secondary: rgba(255, 255, 255, 0.7);
+  /* Semi-transparent for subdued text */
+  --obr-text-disabled: rgba(255, 255, 255, 0.5);
+  /* More transparent for disabled states */
+
+  /* Primary accent - A vibrant purple/blue (common in dark themes for visibility) */
+  --obr-primary-main: rgba(103, 58, 183, 1);
+  /* Deep purple */
+  --obr-primary-light: rgba(149, 117, 205, 1);
+  /* Lighter variant */
+  --obr-primary-dark: rgba(69, 39, 124, 1);
+  /* Darker variant */
+  --obr-primary-contrast: rgba(255, 255, 255, 1);
+  /* White text on primary buttons */
+
+  /* Secondary accent - Teal/cyan for complementary highlights */
+  --obr-secondary-main: rgba(0, 150, 136, 1);
+  /* Teal */
+  --obr-secondary-light: rgba(77, 182, 172, 1);
+  /* Lighter */
+  --obr-secondary-dark: rgba(0, 105, 92, 1);
+  /* Darker */
+  --obr-secondary-contrast: rgba(0, 0, 0, 1);
+  /* Black text on secondary (for light accents) */
+
+  --invert: none;
+  --invert-click: invert(52%) sepia(81%) saturate(5333%) hue-rotate(331deg) brightness(90%) contrast(88%);
+  --slider-color: #ccc;
+
   --container-width: 380px;
-  --background-color: #000;
-  --theme-color: #C6C4AF;
-  --alt-theme-color: #ecd69b;
-  --heading-font: 'Anton', sans-serif;
-  --body-font: 'Open Sans', sans-serif;
+
   --spacing: 6px;
-  --border: 1px solid var(--theme-color);
   --border-radius: 6px;
   --card-spread-inc: 2.8rem;
   --card-stacked-down-inc: .1rem;
   --card-height: 3.7rem;
   --button-size: 26px;
+
+  color-scheme: inherit;
+  color: var(--obr-text-primary);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Backgrounds */
+    --obr-background-default: rgba(255, 255, 255, 1);
+    /* Pure white - common light mode base */
+    --obr-background-paper: rgba(245, 245, 245, 1);
+    /* Slight off-white for cards/panels */
 
-a:hover {
-  color: #535bf2;
-}
+    /* Text */
+    --obr-text-primary: rgba(0, 0, 0, 1);
+    /* Black for primary text */
+    --obr-text-secondary: rgba(0, 0, 0, 0.7);
+    /* Semi-transparent black for subdued text */
+    --obr-text-disabled: rgba(0, 0, 0, 0.5);
+    /* More transparent for disabled states */
 
-body {
-  margin: 0px;
-  padding: 0px;
-  place-items: center;
-  min-width: 320px;
-  min-height: 596px;
-}
+    /* Primary accent (often a blue/purple in many apps) */
+    --obr-primary-main: rgba(103, 58, 183, 1);
+    /* Deep purple (common Material primary) */
+    --obr-primary-light: rgba(149, 117, 205, 1);
+    /* Lighter variant */
+    --obr-primary-dark: rgba(69, 39, 124, 1);
+    /* Darker variant */
+    --obr-primary-contrast: rgba(255, 255, 255, 1);
+    /* White text on primary */
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+    /* Secondary accent (often green/teal) */
+    --obr-secondary-main: rgba(0, 150, 136, 1);
+    /* Teal green */
+    --obr-secondary-light: rgba(77, 182, 172, 1);
+    /* Lighter */
+    --obr-secondary-dark: rgba(0, 105, 92, 1);
+    /* Darker */
+    --obr-secondary-contrast: rgba(255, 255, 255, 1);
+    /* White text on secondary */
+    --invert: invert(1);
+    --invert-click: none;
+    --slider-color: #4b4b4b;
+  }
 }
 
 #app {
@@ -56,6 +105,116 @@ h1 {
   margin: 0 auto;
   padding: 0 auto;
   text-align: center;
+}
+
+#root {
+  max-width: 1280px;
+  height: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  --button-highlight: rgb(255, 255, 255, .1);
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  place-items: center;
+  min-width: 320px;
+  min-height: 596px;
+  box-sizing: border-box;
+  margin: 0
+}
+
+a {
+  font-weight: 500;
+  color: var(--obr-primary-main);
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: var(--obr-primary-main)
+}
+
+button {
+  background: var(--obr-primary-main);
+  display: inline-block;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+input {
+  color: var(--obr-text-primary);
+  background-color: transparent;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  border-color: #fff;
+  border-width: 1px;
+  border-style: solid;
+  text-align: center;
+  padding: .1rem .5rem
+}
+
+legend {
+  font-family: Verdana, "Lucida Grande", "Lucida Sans", "Trebuchet MS", Geneva, Tahoma, Impact, Anton, sans-serif;
+  font-size: medium;
+  font-weight: bolder;
+  color: var(--obr-text-primary);
+  text-align: left;
+  margin-bottom: 0;
+}
+
+fieldset {
+  margin: 0px;
+  padding: 0px;
+  border-width: medium;
+  border-radius: var(--border-radius);
+  border-color: var(--obr-text-primary);
+  border-style: solid;
+}
+
+fieldset.nextplayer {
+  border-width: thick;
+  border-color: var(--obr-primary-main);
+}
+
+.toggle-image {
+  cursor: pointer;
+  margin: 0px;
+  padding: 0px;
+  vertical-align: middle;
+  border: 0px;
+  background-color: transparent;
+  color: var(--obr-text-primary);
+}
+
+.toggle-image path {
+  transition: fill 0.3s ease;
+  fill: var(--obr-text-primary);
+}
+
+.toggle-image.active path {
+  fill: #007BFF;
+  /* Active color */
+}
+
+.toggle-image:hover path {
+  fill: #0056b3;
+  background-color: var(--obr-secondary-contrast);
+  /* A darker shade for hover */
+}
+
+.toggle-image.toggle-danger path {
+  color: #dc3545;
+  border-color: #dc3545
+}
+
+.toggle-image.toggle-danger:hover path {
+  color: #bb2d3b;
+  border-color: #b02a37
 }
 
 .alert-danger {
@@ -77,177 +236,6 @@ h1 {
 
 .logo.vanilla:hover {
   filter: drop-shadow(0 0 2em #3178c6aa);
-}
-
-.card {
-  padding: 0px;
-}
-
-legend {
-  font-family: Verdana, "Lucida Grande", "Lucida Sans", "Trebuchet MS", Geneva, Tahoma, Impact, Anton, sans-serif;
-  font-size: medium;
-  font-weight: bolder;
-  text-align: left;
-  margin-bottom: 0;
-}
-
-.toggle-image.toggle-danger path {
-  color: #dc3545;
-  border-color: #dc3545
-}
-
-.toggle-image.toggle-danger:hover path {
-  color: #bb2d3b;
-  border-color: #b02a37
-}
-
-fieldset {
-  margin: 0px;
-  padding: 0px;
-  border-width: thin;
-  border-radius: var(--border-radius);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #dddaee;
-    border-color: #f5c2c7;
-    --background-color: #ffffff;
-    --theme-color: #213547;
-    --alt-theme-color: #ecd69b;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-    display: inline-block;
-  }
-
-  .small-card {
-    height: var(--card-height);
-    margin: 0px;
-    padding: 0px;
-    border: .5px solid #000000;
-  }
-
-  .small-card-div {
-    height: calc(.4em + var(--card-height));
-    margin: 0px;
-    padding: 0px;
-    border: .5px solid #000000;
-  }
-
-  .toggle-image {
-    cursor: pointer;
-    margin: 0px;
-    padding: 0px;
-    vertical-align: middle;
-    border: 0px;
-    background-color: transparent;
-    color: black;
-  }
-
-  .toggle-image path {
-    transition: fill 0.3s ease;
-    fill: #202020;
-  }
-
-  .toggle-image.active path {
-    fill: #007BFF;
-    /* Active color */
-  }
-
-  .toggle-image:hover path {
-    fill: #0056b3;
-    /* A darker shade for hover */
-  }
-
-  .chosen {
-    outline: 2px solid #BF40BF;
-    outline-offset: -2px;
-    z-index: 100;
-  }
-
-  fieldset {
-    border-color: black;
-  }
-
-  fieldset.nextplayer {
-    border-width: thick;
-    border-color: #001aff;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #ffffffdd;
-    background-color: #242424;
-    border-color: #f5c2c7;
-    --background-color: #000000;
-    --theme-color: #c6c4af;
-    --alt-theme-color: #ecd69b;
-  }
-
-  a:hover {
-    color: #535bf2;
-  }
-
-  button {
-    background-color: #1a1a1a;
-  }
-
-  .small-card {
-    height: var(--card-height);
-    margin: 0px;
-    padding: 0px;
-  }
-
-  .small-card-div {
-    height: calc(.4em + var(--card-height));
-    margin: 0px;
-    padding: 0px;
-  }
-
-  .toggle-image {
-    cursor: pointer;
-    margin: 0px;
-    padding: 0px;
-    vertical-align: middle;
-    border: 0px;
-    background-color: transparent;
-    color: white;
-  }
-
-  .toggle-image path {
-    transition: fill 0.3s ease;
-    fill: #dfdfdf;
-  }
-
-  .toggle-image.active path {
-    fill: #007BFF;
-  }
-
-  .toggle-image:hover path {
-    fill: #0056b3;
-  }
-
-  .chosen {
-    border: 2px solid #BF40BF;
-    z-index: 100;
-  }
-
-  fieldset {
-    border-color: #f1f1f1;
-  }
-
-  fieldset.nextplayer {
-    border-width: thick;
-    border-color: cornflowerblue;
-  }
 }
 
 .flex-container {
@@ -301,4 +289,25 @@ fieldset {
   outline: 3px solid #FFD700;
   outline-offset: -3px;
   z-index: 50;
+}
+
+.small-card {
+  height: var(--card-height);
+  margin: 0px;
+  padding: 0px;
+}
+
+.small-card-div {
+  height: calc(.4em + var(--card-height));
+  margin: 0px;
+  padding: 0px;
+}
+
+.card {
+  padding: 0px;
+}
+
+.chosen {
+  border: 3px solid var(--obr-primary-main);
+  z-index: 100;
 }

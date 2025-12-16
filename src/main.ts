@@ -16,6 +16,12 @@ window.addEventListener("load", () => { setupCards() });
 OBR.onReady(async () => {
   await getCurrentPlayerId();
   setupContextMenu();
+  applyTheme();
+  // Update whenever the user changes the theme in Owlbear Rodeo
+  unsubscribes.push(OBR.theme.onChange(applyTheme));
+
+
+  
   // Optional: react to entering/leaving scene later if needed
   unsubscribes.push(OBR.scene.onReadyChange(async (isReady) => {
     if (isReady) {
@@ -248,3 +254,31 @@ async function migrateOldRoomMetadata() {
   }
 }
 
+async function applyTheme() {
+  const theme = await OBR.theme.getTheme();
+
+  // Background
+  document.documentElement.style.setProperty("--obr-background-default", theme.background.default);
+  document.documentElement.style.setProperty("--obr-background-paper", theme.background.paper);
+
+  // Text
+  document.documentElement.style.setProperty("--obr-text-primary", theme.text.primary);
+  document.documentElement.style.setProperty("--obr-text-secondary", theme.text.secondary);
+  document.documentElement.style.setProperty("--obr-text-disabled", theme.text.disabled);
+
+  // Primary color variants
+  document.documentElement.style.setProperty("--obr-primary-main", theme.primary.main);
+  document.documentElement.style.setProperty("--obr-primary-light", theme.primary.light);
+  document.documentElement.style.setProperty("--obr-primary-dark", theme.primary.dark);
+  document.documentElement.style.setProperty("--obr-primary-contrast", theme.primary.contrastText);
+
+  // Secondary color variants
+  document.documentElement.style.setProperty("--obr-secondary-main", theme.secondary.main);
+  document.documentElement.style.setProperty("--obr-secondary-light", theme.secondary.light);
+  document.documentElement.style.setProperty("--obr-secondary-dark", theme.secondary.dark);
+  document.documentElement.style.setProperty("--obr-secondary-contrast", theme.secondary.contrastText);
+
+  // Optional: Add classes for mode-specific styling
+  document.body.classList.toggle("obr-dark", theme.mode === "DARK");
+  document.body.classList.toggle("obr-light", theme.mode === "LIGHT");
+}
