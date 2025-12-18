@@ -2,6 +2,7 @@ import { Card } from "./cards";
 import * as pako from 'pako';
 import { DeckMeta, PlayerCard } from "./deck";
 import OBR from "@owlbear-rodeo/sdk";
+import { PlayerChar } from "./player";
 
 export class Util {
     static readonly BUTTON_CLASS = 'toggle-image';
@@ -251,10 +252,13 @@ export class Debug {
         return this._enabled;
     }
 
-    static updateFromPlayers(names: string[]) {
-        const hasDebugPlayer = names.some(p =>
-            p.toLowerCase().includes("debug")
-        );
+    static updateFromPlayers(players:Map<string, PlayerChar>) {
+        let hasDebugPlayer = false;
+        players.forEach((_, p) => {
+            if (p.toLowerCase().includes("debug")) {
+                hasDebugPlayer = true;
+            }
+        });
 
         if (hasDebugPlayer !== this._enabled) {
             this._enabled = hasDebugPlayer;

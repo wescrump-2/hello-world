@@ -95,6 +95,8 @@ export function setupContextMenu() {
 				} catch (error) {
 					console.error("Failed to remove items from initiative:", error);
 				}
+
+				deck.renderDeckAsync();
 			}
 		},
 	});

@@ -30,6 +30,8 @@ export class PlayerCard {
 export class Deck {
 	private static instance: Deck;
 	public isGM: boolean = false;
+	private _players = new Map<string, PlayerChar>();
+	get players(): Map<string, PlayerChar> { return this._players; }
 
 	static isSamePile(a: PileId, b: PileId): boolean {
 		if (a === b) return true;
@@ -41,8 +43,6 @@ export class Deck {
 
 	// Graphic assets
 	public svgcontainer!: HTMLDivElement;
-	public players: Map<string, PlayerChar> = new Map();
-	get playersArray(): PlayerChar[] { return Array.from(this.players.values()); }
 	get playerNames(): string[] { return Array.from(this.players.values()).map(p => p.name); }
 	// Game state
 	private meta: DeckMeta = {
@@ -135,11 +135,11 @@ export class Deck {
 	}
 
 	private async performSave(): Promise<void> {
-		const compressed = Util.compress(this.Meta);
+		const data = this.Meta;
 		try {
 			// Ensure scene is ready before saving metadata
 			await Util.ensureSceneReady();
-			await OBR.scene.setMetadata({ [Util.DeckMkey]: compressed });
+			await OBR.scene.setMetadata({ [Util.DeckMkey]: data });
 		} catch (err: any) {
 			// This is the EXACT error OBR throws when >16KB
 			if (err.message?.includes("metadata") && err.message?.includes("16")) {
@@ -155,10 +155,10 @@ export class Deck {
 					this.shuffle();
 
 					// Step 3: Save the clean version
-					const freshCompressed = Util.compress(this.Meta);
-					await OBR.scene.setMetadata({ [Util.DeckMkey]: freshCompressed });
+					const freshData = this.Meta;
+					await OBR.scene.setMetadata({ [Util.DeckMkey]: freshData });
 
-					Debug.log("Fresh deck saved after cleanup", freshCompressed.length, "chars");
+					Debug.log("Fresh deck saved after cleanup");
 
 					// Step 4: Notify everyone
 					await OBR.notification.show("Deck metadata was too large and has been reset!", "WARNING");
@@ -177,7 +177,7 @@ export class Deck {
 		}
 
 		// Save all player metadata to their tokens
-		const playerMetas = this.playersArray.map(p => ({
+		const playerMetas = Array.from(this.players.values()).map(p => ({
 			id: p.characterId,
 			meta: p.Meta
 		}));
@@ -264,7 +264,7 @@ export class Deck {
 	drawInitiative() {
 		Debug.log("drawInitiative");
 		try {
-			this.playersArray.forEach(p => p.drawInitiative());
+			this.players.forEach(p => p.drawInitiative());
 		} finally {
 			this.triggerPlayerStateChange();
 		}
@@ -273,7 +273,7 @@ export class Deck {
 	drawInterlude() {
 		Debug.log("drawInterlude");
 		try {
-			this.playersArray.forEach(p => p.drawInterlude());
+			this.players.forEach(p => p.drawInterlude());
 		} finally {
 			this.triggerPlayerStateChange();
 		}
@@ -288,12 +288,12 @@ export class Deck {
 	discardAllHands() {
 		Debug.log("discardAllHands");
 		if (!this.isGM) return;
-		if (this.playersArray.every(p => p.hand.length === 0)) return;
+		if (Array.from(this.players.values()).every(p => p.hand.length === 0)) return;
 
 		let anyChange = false;
 
 		try {
-			for (const player of this.playersArray) {
+			for (const player of this.players.values()) {
 				const handSize = player.hand.length;
 				if (handSize > 0) {
 					player.discardHand();
@@ -375,11 +375,7 @@ export class Deck {
 	initializeDeck() {
 		this.carddeck = Array.from({ length: 56 }, (_, i) => new PlayerCard(i + 1))
 		this.carddeck.forEach(c => {
-			if (!this.use4jokers && (c.cid === 55 || c.cid === 56)) {
-				this.setPile(c, 'remove');
-			} else {
-				this.setPile(c, 'draw');
-			}
+			this.setPile(c, (!this.use4jokers && (c.cid === 55 || c.cid === 56)) ? 'remove' : 'draw');
 		});
 	}
 
@@ -388,9 +384,19 @@ export class Deck {
 	}
 
 	shuffle() {
-		this.playersArray.forEach(p => { this.moveToPool('draw', p.pileId) }); // return hands
+		this.players.forEach(p => {
+			this.moveToPool('draw', p.pileId);
+		}); // return hands
 		this.moveToPool('draw', 'pool'); //return card pool
 		this.moveToPool('draw', 'discard'); //return discard
+		this.carddeck.forEach(c => {
+			console.log(`${c.cid}:${c.pile}`);
+			this.setPile(c, (!this.use4jokers && (c.cid === 55 || c.cid === 56)) ? 'remove' : 'draw');
+			c.selectedBy = '';
+		});
+		this.players.forEach(p => {
+			p.tacticianCards = [];
+		}); // clear tactician cards
 		const array = this.carddeck;
 		for (let i = this.carddeck.length - 1; i > 0; i--) {
 			const randomBytes = new Uint32Array(1);
@@ -470,30 +476,28 @@ export class Deck {
 		const p = new PlayerChar(name, charid, playerId);
 		this.players.set(charid, p);
 		///his.needsFullRender = true;
-		Debug.updateFromPlayers(Deck.getInstance().playerNames)
+		Debug.updateFromPlayers(Deck.getInstance().players)
 		return p;
 	}
 
 	removePlayer(player: PlayerChar) {
-		if (this.players.has(player.characterId)) {
-			try {
-				document.querySelector(`fieldset[data-pid="${player.characterId}"]`)?.remove();
-				this.moveToDiscardPool(player.pileId);
-				this.players.delete(player.characterId);
-			} finally {
-				player.removeOBR();
-			}
-
-			this.cleanupOrphanCards();
-			Debug.updateFromPlayers(this.playerNames)
-			this.triggerPlayerStateChange();
+		try {
+			document.querySelector(`fieldset[data-pid="${player.characterId}"]`)?.remove();
+			this.moveToDiscardPool(player.pileId);
+			this.players.delete(player.characterId);
+		} finally {
+			player.removeOBR();
 		}
+
+		this.cleanupOrphanCards();
+		Debug.updateFromPlayers(this.players)
+		this.triggerPlayerStateChange();
 	}
 
 	private updatePlayerOrderAndHighlight() {
 		////if (this.suppressRender) return;
 
-		if (this.playersArray.length === 0) {
+		if (this.players.size === 0) {
 			document.querySelectorAll('fieldset.nextplayer').forEach(el =>
 				el.classList.remove('nextplayer')
 			);
@@ -502,7 +506,7 @@ export class Deck {
 
 		requestAnimationFrame(() => {
 			// Sort players by adjusted best card: active, then on-hold, then zero-cards not out of combat, then out of combat
-			const currentPlayers = this.playersArray;
+			const currentPlayers = Array.from(this.players.values());
 			if (currentPlayers.length === 0) return;
 			const sorted = [...currentPlayers].sort((a, b) => {
 				const getAdjustedBestCard = (p: PlayerChar) => {
@@ -700,10 +704,9 @@ export class Deck {
 
 	renderPlayers() {
 		const div = this.svgcontainer;
-		this.playersArray.forEach(p => {
+		this.players.forEach(p => {
 			p.render(div);
 		});
-
 	}
 
 	setCurrentPlayer(pid: string) {

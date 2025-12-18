@@ -142,7 +142,7 @@ async function updatePlayerStateAll(playerItems: Item[]) {
   const changed = await updatePlayerState(playerItems);
 
   if (changed || playerItems.length === 0) {
-    Debug.updateFromPlayers(Deck.getInstance().playerNames)
+    Debug.updateFromPlayers(Deck.getInstance().players)
   }
 }
 
@@ -152,12 +152,10 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
 
   const activePids = new Set(items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.characterId).filter(Boolean));
 
-  for (let i = deck.playersArray.length - 1; i >= 0; i--) {
-    const localPid = deck.playersArray[i].characterId;
-    if (!activePids.has(localPid)) {
-      deck.removePlayer(deck.playersArray[i]);
-      changed = true;
-    }
+  const toRemove = Array.from(deck.players.values()).filter(p => !activePids.has(p.characterId));
+  for (const player of toRemove) {
+    deck.removePlayer(player);
+    changed = true;
   }
 
   for (const item of items) {
@@ -185,7 +183,7 @@ function rehydratePlayer(pmd: PlayerMeta, deck: Deck): boolean {
   if (player.applyMeta(pmd)) {
     changed = true;
   }
-  Debug.updateFromPlayers(deck.playerNames)
+  Debug.updateFromPlayers(deck.players)
   return changed;
 }
 
