@@ -120,13 +120,13 @@ async function renderScene(metadata: Record<string, any>) {
   const deck = Deck.getInstance();
   try {
     await Util.ensureSceneReady();
-    const newMeta = Util.getDeckMeta(metadata)
-    if (newMeta) {
+    const newMeta = Util.getDeckMeta(metadata);
+    if (newMeta && JSON.stringify(newMeta) !== JSON.stringify(deck.Meta)) {
       deck.updateState(newMeta);
+      // Deck metadata changed, reload player states but skip consistencyCheck
+      const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item));
+      await updatePlayerState(items, false);
     }
-    // Reload player states from scene items
-    const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
-    await updatePlayerState(items);
   } catch (error) {
     console.error("Failed to reload player states in renderScene:", error);
   }
@@ -142,7 +142,7 @@ async function renderScene(metadata: Record<string, any>) {
 //   }
 // }
 
-async function updatePlayerState(items: Item[]): Promise<boolean> {
+async function updatePlayerState(items: Item[], callConsistencyCheck: boolean = true): Promise<boolean> {
   const deck = Deck.getInstance();
   let changed = false;
 
@@ -165,7 +165,9 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
 
   if (changed) {
     Debug.updateFromPlayers(Deck.getInstance().players)
-    Util.consistencyCheck(deck);
+    if (callConsistencyCheck) {
+      Util.consistencyCheck(deck);
+    }
     deck.renderDeckAsync();
   }
   return changed;
