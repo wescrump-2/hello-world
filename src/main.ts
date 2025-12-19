@@ -118,15 +118,12 @@ async function setupGameState(): Promise<void> {
 
 async function renderScene(metadata: Record<string, any>) {
   const deck = Deck.getInstance();
-  const newMeta = Util.getDeckMeta(metadata)
-  if (newMeta) {
-    deck.updateState(newMeta);
-  }
-
   try {
-    // Ensure scene is ready before accessing items
     await Util.ensureSceneReady();
-
+    const newMeta = Util.getDeckMeta(metadata)
+    if (newMeta) {
+      deck.updateState(newMeta);
+    }
     // Reload player states from scene items
     const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
     await updatePlayerState(items);
@@ -167,7 +164,7 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
   }
 
   if (changed) {
-    Debug.updateFromPlayers(Deck.getInstance().players)  
+    Debug.updateFromPlayers(Deck.getInstance().players)
     Util.consistencyCheck(deck);
     deck.renderDeckAsync();
   }
