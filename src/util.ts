@@ -194,6 +194,179 @@ export class Util {
         return JSON.stringify(value).length;
     }
 
+    static consistencyCheck(deck: any): void {
+        const errors: string[] = [];
+        const deckMeta = deck.Meta;
+        const players = deck.players;
+        const use4jokers = deckMeta.use4jokers;
+        const totalCards = use4jokers ? 56 : 54;
+        
+        // Track which cards we've found and where
+        const cardLocations = new Map<number, { pile: string; details?: string }>();
+        const selectedCards = new Set<number>();
+        
+        // Summary statistics
+        const summary = {
+            totalCards,
+            cardsFound: 0,
+            cardsInDraw: 0,
+            cardsInDiscard: 0,
+            cardsInPool: 0,
+            cardsInRemove: 0,
+            cardsInHands: 0,
+            selectedCards: 0,
+            orphanedCards: 0,
+            duplicateCards: 0,
+            missingPlayers: 0
+        };
+
+        // Track unique missing player IDs to avoid double-counting
+        const missingPlayerIds = new Set<string>();
+
+        // Check all cards in the deck
+        for (const playerCard of deckMeta.carddeck) {
+            const cid = playerCard.cid;
+            
+            // Skip jokers if not using 4 jokers
+            if (!use4jokers && (cid === 55 || cid === 56)) {
+                continue;
+            }
+            
+            // Track selected cards
+            if (playerCard.selectedBy && playerCard.selectedBy !== '') {
+                selectedCards.add(cid);
+                summary.selectedCards++;
+            }
+            
+            // Determine pile location
+            let pile = '';
+            let details = '';
+            
+            if (typeof playerCard.pile === 'string') {
+                pile = playerCard.pile;
+                details = pile;
+            } else if (typeof playerCard.pile === 'object' && playerCard.pile.characterId) {
+                pile = 'hand';
+                details = `player:${playerCard.pile.characterId}`;
+            } else {
+                errors.push(`Card ${cid}: Invalid pile type ${typeof playerCard.pile}`);
+                continue;
+            }
+            
+            // Validate pile location
+            const validPiles = ['draw', 'discard', 'pool', 'remove', 'hand'];
+            if (!validPiles.includes(pile)) {
+                errors.push(`Card ${cid}: Invalid pile "${pile}"`);
+                continue;
+            }
+            
+            // Track card location
+            if (cardLocations.has(cid)) {
+                const prev = cardLocations.get(cid)!;
+                errors.push(`Card ${cid}: Duplicate card found - already in ${prev.details}, now also in ${details}`);
+                summary.duplicateCards++;
+                continue;
+            }
+            
+            cardLocations.set(cid, { pile, details });
+            summary.cardsFound++;
+            
+            // Update summary counts
+            switch (pile) {
+                case 'draw':
+                    summary.cardsInDraw++;
+                    break;
+                case 'discard':
+                    summary.cardsInDiscard++;
+                    break;
+                case 'pool':
+                    summary.cardsInPool++;
+                    break;
+                case 'remove':
+                    summary.cardsInRemove++;
+                    break;
+                case 'hand':
+                    summary.cardsInHands++;
+                    break;
+            }
+            
+            // Validate player existence for cards in hands
+            if (pile === 'hand') {
+                const characterId = playerCard.pile.characterId;
+                if (!players.has(characterId)) {
+                    errors.push(`Card ${cid}: In hand of non-existent player ${characterId}`);
+                    summary.orphanedCards++;
+                    // Only count each missing player once
+                    if (!missingPlayerIds.has(characterId)) {
+                        missingPlayerIds.add(characterId);
+                        summary.missingPlayers++;
+                    }
+                }
+            }
+        }
+        
+        // Check for missing cards (should not happen with current structure, but good to verify)
+        for (let cid = 1; cid <= totalCards; cid++) {
+            if (!cardLocations.has(cid)) {
+                errors.push(`Card ${cid}: Missing from all piles`);
+            }
+        }
+        
+        // Validate selected cards are in player hands
+        for (const selectedCid of selectedCards) {
+            const location = cardLocations.get(selectedCid);
+            if (!location) {
+                errors.push(`Selected card ${selectedCid}: Card not found in any pile`);
+                continue;
+            }
+            
+            if (location.pile !== 'hand') {
+                errors.push(`Selected card ${selectedCid}: Selected but not in a player's hand (found in ${location.pile})`);
+            }
+        }
+        
+        // Validate joker consistency
+        if (!use4jokers) {
+            // Jokers should be in 'remove' pile
+            for (const jokerCid of [55, 56]) {
+                const location = cardLocations.get(jokerCid);
+                if (location && location.pile !== 'remove') {
+                    errors.push(`Joker ${jokerCid}: Should be in 'remove' pile when use4jokers=false, but found in ${location.pile}`);
+                }
+            }
+        }
+        
+        // Validate that all players have valid hands
+        for (const [characterId, player] of players) {
+            const playerHand = player.hand;
+            for (const cardId of playerHand) {
+                const location = cardLocations.get(cardId);
+                if (!location || location.pile !== 'hand') {
+                    errors.push(`Player ${characterId}: Claims to have card ${cardId} but it's not in their hand`);
+                }
+            }
+        }
+        
+        // Summary validation
+        const expectedTotal = summary.cardsInDraw + summary.cardsInDiscard +
+                             summary.cardsInPool + summary.cardsInRemove + summary.cardsInHands;
+        
+        if (expectedTotal !== summary.cardsFound) {
+            errors.push(`Summary mismatch: Expected ${summary.cardsFound} cards but calculated ${expectedTotal} from pile counts`);
+        }
+        
+        // Log results to console
+        console.log('=== DECK CONSISTENCY CHECK ===');
+        console.log('Summary:', summary);
+        
+        if (errors.length > 0) {
+            console.error('Consistency errors found:');
+            errors.forEach(error => console.error('  -', error));
+            deck.cleanupOrphanCards();
+        } else {
+            console.log('All consistency checks passed!');
+        }
+    }
 
     static getDeckMeta(metadata: Record<string, any>): DeckMeta | undefined {
         const raw = metadata[Util.DeckMkey] as Uint8Array;

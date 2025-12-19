@@ -21,7 +21,7 @@ OBR.onReady(async () => {
   unsubscribes.push(OBR.theme.onChange(applyTheme));
 
 
-  
+
   // Optional: react to entering/leaving scene later if needed
   unsubscribes.push(OBR.scene.onReadyChange(async (isReady) => {
     if (isReady) {
@@ -99,11 +99,10 @@ async function setupGameState(): Promise<void> {
 
   try {
     const initialItems = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item));
-    await updatePlayerStateAll(initialItems).then(() => {
+    await updatePlayerState(initialItems).then(() => {
       if (deck.drawdeck.length === 0) {
         deck.shuffleDeck();
       }
-      deck.cleanupOrphanCards();
     });
 
   } catch (error) {
@@ -112,7 +111,7 @@ async function setupGameState(): Promise<void> {
 
   unsubscribes.push(OBR.scene.items.onChange(async (context) => {
     const chars = context.filter(item => isImage(item) && item.layer === 'CHARACTER');
-    await updatePlayerStateAll(chars);
+    await updatePlayerState(chars);
   }));
   deck.renderDeckAsync();
 }
@@ -130,7 +129,7 @@ async function renderScene(metadata: Record<string, any>) {
 
     // Reload player states from scene items
     const items = await OBR.scene.items.getItems((item): item is Image => item.layer === "CHARACTER" && isImage(item))
-    await updatePlayerStateAll(items);
+    await updatePlayerState(items);
   } catch (error) {
     console.error("Failed to reload player states in renderScene:", error);
   }
@@ -138,25 +137,17 @@ async function renderScene(metadata: Record<string, any>) {
   deck.renderDeckAsync();
 }
 
-async function updatePlayerStateAll(playerItems: Item[]) {
-  const changed = await updatePlayerState(playerItems);
+// async function updatePlayerStateAll(playerItems: Item[]) {
+//   const changed = await updatePlayerState(playerItems);
 
-  if (changed || playerItems.length === 0) {
-    Debug.updateFromPlayers(Deck.getInstance().players)
-  }
-}
+//   if (changed || playerItems.length === 0) {
+//     Debug.updateFromPlayers(Deck.getInstance().players)
+//   }
+// }
 
 async function updatePlayerState(items: Item[]): Promise<boolean> {
   const deck = Deck.getInstance();
   let changed = false;
-
-  const activePids = new Set(items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.characterId).filter(Boolean));
-
-  const toRemove = Array.from(deck.players.values()).filter(p => !activePids.has(p.characterId));
-  for (const player of toRemove) {
-    deck.removePlayer(player);
-    changed = true;
-  }
 
   for (const item of items) {
     const pmd = item.metadata[Util.PlayerMkey] as PlayerMeta;
@@ -167,7 +158,17 @@ async function updatePlayerState(items: Item[]): Promise<boolean> {
     }
   }
 
+  const activePids = new Set(items.map(item => (item.metadata[Util.PlayerMkey] as PlayerMeta)?.characterId).filter(Boolean));
+
+  const toRemove = Array.from(deck.players.values()).filter(p => !activePids.has(p.characterId));
+  for (const player of toRemove) {
+    deck.removePlayer(player);
+    changed = true;
+  }
+
   if (changed) {
+    Debug.updateFromPlayers(Deck.getInstance().players)  
+    Util.consistencyCheck(deck);
     deck.renderDeckAsync();
   }
   return changed;

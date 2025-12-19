@@ -73,7 +73,18 @@ export function setupContextMenu() {
 
 			// ─── REMOVE FROM INITIATIVE ───
 			if (itemsToRemove.length > 0) {
-				// First, clean up local players (moves cards to discard, removes from Map)
+				// First, delete metadata from tokens to prevent scene item change events
+				try {
+					await OBR.scene.items.updateItems(itemsToRemove, (items) => {
+						for (const item of items) {
+							item.metadata[Util.PlayerMkey] = undefined;
+						}
+					});
+				} catch (error) {
+					console.error("Failed to remove items from initiative:", error);
+				}
+
+				// Then, clean up local players (moves cards to discard, removes from Map)
 				for (const item of itemsToRemove) {
 					const meta = item.metadata[Util.PlayerMkey] as PlayerMeta | undefined;
 					if (meta) {
@@ -82,18 +93,6 @@ export function setupContextMenu() {
 							deck.removePlayer(player); // sync, moves cards + deletes from Map
 						}
 					}
-				}
-
-				// Then delete metadata from tokens
-				try {
-					await OBR.scene.items.updateItems(itemsToRemove, (items) => {
-						for (const item of items) {
-							//delete item.metadata[Util.PlayerMkey];
-							item.metadata[Util.PlayerMkey] = undefined;
-						}
-					});
-				} catch (error) {
-					console.error("Failed to remove items from initiative:", error);
 				}
 
 				deck.renderDeckAsync();
